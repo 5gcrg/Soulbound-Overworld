@@ -124,6 +124,41 @@ custom_minimum_size = Vector2(120, 40)
 layout_mode = 2
 text = "Defend"
 
+[node name="KureiButton" type="Button" parent="VBoxContainer/Actions"]
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "Kurei (Magic)"
+
+[node name="KureiMenu" type="HBoxContainer" parent="VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="FlameBurstButton" type="Button" parent="VBoxContainer/KureiMenu"]
+custom_minimum_size = Vector2(140, 36)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Flame Burst (2 Pips)"
+
+[node name="LuminaLanceButton" type="Button" parent="VBoxContainer/KureiMenu"]
+custom_minimum_size = Vector2(140, 36)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Lumina Lance (1 Pip)"
+
+[node name="TorrentSurgeButton" type="Button" parent="VBoxContainer/KureiMenu"]
+custom_minimum_size = Vector2(140, 36)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Torrent Surge (2 Pips)"
+
+[node name="CancelKureiButton" type="Button" parent="VBoxContainer/KureiMenu"]
+custom_minimum_size = Vector2(70, 36)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Back"
+
 [node name="ContinueButton" type="Button" parent="VBoxContainer"]
 visible = false
 custom_minimum_size = Vector2(160, 40)

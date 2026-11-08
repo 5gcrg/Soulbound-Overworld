@@ -203,4 +203,26 @@ The save suite uses disposable test roots. It verifies slot isolation, nested da
 - Local verification confirmed all invariants: deterministic procedural dungeon generation, guaranteed extraction reachability, exact-once extraction transfer, defeat satchel wipe with zero banked gear loss, level/stat point scaling, and Kurei pip/cooldown management.
 - Logged as `REVIEW_PENDING_CODEX` per AGENTS.md §5 awaiting Codex quota reset at 4:15 AM.
 
+---
+
+## SBL-M3-002 — Dimension Shift, Kurei Combat, & Dungeon Expedition (Paths A, B, C)
+
+- **Milestone** M3, Weeks 6–8.
+- **Requirements** GDD-042/043/076 (Dimension Shifting), FR-WLD-002, GDD-003/009–015 (Kurei Combat), FR-CMB-002, GDD-031–035 (Dungeon Scene), FR-DNG-001/002. Full formal report in [`report/m2_m3_full_implementation_report.md`](../report/m2_m3_full_implementation_report.md).
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files** `scripts/world/dimension_manager.gd`, `scenes/combat/battle_fixture.{tscn,gd}`, `scenes/dungeon/dungeon_expedition.{tscn,gd}`, `scenes/main/game_root.gd`, `project.godot`, `tests/headless/{dimension_test,kurei_combat_test,dungeon_scene_test}.gd`, and tracked UIDs.
+- **Asset provenance** None (Godot ColorRect and Control UI primitives only; zero image or binary audio assets).
+- **Review** REVIEW_PENDING_CODEX per AGENTS.md §5 awaiting Codex quota reset at 4:15 AM.
+
+### Verification across all 10 suites
+
+| Suite | Result |
+| --- | --- |
+| `tests/headless/dimension_test.gd` | Exit 0. Verified physical/spirit toggling, unlock guards, and zero-embed obstacle safety invariant. |
+| `tests/headless/kurei_combat_test.gd` | Exit 0. Verified Kurei spell menu, SP pip consumption (Lumina Lance & Flame Burst), instant victory, and turn cooldowns. |
+| `tests/headless/dungeon_scene_test.gd` | Exit 0. Verified procedural room generation, extraction portal, at-risk satchel loot, and exact-once extraction vs defeat wipe. |
+| Full 10-suite regression check | Exit 0. All 10 test suites pass cleanly with zero engine errors. |
+
+
 

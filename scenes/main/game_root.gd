@@ -16,6 +16,7 @@ var _previous_input_frozen: bool = false
 
 var profile_store: ProfileStore = null
 var slice_progress: SliceProgress = null
+var dimension_manager: DimensionManager = DimensionManager.new()
 
 @onready var world_container: Node2D = $WorldContainer
 @onready var player: PlayerCharacter = $Player
@@ -70,6 +71,17 @@ func _on_region_transition_failed(reason: String, from_id: String, to_id: String
 func _bind_region_fixtures() -> void:
 	_bind_combat_encounter()
 	_bind_quest_npc()
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("shift_dimension"):
+		if player != null and not player.input_frozen and world_router != null and world_router.active_region != null:
+			var space: PhysicsDirectSpaceState2D = player.get_world_2d().direct_space_state if player.get_world_2d() != null else null
+			var err: Error = dimension_manager.request_shift(player, space)
+			if err == OK:
+				dimension_manager.apply_dimension_to_region(world_router.active_region)
+				if status_label != null:
+					var dim_name: String = "Spirit Dimension" if dimension_manager.current_dimension == DimensionManager.Dimension.SPIRIT else "Physical Dimension"
+					status_label.text = "Shifted to %s" % dim_name
 
 # ==============================================================================
 # Combat Encounter Binding & Handling

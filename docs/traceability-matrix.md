@@ -127,3 +127,21 @@ This matrix covers the M1 bootstrap and SBL-W2-001 overworld transitions under [
 - **Scope**: Core M3 systems foundations: CharacterStats (attributes/level/XP), InventoryManager (secured town gear vs satchel, defeat loss invariant), KureiSystem (6 categories, pip costs, cooldowns), DungeonGenerator (seeded determinism, reachable extraction, suspend/resume).
 - **Review**: REVIEW_PENDING_CODEX per AGENTS.md §5 due to Codex CLI quota limit. Local verification passed 100% cleanly (exit 0).
 - **Asset Scope**: Zero image, audio, or generated narrative assets (typed GDScript system classes only).
+
+---
+
+## Task SBL-M3-002: Dimension Shift, Kurei Combat, & Dungeon Expedition (Paths A, B, C)
+
+| Requirement ID | Description | Milestone / Scope | Priority | Planned Scene / Script / Data Owner | Corresponding Issue / PR | Tests | Evidence Link | Implementation Status | Review Status | Last Approval Date |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **GDD-042** | Spirit dimension switching in eligible areas | M3 (Weeks 6–8) | P1 (planned) | `scripts/world/dimension_manager.gd`, `scenes/main/game_root.gd` | Task SBL-M3-002 (`feature/w4-5-vertical-slice`) | `tests/headless/dimension_test.gd` | [M3 review entry](agent-review-queue.md#sbl-m3-002--dimension-shift-kurei-combat--dungeon-expedition-paths-a-b-c) | Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **GDD-043** | Dimension shifts reveal objects and alternate routes | M3 (Weeks 6–8) | P1 (planned) | `scripts/world/dimension_manager.gd` | Task SBL-M3-002 (`feature/w4-5-vertical-slice`) | `tests/headless/dimension_test.gd` | [M3 review entry](agent-review-queue.md#sbl-m3-002--dimension-shift-kurei-combat--dungeon-expedition-paths-a-b-c) | Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **FR-WLD-002** | Shift dimensions only when unlocked and position-safe (zero embed) | M3 (Weeks 6–8) | P1 (planned) | `scripts/world/dimension_manager.gd` | Task SBL-M3-002 (`feature/w4-5-vertical-slice`) | `tests/headless/dimension_test.gd` | [M3 review entry](agent-review-queue.md#sbl-m3-002--dimension-shift-kurei-combat--dungeon-expedition-paths-a-b-c) | Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **FR-CMB-002** | Turn-based Kurei magic actions with pip costs & cooldowns | M3 (Weeks 6–8) | P1 (planned) | `scenes/combat/battle_fixture.{tscn,gd}` | Task SBL-M3-002 (`feature/w4-5-vertical-slice`) | `tests/headless/kurei_combat_test.gd` | [M3 review entry](agent-review-queue.md#sbl-m3-002--dimension-shift-kurei-combat--dungeon-expedition-paths-a-b-c) | Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **FR-DNG-001** | Procedural dungeon expedition scene with extraction portal | M3 (Weeks 6–8) | P1 (planned) | `scenes/dungeon/dungeon_expedition.{tscn,gd}` | Task SBL-M3-002 (`feature/w4-5-vertical-slice`) | `tests/headless/dungeon_scene_test.gd` | [M3 review entry](agent-review-queue.md#sbl-m3-002--dimension-shift-kurei-combat--dungeon-expedition-paths-a-b-c) | Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **FR-DNG-002** | Satchel at-risk loot gathering and extraction transfer | M3 (Weeks 6–8) | P1 (planned) | `scenes/dungeon/dungeon_expedition.gd` | Task SBL-M3-002 (`feature/w4-5-vertical-slice`) | `tests/headless/dungeon_scene_test.gd` | [M3 review entry](agent-review-queue.md#sbl-m3-002--dimension-shift-kurei-combat--dungeon-expedition-paths-a-b-c) | Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+
+### SBL-M3-002 Scope Notes
+- **Scope**: DimensionManager dual-plane switching, BattleFixture Kurei spell menu, and DungeonExpedition scene with extraction and loot mechanics. Formal report at `report/m2_m3_full_implementation_report.md`.
+- **Review**: REVIEW_PENDING_CODEX per AGENTS.md §5 awaiting Codex quota reset at 4:15 AM.
+- **Asset Scope**: Zero image, audio, or generated narrative assets (ColorRect primitives, native Control containers, and typed GDScript only).
