@@ -6,26 +6,34 @@ const EXPECTED_HEIGHT: int = 540
 const EXPECTED_RENDERER: String = "gl_compatibility"
 const EXPECTED_ENGINE_MAJOR: int = 4
 const EXPECTED_ENGINE_MINOR: int = 7
+const EXPECTED_ENGINE_PATCH: int = 2
+const EXPECTED_ENGINE_STATUS: String = "stable"
+const EXPECTED_TITLE_TEXT: String = "Soulbound"
+const EXPECTED_STATUS_TEXT: String = "M1 Technical Foundation Bootstrap"
 
 func _init() -> void:
+	call_deferred("_run_smoke_test")
+
+func _run_smoke_test() -> void:
 	print("--- Running Soulbound Headless Smoke Test (SBL-M1-001) ---")
 	var success: bool = true
 
-	# 1. Check Godot Engine Version
+	# 1. Enforce exact Godot 4.7.2 stable version
 	var version_info: Dictionary = Engine.get_version_info()
-	print("Engine Version: %s.%s.%s (%s)" % [
-		version_info.get("major", 0),
-		version_info.get("minor", 0),
-		version_info.get("patch", 0),
-		version_info.get("status", "")
-	])
 	var major: int = int(version_info.get("major", 0))
 	var minor: int = int(version_info.get("minor", 0))
-	if major != EXPECTED_ENGINE_MAJOR or minor != EXPECTED_ENGINE_MINOR:
-		printerr("FAIL: Engine version mismatch! Expected 4.7.x, got %s.%s" % [major, minor])
+	var patch: int = int(version_info.get("patch", 0))
+	var status: String = str(version_info.get("status", ""))
+	print("Engine Version: %s.%s.%s.%s" % [major, minor, patch, status])
+
+	if major != EXPECTED_ENGINE_MAJOR or minor != EXPECTED_ENGINE_MINOR or patch != EXPECTED_ENGINE_PATCH or status != EXPECTED_ENGINE_STATUS:
+		printerr("FAIL: Engine version mismatch! Expected %s.%s.%s.%s, got %s.%s.%s.%s" % [
+			EXPECTED_ENGINE_MAJOR, EXPECTED_ENGINE_MINOR, EXPECTED_ENGINE_PATCH, EXPECTED_ENGINE_STATUS,
+			major, minor, patch, status
+		])
 		success = false
 	else:
-		print("PASS: Engine version matches 4.7.x")
+		print("PASS: Engine version matches exact %s.%s.%s.%s" % [major, minor, patch, status])
 
 	# 2. Check Project Settings: Display Resolution (GDD-103)
 	var width: int = int(ProjectSettings.get_setting("display/window/size/viewport_width", 0))
@@ -45,13 +53,20 @@ func _init() -> void:
 	else:
 		print("PASS: Stretch configuration is canvas_items/keep")
 
-	# 4. Check Rendering Method (GDD-095)
-	var renderer: String = str(ProjectSettings.get_setting("rendering/renderer/rendering_method", ""))
-	if renderer != EXPECTED_RENDERER:
-		printerr("FAIL: Renderer mismatch! Expected %s, got %s" % [EXPECTED_RENDERER, renderer])
+	# 4. Check Renderer Settings: desktop and web (GDD-095)
+	var desktop_renderer: String = str(ProjectSettings.get_setting("rendering/renderer/rendering_method", ""))
+	var web_renderer: String = str(ProjectSettings.get_setting("rendering/renderer/rendering_method.web", ""))
+	if desktop_renderer != EXPECTED_RENDERER:
+		printerr("FAIL: Desktop renderer mismatch! Expected %s, got %s" % [EXPECTED_RENDERER, desktop_renderer])
 		success = false
 	else:
-		print("PASS: Renderer method is %s" % renderer)
+		print("PASS: Desktop renderer method is %s" % desktop_renderer)
+
+	if web_renderer != EXPECTED_RENDERER:
+		printerr("FAIL: Web renderer mismatch! Expected %s, got %s" % [EXPECTED_RENDERER, web_renderer])
+		success = false
+	else:
+		print("PASS: Web renderer method is %s" % web_renderer)
 
 	# 5. Check Main Scene Setting (GDD-093, GDD-096)
 	var main_scene_path: String = str(ProjectSettings.get_setting("application/run/main_scene", ""))
@@ -82,16 +97,53 @@ func _init() -> void:
 		return
 
 	root.add_child(instance)
-	print("PASS: Instantiated and attached %s to SceneTree root" % instance.name)
 
-	# 8. Verify Scene Content Nodes and Types
-	var title_node: Label = instance.get_node_or_null("VBoxContainer/TitleLabel") as Label
-	var status_node: Label = instance.get_node_or_null("VBoxContainer/StatusLabel") as Label
-	if title_node == null or status_node == null:
-		printerr("FAIL: Required label nodes missing from GameRoot scene")
+	# 8. Verify GameRoot name, type, inside tree, and node readiness
+	if instance.name != "GameRoot":
+		printerr("FAIL: Root instance name mismatch! Expected 'GameRoot', got '%s'" % instance.name)
 		success = false
 	else:
-		print("PASS: Verified TitleLabel ('%s') and StatusLabel ('%s')" % [title_node.text, status_node.text])
+		print("PASS: Root instance name is 'GameRoot'")
+
+	if not (instance is Control):
+		printerr("FAIL: GameRoot is not of expected type Control")
+		success = false
+	else:
+		print("PASS: GameRoot type is Control")
+
+	if not instance.is_inside_tree():
+		printerr("FAIL: GameRoot is not inside tree")
+		success = false
+	else:
+		print("PASS: GameRoot is inside tree")
+
+	if not instance.is_node_ready():
+		printerr("FAIL: GameRoot is not ready")
+		success = false
+	else:
+		print("PASS: GameRoot is ready")
+
+	# 9. Verify actual expected label texts
+	var title_node: Label = instance.get_node_or_null("VBoxContainer/TitleLabel") as Label
+	var status_node: Label = instance.get_node_or_null("VBoxContainer/StatusLabel") as Label
+
+	if title_node == null:
+		printerr("FAIL: TitleLabel node missing from GameRoot scene")
+		success = false
+	elif title_node.text != EXPECTED_TITLE_TEXT:
+		printerr("FAIL: TitleLabel text mismatch! Expected '%s', got '%s'" % [EXPECTED_TITLE_TEXT, title_node.text])
+		success = false
+	else:
+		print("PASS: TitleLabel text matches '%s'" % EXPECTED_TITLE_TEXT)
+
+	if status_node == null:
+		printerr("FAIL: StatusLabel node missing from GameRoot scene")
+		success = false
+	elif status_node.text != EXPECTED_STATUS_TEXT:
+		printerr("FAIL: StatusLabel text mismatch! Expected '%s', got '%s'" % [EXPECTED_STATUS_TEXT, status_node.text])
+		success = false
+	else:
+		print("PASS: StatusLabel text matches '%s'" % EXPECTED_STATUS_TEXT)
 
 	instance.queue_free()
 

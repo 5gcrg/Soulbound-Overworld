@@ -1,42 +1,29 @@
 # Agent Review Queue
 
-In accordance with `AGENTS.md` (§ "Required planning → execution → review sequence" step 5), all changes executed by `agy` must be cataloged here for verification by Codex CLI before release.
+## SBL-M1-001 — Godot foundation
 
----
+- **Milestone** M1, Week 1.
+- **Requirements** GDD-093–096, GDD-103, GDD-108–109, GDD-119, GDD-124, GDD-129, NFR-MAINT-001. Scope and evidence are recorded in the [traceability matrix](traceability-matrix.md).
+- **Implementation owner** agy. **Plan, validation, and Git operation owner** Codex.
+- **Branch and initial implementation** `feature/m1-godot-foundation`, `cdd8e2d`. Baseline `da2d925`.
+- **Files** `project.godot`, `.gitignore`, `scenes/main/game_root.{tscn,gd,gd.uid}`, `tests/headless/smoke_test.{gd,gd.uid}`, and the [asset register](asset-register.md), traceability matrix, and review queue in `docs/`.
+- **Asset provenance** None. No runtime content or save data changes.
+- **Review** CHANGES_REQUESTED.
+- **Open questions** No M1 design questions. Hosted branch protection and peer review require a configured GitHub remote. Godot MCP proof, exports, and platform acceptance remain open.
 
-## Queue Entries
+### Verification
 
-### TASK ID: SBL-M1-001
-- **REQUIREMENTS**: GDD-093, GDD-094, GDD-095, GDD-096, GDD-103, GDD-108, GDD-109, GDD-119, GDD-124, GDD-129, NFR-MAINT-001, TC-AGY-001
-- **MILESTONE**: M1 (Week 1 Foundation)
-- **OWNER**: agy
-- **PLAN OWNER**: Codex
-- **BRANCH/COMMIT**: `feature/m1-godot-foundation` / commit pending Codex commit
-- **FILES CHANGED**:
-  - `project.godot` (verified existing configuration)
-  - `.gitignore` (verified existing configuration)
-  - `scenes/main/game_root.tscn` (created minimal bootstrap root scene)
-  - `scenes/main/game_root.gd` (created typed GDScript controller)
-  - `tests/headless/smoke_test.gd` (created automated headless smoke test)
-  - `docs/asset-register.md` (created register showing zero assets)
-  - `docs/traceability-matrix.md` (created requirement traceability matrix)
-  - `docs/agent-review-queue.md` (logged task handoff)
-- **ASSET PROVENANCE**: none (code, scenes, documentation, and test scripts only)
-- **TESTS RUN + RESULTS**:
-  - Verification target: Godot 4.7.2 Stable headless CLI execution.
-  - Headless smoke test script `tests/headless/smoke_test.gd` checks:
-    1. Godot engine version major 4, minor 7.
-    2. Resolution settings (viewport 960x540).
-    3. Stretch settings (canvas_items mode, keep aspect).
-    4. Rendering method (`gl_compatibility`).
-    5. Main scene path configuration (`res://scenes/main/game_root.tscn`).
-    6. Main scene resource existence and PackedScene instantiate readiness.
-    7. Main scene attachment to SceneTree root.
-    8. Child node presence and expected technical labels.
-  - Test commands to be executed by Codex:
-    - `godot --version`
-    - `godot --headless --path . --import`
-    - `godot --headless --path . --quit-after 5`
-    - `godot --headless --path . -s tests/headless/smoke_test.gd`
-- **REVIEW**: REVIEW_PENDING_CODEX
-- **OPEN QUESTIONS**: None.
+| Command | Result after fixes |
+| --- | --- |
+| `godot --version` | Exit 0. Godot 4.7.2 Stable, official build `ed1daf0bf`. |
+| `godot --headless --path . --import` | Exit 0. Editor imported the project without script or scene errors. |
+| `godot --headless --path . --quit-after 5` | Exit 0. Main scene launched without script or scene errors. |
+| `godot --headless --path . --script tests/headless/smoke_test.gd` | Exit 0. Checks exact stable version, both renderer settings, viewport and scaling, and the initialized GameRoot. |
+
+An isolated copy also passed the smoke check (exit 0). An injected bootstrap assertion and a changed Web renderer override each failed the test (exit 1), as expected.
+
+### Review history
+
+- agy created the project files on the local feature branch. Headless command permission prevented agy from running Git and Godot, so Codex performed those operations. A quota interruption left a partial scaffold, and an agy retry with an available Flash model completed the slice.
+- Codex CLI reviewed `cdd8e2d` against `main` on 8 November 2026 (session `01a1bb6c-e4b7-7ca3-a28b-967563cbe3e4`). It requested checks for runtime scene readiness, the exact stable engine version, and the Web renderer override, plus traceability fields and observed test evidence.
+- Codex CLI's sandbox logged system certificate and user-directory write errors during its Godot runs. The local runs outside that sandbox did not emit those errors.
