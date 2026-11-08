@@ -75,10 +75,10 @@ Two isolated fault injections also exited 1. Disabling the player movement integ
 - **Milestone** Week 2–3 MVP foundation, simple combat slice.
 - **Requirements** GDD-003, GDD-016, GDD-018, GDD-023, GDD-089, FR-CMB-001/003/004/005, and the action economy and intent portions of TC-CMB-001/003. [Traceability](traceability-matrix.md).
 - **Owner** agy. **Plan, validation, and Git operations** Codex.
-- **Branch and base** `feature/w3-simple-combat` based on reviewed overworld `472f696`. Initial runtime `07ab422`.
+- **Branch and base** `feature/w3-simple-combat` based on reviewed overworld `472f696`. Initial runtime `07ab422`. Reviewed implementation tip `cc20094`.
 - **Files** `scenes/combat/battle_fixture.*`, `scenes/main/game_root.*`, `scenes/world/{test_region_alpha.tscn,world_router.gd}`, `tests/headless/combat_test.gd` and its UID, and the review queue, traceability matrix and asset register.
 - **Asset provenance** None. Godot primitives and native controls are used for the fixture. No saves, progression, or rewards are written.
-- **Review** CHANGES_REQUESTED.
+- **Review** REVIEWED by Codex CLI for the simple combat slice. Human milestone acceptance is pending.
 - **Open decisions** OD-002 initiative ordering, OD-003 balance formulas and resource costs, OD-004 status timing and stacking, and OD-009 save boundaries. The scripted pips and enemy intent cycle are fixture data.
 
 Start the game in Godot and walk southeast from the Alpha spawn to the marker labeled **Combat test**. Defend against Strike and attack while the enemy recovers. Use **Continue** after either outcome. Leave the marker and walk back in to replay.
@@ -104,3 +104,4 @@ A second fault probe confirmed a same-frame competing portal could no longer can
 - Codex CLI reviewed `07ab422` (session `01a1bbbe-cf5e-7281-bda8-a6d4392c9ddd`) and found a competing portal request could cancel a pending combat encounter. A local fault probe reproduced the issue.
 - agy reserved movement and travel when accepting combat, restored the prior lock on rejected deferred admission, and corrected the headless test harness. The complete local suite and both independent runtime probes passed.
 - Codex CLI confirmed the runtime repair at `53851ee` (session `01a1bbc9-f7d5-77f0-b6cd-a43214a83347`) and requested direct regression assertions for exactly-once Continue and stale-trigger rollback. agy added both. In isolated copies, removing the Continue guard and removing stale rollback each made the combat suite exit 1 for the expected assertion. Clean runs exited 0.
+- Codex CLI closed both remaining assertions at `cc20094` (session `01a1bbcc-2dbc-79d2-a011-deccf6483081`). The combat suite also passed in the review sandbox, which logged its existing certificate-store and user log warnings. Local verification produced no Godot errors.
