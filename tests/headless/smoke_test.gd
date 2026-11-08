@@ -1,5 +1,30 @@
 extends SceneTree
 
+class SmokeErrorCaptureLogger extends Logger:
+	var _mutex: Mutex = Mutex.new()
+	var error_count: int = 0
+
+	func _log_error(
+		_function: String,
+		_file: String,
+		_line: int,
+		_code: String,
+		_rationale: String,
+		_editor_notify: bool,
+		error_type: int,
+		_script_backtraces: Array[ScriptBacktrace]
+	) -> void:
+		if error_type != Logger.ERROR_TYPE_WARNING:
+			_mutex.lock()
+			error_count += 1
+			_mutex.unlock()
+
+	func get_error_count() -> int:
+		_mutex.lock()
+		var count: int = error_count
+		_mutex.unlock()
+		return count
+
 const EXPECTED_MAIN_SCENE: String = "res://scenes/main/game_root.tscn"
 const EXPECTED_WIDTH: int = 960
 const EXPECTED_HEIGHT: int = 540
@@ -76,76 +101,10 @@ func _run_smoke_test() -> void:
 	else:
 		print("PASS: Main scene setting points to %s" % main_scene_path)
 
-	# 6. Load Main Scene Resource
-	if not ResourceLoader.exists(main_scene_path):
-		printerr("FAIL: Main scene resource does not exist at %s" % main_scene_path)
-		quit(1)
-		return
-
-	var packed_scene: PackedScene = load(main_scene_path) as PackedScene
-	if not packed_scene or not packed_scene.can_instantiate():
-		printerr("FAIL: Could not load or instantiate main scene %s" % main_scene_path)
-		quit(1)
-		return
-	print("PASS: Successfully loaded PackedScene from %s" % main_scene_path)
-
-	# 7. Instantiate Main Scene and Attach to Scene Tree
-	var instance: Node = packed_scene.instantiate()
-	if not instance:
-		printerr("FAIL: Instantiation of main scene returned null")
-		quit(1)
-		return
-
-	root.add_child(instance)
-
-	# 8. Verify GameRoot name, type, inside tree, and node readiness
-	if instance.name != "GameRoot":
-		printerr("FAIL: Root instance name mismatch! Expected 'GameRoot', got '%s'" % instance.name)
+	# 6. Load, instantiate, and attach Main Scene under scoped Logger capture
+	var scene_check_passed: bool = _load_and_verify_main_scene(main_scene_path)
+	if not scene_check_passed:
 		success = false
-	else:
-		print("PASS: Root instance name is 'GameRoot'")
-
-	if not (instance is Control):
-		printerr("FAIL: GameRoot is not of expected type Control")
-		success = false
-	else:
-		print("PASS: GameRoot type is Control")
-
-	if not instance.is_inside_tree():
-		printerr("FAIL: GameRoot is not inside tree")
-		success = false
-	else:
-		print("PASS: GameRoot is inside tree")
-
-	if not instance.is_node_ready():
-		printerr("FAIL: GameRoot is not ready")
-		success = false
-	else:
-		print("PASS: GameRoot is ready")
-
-	# 9. Verify actual expected label texts
-	var title_node: Label = instance.get_node_or_null("VBoxContainer/TitleLabel") as Label
-	var status_node: Label = instance.get_node_or_null("VBoxContainer/StatusLabel") as Label
-
-	if title_node == null:
-		printerr("FAIL: TitleLabel node missing from GameRoot scene")
-		success = false
-	elif title_node.text != EXPECTED_TITLE_TEXT:
-		printerr("FAIL: TitleLabel text mismatch! Expected '%s', got '%s'" % [EXPECTED_TITLE_TEXT, title_node.text])
-		success = false
-	else:
-		print("PASS: TitleLabel text matches '%s'" % EXPECTED_TITLE_TEXT)
-
-	if status_node == null:
-		printerr("FAIL: StatusLabel node missing from GameRoot scene")
-		success = false
-	elif status_node.text != EXPECTED_STATUS_TEXT:
-		printerr("FAIL: StatusLabel text mismatch! Expected '%s', got '%s'" % [EXPECTED_STATUS_TEXT, status_node.text])
-		success = false
-	else:
-		print("PASS: StatusLabel text matches '%s'" % EXPECTED_STATUS_TEXT)
-
-	instance.queue_free()
 
 	if success:
 		print("--- ALL SMOKE CHECKS PASSED SUCCESSFULLY ---")
@@ -153,3 +112,85 @@ func _run_smoke_test() -> void:
 	else:
 		printerr("--- SMOKE CHECKS FAILED ---")
 		quit(1)
+
+func _load_and_verify_main_scene(scene_path: String) -> bool:
+	var logger: SmokeErrorCaptureLogger = SmokeErrorCaptureLogger.new()
+	OS.add_logger(logger)
+	var check_success: bool = true
+	var instance: Node = null
+
+	if not ResourceLoader.exists(scene_path):
+		printerr("FAIL: Main scene resource does not exist at %s" % scene_path)
+		check_success = false
+	else:
+		var packed_scene: PackedScene = load(scene_path) as PackedScene
+		if not packed_scene or not packed_scene.can_instantiate():
+			printerr("FAIL: Could not load or instantiate main scene %s" % scene_path)
+			check_success = false
+		else:
+			print("PASS: Successfully loaded PackedScene from %s" % scene_path)
+			instance = packed_scene.instantiate()
+			if not instance:
+				printerr("FAIL: Instantiation of main scene returned null")
+				check_success = false
+			else:
+				root.add_child(instance)
+
+				if instance.name != "GameRoot":
+					printerr("FAIL: Root instance name mismatch! Expected 'GameRoot', got '%s'" % instance.name)
+					check_success = false
+				else:
+					print("PASS: Root instance name is 'GameRoot'")
+
+				if not (instance is Control):
+					printerr("FAIL: GameRoot is not of expected type Control")
+					check_success = false
+				else:
+					print("PASS: GameRoot type is Control")
+
+				if not instance.is_inside_tree():
+					printerr("FAIL: GameRoot is not inside tree")
+					check_success = false
+				else:
+					print("PASS: GameRoot is inside tree")
+
+				if not instance.is_node_ready():
+					printerr("FAIL: GameRoot is not ready")
+					check_success = false
+				else:
+					print("PASS: GameRoot is ready")
+
+				var title_node: Label = instance.get_node_or_null("VBoxContainer/TitleLabel") as Label
+				var status_node: Label = instance.get_node_or_null("VBoxContainer/StatusLabel") as Label
+
+				if title_node == null:
+					printerr("FAIL: TitleLabel node missing from GameRoot scene")
+					check_success = false
+				elif title_node.text != EXPECTED_TITLE_TEXT:
+					printerr("FAIL: TitleLabel text mismatch! Expected '%s', got '%s'" % [EXPECTED_TITLE_TEXT, title_node.text])
+					check_success = false
+				else:
+					print("PASS: TitleLabel text matches '%s'" % EXPECTED_TITLE_TEXT)
+
+				if status_node == null:
+					printerr("FAIL: StatusLabel node missing from GameRoot scene")
+					check_success = false
+				elif status_node.text != EXPECTED_STATUS_TEXT:
+					printerr("FAIL: StatusLabel text mismatch! Expected '%s', got '%s'" % [EXPECTED_STATUS_TEXT, status_node.text])
+					check_success = false
+				else:
+					print("PASS: StatusLabel text matches '%s'" % EXPECTED_STATUS_TEXT)
+
+	OS.remove_logger(logger)
+
+	var captured_errors: int = logger.get_error_count()
+	if captured_errors > 0:
+		printerr("FAIL: Scoped logger captured %d engine/script error(s) during scene load/instantiate/ready" % captured_errors)
+		check_success = false
+	else:
+		print("PASS: Scoped logger captured 0 engine/script errors during scene lifecycle")
+
+	if instance != null and is_instance_valid(instance):
+		instance.queue_free()
+
+	return check_success

@@ -18,12 +18,13 @@
 | `godot --version` | Exit 0. Godot 4.7.2 Stable, official build `ed1daf0bf`. |
 | `godot --headless --path . --import` | Exit 0. Editor imported the project without script or scene errors. |
 | `godot --headless --path . --quit-after 5` | Exit 0. Main scene launched without script or scene errors. |
-| `godot --headless --path . --script tests/headless/smoke_test.gd` | Exit 0. Checks exact stable version, both renderer settings, viewport and scaling, and the initialized GameRoot. |
+| `godot --headless --path . --script tests/headless/smoke_test.gd` | Exit 0. Checks exact stable version, both renderer settings, viewport and scaling, and the initialized GameRoot. Fails if Godot reports a scene initialization error. |
 
-An isolated copy also passed the smoke check (exit 0). An injected bootstrap assertion and a changed Web renderer override each failed the test (exit 1), as expected.
+An isolated copy passed the smoke check (exit 0). An injected assertion before and after the bootstrap status update, an engine error after the update, and an invalid Web renderer each failed the check (exit 1). An injected warning passed (exit 0).
 
 ### Review history
 
 - agy created the project files on the local feature branch. Headless command permission prevented agy from running Git and Godot, so Codex performed those operations. A quota interruption left a partial scaffold, and an agy retry with an available Flash model completed the slice.
 - Codex CLI reviewed `cdd8e2d` against `main` on 8 November 2026 (session `01a1bb6c-e4b7-7ca3-a28b-967563cbe3e4`). It requested checks for runtime scene readiness, the exact stable engine version, and the Web renderer override, plus traceability fields and observed test evidence.
 - Codex CLI's sandbox logged system certificate and user-directory write errors during its Godot runs. The local runs outside that sandbox did not emit those errors.
+- Codex CLI re-reviewed `eb79b1d` (session `01a1bb71-6842-7962-81c1-2f096538c2c9`). It confirmed four fixes and found that an error after the status update could still pass. agy added scoped engine and script error capture during scene loading and initialization.
