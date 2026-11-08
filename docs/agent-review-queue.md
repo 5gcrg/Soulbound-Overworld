@@ -37,10 +37,10 @@ An isolated copy passed the smoke check (exit 0). An injected assertion before a
 - **Milestone** Week 2–3 MVP foundation, overworld slice.
 - **Requirements** GDD-001, GDD-002, GDD-041, GDD-094–096, GDD-109, GDD-124, GDD-129, FR-WLD-001, regional portion of TC-WLD-001, and TC-AGY-001. [Traceability](traceability-matrix.md).
 - **Owner** agy. **Plan, validation, and Git operations** Codex.
-- **Branch and base** `feature/w2-overworld-transitions` based on reviewed M1 `50b01a9`. Initial implementation `90760a1`.
+- **Branch and base** `feature/w2-overworld-transitions` based on reviewed M1 `50b01a9`. Initial implementation `90760a1`. Reviewed implementation tip `05e121a`.
 - **Files** `project.godot`, `scenes/main/game_root.*`, `scenes/player/player.*`, `scenes/world/`, `tests/headless/{smoke_test,transition_test}.gd`, tracked script UIDs, and the audit, traceability matrix, and asset register.
 - **Asset provenance** None. The two technical regions and player use Godot primitives. The slice creates no save data.
-- **Review** CHANGES_REQUESTED.
+- **Review** REVIEWED by Codex CLI for the overworld slice. Human milestone acceptance is pending.
 - **Open questions** Story map content and story-specific access rules are future work. Waypoint fast travel, combat, and the save model are separate slices.
 
 Run the Godot project from the editor. Move with WASD or the arrow keys and walk into a marked portal to cross between Alpha and Beta. The movement speed is an editor-tunable test value.
@@ -65,3 +65,5 @@ Two isolated fault injections also exited 1. Disabling the player movement integ
 - agy authored the repair in the managed worktree. Codex ran the Godot checks and recorded the startup failure that remained after the first repair.
 - agy repaired off-tree marker resolution, validated the player collision footprint against destination shapes, and hardened the portal signal and stale-request handling. Local verification passed on Godot 4.7.2 Stable.
 - Codex CLI re-reviewed `194cf75` (session `01a1bb8b-3885-7cc1-9eb1-b1c753ada733`), cleared the runtime fixes, and requested stronger evidence for actual movement and suite completion. agy added displacement assertions over physics frames and a watchdog. Clean and fault-injected runs behaved as expected.
+- agy ran a high-effort verification pass with `gemini-3.8-flash-high --effort high` and found both test repairs in place.
+- Codex CLI closed both findings at `05e121a` (session `01a1bb8f-5d02-7cf0-b7e7-77dc1c67dac3`). Its sandbox reproduced the known Windows certificate-store error. The same tests passed with zero Godot errors in the local environment.
