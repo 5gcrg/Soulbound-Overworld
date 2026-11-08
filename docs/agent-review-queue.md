@@ -111,30 +111,37 @@ A second fault probe confirmed a same-frame competing portal could no longer can
 
 ## SBL-W3-002 — Local save model and JSON text
 
-- **Milestone** Week 2–3 MVP foundation, save model slice.
-- **Requirements** GDD-098, GDD-099, GDD-100, GDD-102, FR-SAV-001/002 (partial), TC-SAV-001/002, NFR-REL-001, and NFR-SEC-001. [Traceability](traceability-matrix.md).
+- **Milestone** Week 2–3 MVP foundation.
+- **Requirements** GDD-098, GDD-099, GDD-100, GDD-102, FR-SAV-001/002 (partial), TC-SAV-001/002, NFR-REL-001, and NFR-SEC-001. [Traceability](traceability-matrix.md)
 - **Owner** agy. **Plan owner** Codex.
-- **Branch and base** `feature/w3-save-model` based on `d0fbba9`. Initial store `4822621`.
-- **Files** `tests/headless/save_model_test.gd` (written first), and the review queue, traceability matrix and asset register. No runtime edits in this step.
-- **Asset provenance** None. Code and an automated test only. No images, audio or generated narrative.
-- **Review** CHANGES_REQUESTED from the initial runtime review. The new test is REVIEW_PENDING_CODEX.
-- **Scope** The local profile model and its JSON text. Gameplay autosave and the Web file UI are deferred. Expedition state is separate. OD-009 save boundaries remain open.
+- **Branch and implementation** `feature/w3-save-model` based on `d0fbba9`. Initial store `4822621`, recovery and validation `0fb5791`, review follow-ups `f3c85ec`, legacy compatibility `9a672bb`.
+- **Files** `scripts/persistence/profile_store.gd`, `scripts/persistence/strict_profile_json.gd`, `tests/headless/save_model_test.gd`, their UIDs, the review queue, traceability matrix, and asset register.
+- **Asset provenance** None.
+- **Review** REVIEWED by Codex CLI through `9a672bb`. Human milestone acceptance is pending.
+- **Open items** Gameplay autosave, profile selection, browser file UI, and expedition storage are separate slices. OD-009 save boundaries remain open.
+
+`ProfileStore` is a synchronous single-writer API under `user://profiles`. Schema 1 defines three fixed slot IDs and four JSON-safe dictionaries for character, inventory, world, and education data. An empty profile comes from `new_profile(slot)`. Callers explicitly use `save_profile` and read `error`, `profile`, and `recovered` from `load_profile`. Backup import accepts validated JSON text for the same slot. Export returns the validated stored text.
+
+A save stages and verifies a sibling temporary file before publishing to a new revision path. Existing valid files never serve as rename destinations. Successful writes retain the two latest valid revisions. Loads can recover from a corrupt newest revision without rewriting files. Recognized unsupported schemas, oversized files, and unreadable files block replacement. Exact schema-1 spellings such as `1.0` remain readable and re-importable. New saves from dictionaries serialize the version as `1`.
 
 ### Save model verification
 
+All commands exited 0 with no Godot errors on Windows using Godot 4.7.2 Stable, official build `ed1daf0bf`.
+
 | Command | Result |
 | --- | --- |
-| `godot --headless --path . --script tests/headless/save_model_test.gd` | Not run. This step had no shell. Expected on success: exit 0 and the exact line `SAVE MODEL TESTS PASSED`. Any assertion exits 1. |
+| `godot --headless --path . --import` | Clean import. |
+| `godot --headless --path . --fixed-fps 60 --quit-after 120` | Clean project boot. |
+| `godot --headless --path . --fixed-fps 60 --script tests/headless/smoke_test.gd --quit-after 600` | Smoke checks passed. |
+| `godot --headless --path . --fixed-fps 60 --script tests/headless/transition_test.gd --quit-after 600` | Transition checks passed. |
+| `godot --headless --path . --fixed-fps 60 --script tests/headless/combat_test.gd --quit-after 600` | Combat checks passed. |
+| `godot --headless --path . --fixed-fps 60 --script tests/headless/save_model_test.gd --quit-after 600` | `SAVE MODEL TESTS PASSED`. |
 
-The suite uses a unique `user://` root per run (process ID and ticks). It removes only its own known slot directories and `profile.*.json`/`.tmp` files. It never touches normal profiles. It covers:
+The save suite uses disposable test roots. It verifies slot isolation, nested data, same-slot backup round trips, failed promotion preserving both committed files, corrupt-file fallback, ignored staging files, unsafe input rejection, the exact 4 MiB text export boundary, unsupported schema protection, and occupied slot paths. A disposable mutation removed the export result keys and caused the test runner to exit 1 for the captured script error. The full output is in dashboard run log `SBL-W3-002-godot-20261109-002006-341.log`.
 
-- Typed bracket-key access, nested ordinary ints persisting with numeric equality, and three independent slots.
-- Two retained revisions, and fallback when the newest is corrupt. Corrupt bytes are never rewritten on load.
-- Raw-text export and import of the same slot at a fresh root.
-- A forced promotion failure that leaves both committed revisions byte-for-byte unchanged.
-- Rejected input: leading-zero numbers, trailing commas, duplicate decoded names, a fractional version, a wrong slot or path, unsafe numbers, a future committed revision, oversized records, and invalid nested Variants. Rejected input creates no files.
+### Save model review history
 
-### Open items
-
-- `ProfileStore` preloads `res://scripts/persistence/strict_profile_json.gd`. That file was not present in the worktree when this entry was written. The runtime owner must supply it before the suite can run.
-- The test must be executed and reviewed by Codex CLI. Do not treat it as reviewed until that happens.
+- agy implemented and revised the store with high effort. Codex CLI requested changes on the initial implementation in session `01a1bbd8-b903-7062-adc8-0c19a47d1ba4`. Findings covered the Windows replace behavior, preserving prior revisions and unreadable or unsupported records, stricter JSON and numeric validation, distinguishing corruption from an empty slot, and bounded raw-text export.
+- agy moved commits to immutable revision files and added strict JSON validation. Godot regression tests verified the revised implementation at `0fb5791`. Codex CLI re-review in session `01a1bbea-1654-7291-b6e7-ec5ebad0f4e1` requested four follow-ups covering exact version tokens, future versions with unsafe payload numbers, inaccessible slot paths, and runtime errors in the save test.
+- agy addressed those findings at `f3c85ec`. Codex CLI follow-up review in session `01a1bbf3-107d-7752-88fc-3b0133dfd876` confirmed the four fixes and requested compatibility for legacy revisions such as `1.0`.
+- agy added an exact decimal version check at `9a672bb`. The suite verifies legacy raw export and re-import, next-save compatibility, and rejection of values that only round to 1. Codex CLI closed the compatibility finding in session `01a1bbf6-043c-7090-8bd4-9bc5805c6874` without further findings.
