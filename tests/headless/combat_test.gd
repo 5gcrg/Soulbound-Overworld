@@ -91,6 +91,9 @@ func _run_test() -> void:
 	fixture.continued.connect(func() -> void: continued_calls[0] += 1)
 	fixture.continue_button.pressed.emit()
 	fixture.continue_button.pressed.emit()
+	if continued_calls[0] != 1:
+		_fail("Continue must emit exactly once")
+		return
 
 	for i in 5:
 		await physics_frame
@@ -175,6 +178,19 @@ func _run_test() -> void:
 	await process_frame
 	if battle_layer.get_child_count() != 0 or player.input_frozen:
 		_fail("Defeat continue failed to restore")
+		return
+
+	# Remove the trigger after acceptance but before deferred opening.
+	encounter.body_entered.emit(player)
+	if not player.input_frozen:
+		_fail("Expected synchronous movement reservation")
+		return
+	encounter.queue_free()
+	for i in 5:
+		await physics_frame
+	await process_frame
+	if battle_layer.get_child_count() != 0 or player.input_frozen or router.is_transition_in_flight:
+		_fail("Stale encounter did not release the reservation")
 		return
 
 	print("COMBAT TESTS PASSED")
