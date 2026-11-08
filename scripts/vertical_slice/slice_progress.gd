@@ -34,7 +34,6 @@ const _STAGE_NAMES: Dictionary = {
 
 var _store: ProfileStore = null
 var _slot: String = "profile_01"
-var _profile: Dictionary = {}
 var _ready: bool = false
 var _recovered: bool = false
 var _stage: Stage = Stage.OFFERED
@@ -106,7 +105,6 @@ func configure(store: ProfileStore, slot: String = "profile_01") -> Error:
 		return parsed["error"]
 	_store = store
 	_slot = slot
-	_profile = profile
 	_recovered = recovered
 	_apply_state(parsed)
 	_ready = true
@@ -147,7 +145,24 @@ func _transition(expected: Stage, next: Stage, choice: String = "") -> Error:
 	if _stage > expected:
 		return ERR_ALREADY_EXISTS
 
-	var candidate: Dictionary = _profile.duplicate(true)
+	var loaded: Dictionary = _store.load_profile(_slot)
+	var load_err: Error = loaded["error"]
+	var candidate: Dictionary = {}
+	if load_err == ERR_FILE_NOT_FOUND:
+		candidate = _store.new_profile(_slot)
+	elif load_err != OK:
+		return load_err
+	else:
+		if typeof(loaded["profile"]) != TYPE_DICTIONARY:
+			return ERR_INVALID_DATA
+		candidate = (loaded["profile"] as Dictionary).duplicate(true)
+
+	var parsed: Dictionary = _parse_owned(candidate)
+	if parsed["error"] != OK:
+		return parsed["error"]
+	if parsed["stage"] != _stage or parsed["choice"] != _first_choice or parsed["correct"] != _attempt_correct:
+		return ERR_BUSY
+
 	var world: Dictionary = candidate["world"] as Dictionary
 	world[SLICE_KEY] = {"fixture_id": FIXTURE_ID, "stage": _STAGE_NAMES[next]}
 	var correct: bool = false
@@ -168,7 +183,6 @@ func _transition(expected: Stage, next: Stage, choice: String = "") -> Error:
 	var save_err: Error = _store.save_profile(_slot, candidate)
 	if save_err != OK:
 		return save_err
-	_profile = candidate
 	_apply_state(check)
 	return OK
 
@@ -176,9 +190,13 @@ func _transition(expected: Stage, next: Stage, choice: String = "") -> Error:
 # Owned-record validation
 # ==============================================================================
 
+## Validates the fixture-owned records in a profile. Returns OK or ERR_INVALID_DATA.
+static func validate_profile(profile: Dictionary) -> Error:
+	return _parse_owned(profile)["error"]
+
 ## Validates only the two owned records and their cross-record consistency. Unrelated keys and
 ## sections are ignored. Returns {"error", "stage", "choice", "correct"}; ERR_INVALID_DATA on any defect.
-func _parse_owned(profile: Dictionary) -> Dictionary:
+static func _parse_owned(profile: Dictionary) -> Dictionary:
 	var bad: Dictionary = {"error": ERR_INVALID_DATA, "stage": Stage.OFFERED, "choice": "", "correct": false}
 	if typeof(profile.get("world")) != TYPE_DICTIONARY or typeof(profile.get("education")) != TYPE_DICTIONARY:
 		return bad
@@ -220,7 +238,7 @@ func _parse_owned(profile: Dictionary) -> Dictionary:
 	return {"error": OK, "stage": stage_value, "choice": choice, "correct": correct}
 
 ## Returns the Stage int for a valid stored world record, or -1. Stage values are exact strings only.
-func _parse_world_record(rec: Variant) -> int:
+static func _parse_world_record(rec: Variant) -> int:
 	if typeof(rec) != TYPE_DICTIONARY or not _has_exact_keys(rec as Dictionary, _WORLD_KEYS):
 		return -1
 	var d: Dictionary = rec as Dictionary
@@ -233,7 +251,7 @@ func _parse_world_record(rec: Variant) -> int:
 			return int(key)
 	return -1
 
-func _has_exact_keys(d: Dictionary, keys: Array[String]) -> bool:
+static func _has_exact_keys(d: Dictionary, keys: Array[String]) -> bool:
 	if d.size() != keys.size():
 		return false
 	for k in keys:
@@ -249,7 +267,6 @@ func _apply_state(parsed: Dictionary) -> void:
 func _reset_state() -> void:
 	_store = null
 	_slot = "profile_01"
-	_profile = {}
 	_ready = false
 	_recovered = false
 	_stage = Stage.OFFERED

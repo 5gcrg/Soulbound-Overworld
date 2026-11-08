@@ -24,6 +24,7 @@ func _run() -> void:
 	_test_persistence_roundtrip_and_isolation()
 	_test_corrupt_data_rejection()
 	_test_out_of_order_guards()
+	_test_p1_stale_quest_save_regression()
 	_cleanup()
 
 	if _failures > 0:
@@ -278,3 +279,58 @@ func _test_out_of_order_guards() -> void:
 	# While in BATTLE:
 	sp.finish_practice(SliceProgress.CHOICE_MATCH)
 	_check(sp.turn_in() == ERR_UNAVAILABLE, "turn_in in BATTLE returns ERR_UNAVAILABLE")
+
+func _test_p1_stale_quest_save_regression() -> void:
+	var root: String = _root("p1_stale_quest_save")
+	var store: StoreScript = _store(root)
+
+	# 1. Configure progress on slot 1
+	var sp1: SliceProgress = SliceProgressScript.new()
+	var err1: Error = sp1.configure(store, "profile_01")
+	_check(err1 == OK, "sp1 configure on fresh slot returns OK")
+	_check(sp1.ready, "sp1 is ready after configure")
+	_check(sp1.stage == SliceProgress.Stage.OFFERED, "sp1 starts in OFFERED")
+
+	# 2. Use real InventoryManager to bank an item and save after configure
+	var inv: InventoryManager = InventoryManager.new()
+	inv.add_banked_item("iron_sword", 1)
+	var inv_err: Error = inv.save_to_store(store, "profile_01")
+	_check(inv_err == OK, "saved banked item with InventoryManager")
+
+	# 3. Accept quest and verify latest inventory kept
+	var accept_err: Error = sp1.accept_quest()
+	_check(accept_err == OK, "accept_quest succeeds on sp1")
+	_check(sp1.stage == SliceProgress.Stage.PRACTICE, "sp1 stage is now PRACTICE")
+
+	var after_accept: Dictionary = store.load_profile("profile_01")
+	_check(after_accept["error"] == OK, "profile_01 loaded after accept_quest")
+	var prof_after: Dictionary = after_accept["profile"]
+	var banked_after: Dictionary = prof_after.get("inventory", {}).get("banked", {})
+	_check(banked_after.get("iron_sword") == 1, "inventory.banked.iron_sword survives accept_quest")
+	_check(prof_after["world"]["vertical_slice"]["stage"] == "practice", "store stage updated to practice")
+
+	# 4. Configure two progress objects in PRACTICE verifying wrong response cannot be overwritten by stale second object
+	var sp2: SliceProgress = SliceProgressScript.new()
+	var err2: Error = sp2.configure(store, "profile_01")
+	_check(err2 == OK, "sp2 configure on slot in PRACTICE returns OK")
+	_check(sp2.ready, "sp2 is ready")
+	_check(sp2.stage == SliceProgress.Stage.PRACTICE, "sp2 stage is PRACTICE")
+
+	# First saves its wrong answer
+	var err_ans1: Error = sp1.finish_practice(SliceProgress.CHOICE_MISMATCH)
+	_check(err_ans1 == OK, "first progress object saves wrong answer")
+	_check(sp1.first_choice == SliceProgress.CHOICE_MISMATCH, "first progress object recorded mismatch")
+	_check(sp1.attempt_correct == false, "first progress object recorded attempt_correct as false")
+	_check(sp1.stage == SliceProgress.Stage.BATTLE, "first progress object advanced to BATTLE")
+
+	# Second must fail and preserve the first answer
+	var err_ans2: Error = sp2.finish_practice(SliceProgress.CHOICE_MATCH)
+	_check(err_ans2 != OK, "second progress object finish_practice fails")
+
+	var final_load: Dictionary = store.load_profile("profile_01")
+	_check(final_load["error"] == OK, "profile_01 loaded after second finish_practice")
+	var final_prof: Dictionary = final_load["profile"]
+	_check(final_prof["education"]["vertical_slice"]["first_choice"] == SliceProgress.CHOICE_MISMATCH, "first answer choice preserved in store")
+	_check(final_prof["education"]["vertical_slice"]["first_attempt_correct"] == false, "first answer attempt_correct preserved in store")
+	var final_banked: Dictionary = final_prof.get("inventory", {}).get("banked", {})
+	_check(final_banked.get("iron_sword") == 1, "inventory.banked.iron_sword survives second attempt")
