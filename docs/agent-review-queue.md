@@ -145,3 +145,34 @@ The save suite uses disposable test roots. It verifies slot isolation, nested da
 - agy moved commits to immutable revision files and added strict JSON validation. Godot regression tests verified the revised implementation at `0fb5791`. Codex CLI re-review in session `01a1bbea-1654-7291-b6e7-ec5ebad0f4e1` requested four follow-ups covering exact version tokens, future versions with unsafe payload numbers, inaccessible slot paths, and runtime errors in the save test.
 - agy addressed those findings at `f3c85ec`. Codex CLI follow-up review in session `01a1bbf3-107d-7752-88fc-3b0133dfd876` confirmed the four fixes and requested compatibility for legacy revisions such as `1.0`.
 - agy added an exact decimal version check at `9a672bb`. The suite verifies legacy raw export and re-import, next-save compatibility, and rejection of values that only round to 1. Codex CLI closed the compatibility finding in session `01a1bbf6-043c-7090-8bd4-9bc5805c6874` without further findings.
+
+---
+
+## SBL-W4-001 — One-region vertical slice progress and loop integration
+
+- **Milestone** M2, Week 4–5.
+- **Requirements** GDD-067, GDD-068, GDD-069, GDD-071, GDD-098–100, GDD-119, FR-QST-001, FR-EDU-002/003, FR-SAV-001 (partial), TC-EDU-002/003, TC-SAV-001. Scope and evidence are recorded in the [traceability matrix](traceability-matrix.md).
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch and initial implementation** `feature/w4-5-vertical-slice`. Baseline `b427fed`.
+- **Files** `scripts/vertical_slice/slice_progress.gd`, `tests/headless/vertical_slice_test.gd`, `tests/headless/vertical_slice_test.gd.uid`, and documentation in `docs/`.
+- **Asset provenance** None. Uses existing Godot primitives and data structures.
+- **Review** REVIEW_PENDING_CODEX. Codex CLI execution returned usage limit exhaustion (`ERROR: You’ve hit your usage limit... try again at 4:15 AM`). Governed by AGENTS.md Rule 5. Local verification passed 100% cleanly.
+- **Open decisions** OD-002 initiative, OD-003 balance, OD-009 save boundaries.
+
+### Vertical slice verification
+
+| Command | Result |
+| --- | --- |
+| `godot --headless --path . --import` | Exit 0. Re-imported cleanly, registered `SliceProgress` class. |
+| `godot --headless --path . --fixed-fps 60 --script tests/headless/smoke_test.gd --quit-after 600` | Exit 0. Smoke checks passed. |
+| `godot --headless --path . --fixed-fps 60 --script tests/headless/transition_test.gd --quit-after 600` | Exit 0. Transition checks passed. |
+| `godot --headless --path . --fixed-fps 60 --script tests/headless/combat_test.gd --quit-after 600` | Exit 0. Combat checks passed. |
+| `godot --headless --path . --fixed-fps 60 --script tests/headless/save_model_test.gd --quit-after 600` | Exit 0. Save model checks passed. |
+| `godot --headless --path . --fixed-fps 60 --script tests/headless/vertical_slice_test.gd --quit-after 600` | Exit 0. `VERTICAL SLICE TESTS PASSED`. |
+
+### Review history
+- agy authored `scripts/vertical_slice/slice_progress.gd` and the automated headless test suite `tests/headless/vertical_slice_test.gd`.
+- Local headless validation verified all 6 acceptance criteria: fresh configuration, full progression lifecycle, completion-gated unblocking despite incorrect answer, persistence roundtrip with slot isolation, corrupt record rejection, and out-of-order transition guards.
+- Codex CLI review was attempted via `codex review --uncommitted` (session `01a1bc01-5b29-7041-afa4-3c92bbd2c320`). Execution was blocked by provider credit quota (`ERROR: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/settings/usage to purchase more credits or try again at 4:15 AM.`).
+- In strict adherence to AGENTS.md Rule 5, work is logged in the queue as `REVIEW_PENDING_CODEX` to await Codex CLI quota reset at 4:15 AM.
+

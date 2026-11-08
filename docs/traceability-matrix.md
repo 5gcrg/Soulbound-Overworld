@@ -82,3 +82,24 @@ This matrix covers the M1 bootstrap and SBL-W2-001 overworld transitions under [
 - **Scope**: Local model and JSON text only. Gameplay autosave and the Web file UI are deferred. Expedition state is separate.
 - **Open Decisions**: OD-009 (save boundaries) remains open.
 - **Asset Scope**: Zero image, audio, or generated narrative assets (see [Asset Register](asset-register.md)).
+
+---
+
+## Task SBL-W4-001: M2 One-Region Vertical Slice Progress & Loop Integration
+
+| Requirement ID | Description | Milestone / Scope | Priority | Planned Scene / Script / Data Owner | Corresponding Issue / PR | Tests | Evidence Link | Implementation Status | Review Status | Last Approval Date |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **GDD-067** | Context-sensitive wrong-answer handling, recording initial assessed response | W4–5 (M2) | P1 (planned) | `scripts/vertical_slice/slice_progress.gd` | Task SBL-W4-001 (`feature/w4-5-vertical-slice`) | Headless vertical slice test (`tests/headless/vertical_slice_test.gd`) | [W4–5 review entry](agent-review-queue.md#vertical-slice-verification) | Slice Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **GDD-068** | Immediate feedback/explanation before battle progression | W4–5 (M2) | P1 (planned) | `scripts/vertical_slice/slice_progress.gd` | Task SBL-W4-001 (`feature/w4-5-vertical-slice`) | Headless vertical slice test (`tests/headless/vertical_slice_test.gd`) | [W4–5 review entry](agent-review-queue.md#vertical-slice-verification) | Slice Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **GDD-069** | Completion rather than passing score gates required story activities | W4–5 (M2) | P1 (planned) | `scripts/vertical_slice/slice_progress.gd` | Task SBL-W4-001 (`feature/w4-5-vertical-slice`) | Headless vertical slice test (`tests/headless/vertical_slice_test.gd`) | [W4–5 review entry](agent-review-queue.md#vertical-slice-verification) | Slice Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **GDD-071** | Track scores, first-attempt correctness, attempts, completed activities | W4–5 (M2) | P1 (planned) | `scripts/vertical_slice/slice_progress.gd` | Task SBL-W4-001 (`feature/w4-5-vertical-slice`) | Headless vertical slice test (`tests/headless/vertical_slice_test.gd`) | [W4–5 review entry](agent-review-queue.md#vertical-slice-verification) | Slice Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **GDD-119** | Vertical-slice-first execution | W4–5 (M2) | P1 (planned) | `scripts/vertical_slice/slice_progress.gd`, `scenes/main/game_root.gd` | Task SBL-W4-001 (`feature/w4-5-vertical-slice`) | Full loop test suite | [W4–5 review entry](agent-review-queue.md#vertical-slice-verification) | Slice Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **FR-QST-001** | Track quest stage state machine | W4–5 (M2) | P1 (planned) | `scripts/vertical_slice/slice_progress.gd` | Task SBL-W4-001 (`feature/w4-5-vertical-slice`) | Headless vertical slice test (`tests/headless/vertical_slice_test.gd`) | [W4–5 review entry](agent-review-queue.md#vertical-slice-verification) | Slice Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **FR-EDU-002** | Record first attempt correctness immutable | W4–5 (M2) | P1 (planned) | `scripts/vertical_slice/slice_progress.gd` | Task SBL-W4-001 (`feature/w4-5-vertical-slice`) | Headless vertical slice test (`tests/headless/vertical_slice_test.gd`) | [W4–5 review entry](agent-review-queue.md#vertical-slice-verification) | Slice Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **FR-EDU-003** | Unlock progress on activity completion without score threshold | W4–5 (M2) | P1 (planned) | `scripts/vertical_slice/slice_progress.gd` | Task SBL-W4-001 (`feature/w4-5-vertical-slice`) | Headless vertical slice test (`tests/headless/vertical_slice_test.gd`) | [W4–5 review entry](agent-review-queue.md#vertical-slice-verification) | Slice Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **TC-SAV-001** | Save and load round trip across independent slots | W4–5 (M2) | P1 (planned) | `scripts/vertical_slice/slice_progress.gd`, `scripts/persistence/profile_store.gd` | Task SBL-W4-001 (`feature/w4-5-vertical-slice`) | Headless vertical slice test (`tests/headless/vertical_slice_test.gd`) | [W4–5 review entry](agent-review-queue.md#vertical-slice-verification) | Slice Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+
+### SBL-W4-001 Scope Notes and Open Decisions
+- **Scope**: One-region vertical slice loop state machine, persistence integration via ProfileStore, completion gating, first-attempt immutability.
+- **Review**: REVIEW_PENDING_CODEX per AGENTS.md Rule 5 due to Codex CLI usage limit exhaustion. Local verification passed (exit 0).
+- **Asset Scope**: Zero image, audio, or generated narrative assets (primitives and typed GDScript only).
