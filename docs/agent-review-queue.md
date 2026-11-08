@@ -32,44 +32,33 @@ An isolated copy passed the smoke check (exit 0). An injected assertion before a
 
 ---
 
-## SBL-W2-001 — Overworld Transitions & 8-Direction Controller
+## SBL-W2-001 — Overworld controller and transitions
 
-- **TASK ID:** SBL-W2-001
-- **REQUIREMENTS:** GDD-001 (connected regions subset), GDD-002, GDD-041 (technical connection subset), GDD-094, GDD-095, GDD-096, GDD-109, GDD-124, GDD-129, FR-WLD-001, TC-WLD-001 (regional transitions subset), TC-AGY-001.
-- **MILESTONE:** Week 2 (MVP)
-- **OWNER:** agy
-- **PLAN OWNER:** Codex
-- **BRANCH/COMMIT:** `feature/w2-overworld-transitions` (based on reviewed M1 `50b01a9`)
-- **FILES CHANGED:**
-  - `project.godot` (input map definitions for WASD and arrow keys, version 0.2.0-w2)
-  - `scenes/player/player.gd` (CharacterBody2D 8-direction movement, get_vector, tunable fixture speed, freeze/resume API)
-  - `scenes/player/player.tscn` (reusable player scene with CollisionShape2D and ColorRect visual fixture)
-  - `scenes/world/portal.gd` (Area2D portal trigger emitting transition request)
-  - `scenes/world/portal.tscn` (reusable portal scene with CollisionShape2D, ColorRect fixture, Label)
-  - `scenes/world/base_region.gd` (base class for region scenes: bounds, spawns, portals, collision disabling)
-  - `scenes/world/test_region_alpha.tscn` (neutral slate test region fixture with perimeter, central pillar, portals, spawns)
-  - `scenes/world/test_region_beta.tscn` (neutral clay test region fixture with perimeter, barrier obstacle, portals, spawns)
-  - `scenes/world/world_router.gd` (persistent scene-owned router managing transitions, candidate staging, physics shape queries, rollbacks)
-  - `scenes/main/game_root.gd` (scene root wiring WorldContainer, Player, WorldRouter, and UI overlay status)
-  - `scenes/main/game_root.tscn` (main scene integrating persistent Player and WorldRouter under WorldContainer)
-  - `tests/headless/smoke_test.gd` (updated M1 smoke assertions verifying GameRoot overworld boot, Player, WorldRouter, and logger error capture)
-  - `tests/headless/transition_test.gd` (deterministic headless test suite validating 8-dir speed normalization, collisions, bidirectional transitions, duplicate guards, locked/unknown destinations, and obstructed spawn rollback)
-  - `docs/asset-register.md` (updated register documenting technical fixture ColorRect primitives; zero image/audio assets)
-  - `docs/traceability-matrix.md` (added SBL-W2-001 requirement rows and verification references)
-  - `docs/agent-review-queue.md` (this audit entry)
-- **ASSET PROVENANCE:** None. All visual elements are engine primitive ColorRect fixtures. No image, audio, or narrative assets generated.
-- **TESTS RUN + RESULTS:** Actual tests pending Codex CLI execution (agy shell execution disabled). Deterministic test script `tests/headless/transition_test.gd` and updated regression test `tests/headless/smoke_test.gd` authored with typed assertions, scoped Logger error capture, and non-zero exit codes on failure.
-- **REVIEW:** REVIEW_PENDING_CODEX
-- **OPEN QUESTIONS:**
-  - Story-specific region registry and narrative unlock criteria remain open (OD-001..OD-016); simple availability dictionary used as testable policy fixture.
-  - Final camera follow and smooth transition/fade polish deferred to future camera task per specification.
-  - Waypoint fast travel deferred per specification.
+- **Milestone** Week 2–3 MVP foundation, overworld slice.
+- **Requirements** GDD-001, GDD-002, GDD-041, GDD-094–096, GDD-109, GDD-124, GDD-129, FR-WLD-001, regional portion of TC-WLD-001, and TC-AGY-001. [Traceability](traceability-matrix.md).
+- **Owner** agy. **Plan, validation, and Git operations** Codex.
+- **Branch and base** `feature/w2-overworld-transitions` based on reviewed M1 `50b01a9`. Initial implementation `90760a1`.
+- **Files** `project.godot`, `scenes/main/game_root.*`, `scenes/player/player.*`, `scenes/world/`, `tests/headless/{smoke_test,transition_test}.gd`, tracked script UIDs, and the audit, traceability matrix, and asset register.
+- **Asset provenance** None. The two technical regions and player use Godot primitives. The slice creates no save data.
+- **Review** CHANGES_REQUESTED.
+- **Open questions** Story map content and story-specific access rules are future work. Waypoint fast travel, combat, and the save model are separate slices.
 
-### Verification Plan for Codex CLI
+Run the Godot project from the editor. Move with WASD or the arrow keys and walk into a marked portal to cross between Alpha and Beta. The movement speed is an editor-tunable test value.
 
-| Command | Expected Result |
+### Overworld verification
+
+| Command | Latest observed result |
 | --- | --- |
-| `godot --headless --path . --import` | Exit 0. Import all new scenes and scripts without error. |
-| `godot --headless --path . --quit-after 5` | Exit 0. Main scene `scenes/main/game_root.tscn` boots overworld cleanly. |
-| `godot --headless --path . --script tests/headless/smoke_test.gd` | Exit 0. Regression smoke test passes with 0 logged engine/script errors. |
-| `godot --headless --path . --script tests/headless/transition_test.gd` | Exit 0. Verifies 8-direction speed, wall collision, bidirectional transitions, duplicate guard, locked/unknown targets, and obstructed spawn rollbacks under scoped error capture. |
+| `godot --version` | Exit 0. Godot 4.7.2 Stable, official build `ed1daf0bf`. |
+| `godot --headless --path . --import` | Exit 0. No Godot errors. |
+| `godot --headless --path . --fixed-fps 60 --quit-after 120` | Exit 0. Alpha started at its valid marker. |
+| `godot --headless --path . --script tests/headless/smoke_test.gd --fixed-fps 60 --quit-after 300` | Exit 0. M1 smoke regression and overworld startup passed. |
+| `godot --headless --path . --script tests/headless/transition_test.gd --fixed-fps 60 --quit-after 600` | Exit 0. Movement, wall collision, real portal signals in both directions, duplicate requests, and spawn rejection and rollback checks passed. |
+
+Two temporary probes also exited 0. One sent physical W, Right, Down, and A key events to walk through both portals with the same player. The other freed the originating portal before deferred dispatch and confirmed the current region was preserved and the router released its reservation.
+
+### Overworld review history
+
+- Codex CLI reviewed `90760a1` (session `01a1bb7c-fdca-7d03-8459-234bf85b9399`). It requested a supported physics API, valid candidate and starting spawn checks, atomic request reservation, collision-state preservation, and corrections to the physics-frame test harness and signal observations.
+- agy authored the repair in the managed worktree. Codex ran the Godot checks and recorded the startup failure that remained after the first repair.
+- agy repaired off-tree marker resolution, validated the player collision footprint against destination shapes, and hardened the portal signal and stale-request handling. Local verification passed on Godot 4.7.2 Stable.
