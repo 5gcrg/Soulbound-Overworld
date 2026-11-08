@@ -53,12 +53,15 @@ Run the Godot project from the editor. Move with WASD or the arrow keys and walk
 | `godot --headless --path . --import` | Exit 0. No Godot errors. |
 | `godot --headless --path . --fixed-fps 60 --quit-after 120` | Exit 0. Alpha started at its valid marker. |
 | `godot --headless --path . --script tests/headless/smoke_test.gd --fixed-fps 60 --quit-after 300` | Exit 0. M1 smoke regression and overworld startup passed. |
-| `godot --headless --path . --script tests/headless/transition_test.gd --fixed-fps 60 --quit-after 600` | Exit 0. Movement, wall collision, real portal signals in both directions, duplicate requests, and spawn rejection and rollback checks passed. |
+| `godot --headless --path . --script tests/headless/transition_test.gd --fixed-fps 60 --quit-after 600` | Exit 0. Cardinal and diagonal displacement across physics frames, wall collision, real portal signals in both directions, duplicate requests, and spawn rejection and rollback checks passed. |
 
 Two temporary probes also exited 0. One sent physical W, Right, Down, and A key events to walk through both portals with the same player. The other freed the originating portal before deferred dispatch and confirmed the current region was preserved and the router released its reservation.
+
+Two isolated fault injections also exited 1. Disabling the player movement integration failed the displacement assertion. Interrupting the suite after setup triggered its watchdog before the engine frame cutoff.
 
 ### Overworld review history
 
 - Codex CLI reviewed `90760a1` (session `01a1bb7c-fdca-7d03-8459-234bf85b9399`). It requested a supported physics API, valid candidate and starting spawn checks, atomic request reservation, collision-state preservation, and corrections to the physics-frame test harness and signal observations.
 - agy authored the repair in the managed worktree. Codex ran the Godot checks and recorded the startup failure that remained after the first repair.
 - agy repaired off-tree marker resolution, validated the player collision footprint against destination shapes, and hardened the portal signal and stale-request handling. Local verification passed on Godot 4.7.2 Stable.
+- Codex CLI re-reviewed `194cf75` (session `01a1bb8b-3885-7cc1-9eb1-b1c753ada733`), cleared the runtime fixes, and requested stronger evidence for actual movement and suite completion. agy added displacement assertions over physics frames and a watchdog. Clean and fault-injected runs behaved as expected.

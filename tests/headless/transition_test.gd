@@ -29,6 +29,7 @@ class TransitionTestLogger extends Logger:
 		return count
 
 var test_passed: bool = true
+var suite_completed: bool = false
 var current_step_name: String = ""
 
 var game_root: Control = null
@@ -36,6 +37,7 @@ var world_router: WorldRouter = null
 var player: PlayerCharacter = null
 
 var logger: TransitionTestLogger = null
+var watchdog_timer: SceneTreeTimer = null
 
 func _init() -> void:
 	logger = TransitionTestLogger.new()
@@ -56,7 +58,18 @@ func _fail_immediate(message: String) -> void:
 
 func _start_suite() -> void:
 	print("=== Running SBL-W2-001 Overworld Transitions Test Suite ===")
+	_arm_watchdog()
 	_step_setup()
+
+func _arm_watchdog() -> void:
+	watchdog_timer = create_timer(4.0, true, false, false)
+	watchdog_timer.timeout.connect(_on_watchdog_timeout)
+
+func _on_watchdog_timeout() -> void:
+	if suite_completed:
+		return
+	printerr("WATCHDOG TIMEOUT: Test suite exceeded 4.0s execution limit without completing")
+	_fail_immediate("Watchdog timer expired before suite completion")
 
 func _step_setup() -> void:
 	current_step_name = "Scene Setup & Normal Startup"
@@ -104,25 +117,56 @@ func _step_movement_and_speed() -> void:
 	var base_speed: float = player.fixture_move_speed
 	_assert(base_speed > 0.0, "Player fixture move speed is tunable positive value (%f)" % base_speed)
 
-	# Test cardinal movement
-	Input.action_press("move_right")
-	player._physics_process(1.0)
-	var expected_cardinal: Vector2 = Vector2.RIGHT * base_speed
-	_assert(player.velocity.is_equal_approx(expected_cardinal), "Cardinal velocity right equals fixture_move_speed: %s" % str(player.velocity))
-	Input.action_release("move_right")
+	# Ensure player starts at clear Alpha spawn area (default marker position)
+	var spawn_pos: Vector2 = world_router.active_region.get_spawn_position("default")
+	player.global_position = spawn_pos
+	player.velocity = Vector2.ZERO
 
-	# Test diagonal movement normalization
-	Input.action_press("move_right")
-	Input.action_press("move_down")
-	player._physics_process(1.0)
-	var diag_norm: Vector2 = Vector2(1, 1).normalized()
-	var expected_diagonal: Vector2 = diag_norm * base_speed
-	_assert(player.velocity.is_equal_approx(expected_diagonal), "Diagonal velocity normalized length equals fixture_move_speed: %s" % str(player.velocity.length()))
-	_assert(is_equal_approx(player.velocity.length(), base_speed), "Diagonal speed strictly equals cardinal speed (no diagonal speed bug)")
-	Input.action_release("move_right")
-	Input.action_release("move_down")
+	var initial_pos: Vector2 = player.global_position
+	var ticks: int = 5
 
-	_run_physics_frames(2, _step_wall_collision)
+	# 1. Test cardinal movement across real physics ticks via actual input action presses
+	Input.action_press("move_right")
+	_run_physics_frames(ticks, func() -> void:
+		var cardinal_disp: Vector2 = player.global_position - initial_pos
+		var expected_cardinal_vel: Vector2 = Vector2.RIGHT * base_speed
+		_assert(player.velocity.is_equal_approx(expected_cardinal_vel), "Cardinal velocity right equals fixture_move_speed: %s" % str(player.velocity))
+		_assert(cardinal_disp.x > 0.0, "Cardinal movement produced actual positive x displacement: %f" % cardinal_disp.x)
+		_assert(is_zero_approx(cardinal_disp.y), "Cardinal horizontal movement left y unchanged: dy=%f" % cardinal_disp.y)
+		Input.action_release("move_right")
+
+		# Reset position in clear Alpha spawn area before diagonal test
+		player.global_position = spawn_pos
+		player.velocity = Vector2.ZERO
+
+		_run_physics_frames(1, func() -> void:
+			var diag_start_pos: Vector2 = player.global_position
+			var diag_norm: Vector2 = Vector2(1, 1).normalized()
+			var expected_diag_vel: Vector2 = diag_norm * base_speed
+
+			# 2. Test diagonal movement normalization across same number of physics ticks
+			Input.action_press("move_right")
+			Input.action_press("move_down")
+
+			_run_physics_frames(ticks, func() -> void:
+				var diag_disp: Vector2 = player.global_position - diag_start_pos
+				_assert(player.velocity.is_equal_approx(expected_diag_vel), "Diagonal velocity matches normalized fixture speed: %s" % str(player.velocity))
+				_assert(is_equal_approx(player.velocity.length(), base_speed), "Diagonal speed strictly equals cardinal speed (no diagonal speed bug)")
+				_assert(diag_disp.x > 0.0, "Diagonal movement produced positive x displacement: %f" % diag_disp.x)
+				_assert(diag_disp.y > 0.0, "Diagonal movement produced positive y displacement: %f" % diag_disp.y)
+
+				# Verify normalized length vs cardinal displacement with tolerance
+				_assert(absf(diag_disp.length() - cardinal_disp.length()) < 0.5, "Diagonal displacement magnitude (%f) matches cardinal displacement magnitude (%f)" % [diag_disp.length(), cardinal_disp.length()])
+
+				# Release input keys before advancing to wall collision
+				Input.action_release("move_right")
+				Input.action_release("move_down")
+				player.velocity = Vector2.ZERO
+
+				_run_physics_frames(2, _step_wall_collision)
+			)
+		)
+	)
 
 func _step_wall_collision() -> void:
 	current_step_name = "Wall & Obstacle Collision"
@@ -393,6 +437,9 @@ func _step_rejected_startup_check() -> void:
 	_finish_test_suite()
 
 func _finish_test_suite() -> void:
+	if suite_completed:
+		return
+	suite_completed = true
 	current_step_name = "Final Suite Completion"
 	OS.remove_logger(logger)
 	var captured_errors: int = logger.get_error_count()
