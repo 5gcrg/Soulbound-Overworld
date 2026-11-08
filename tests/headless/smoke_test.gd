@@ -34,13 +34,13 @@ const EXPECTED_ENGINE_MINOR: int = 7
 const EXPECTED_ENGINE_PATCH: int = 2
 const EXPECTED_ENGINE_STATUS: String = "stable"
 const EXPECTED_TITLE_TEXT: String = "Soulbound"
-const EXPECTED_STATUS_TEXT: String = "M1 Technical Foundation Bootstrap"
+const EXPECTED_STATUS_TEXT: String = "Overworld Active"
 
 func _init() -> void:
 	call_deferred("_run_smoke_test")
 
 func _run_smoke_test() -> void:
-	print("--- Running Soulbound Headless Smoke Test (SBL-M1-001) ---")
+	print("--- Running Soulbound Headless Smoke Test (SBL-M1-001 / SBL-W2-001 Regression) ---")
 	var success: bool = true
 
 	# 1. Enforce exact Godot 4.7.2 stable version
@@ -160,8 +160,8 @@ func _load_and_verify_main_scene(scene_path: String) -> bool:
 				else:
 					print("PASS: GameRoot is ready")
 
-				var title_node: Label = instance.get_node_or_null("VBoxContainer/TitleLabel") as Label
-				var status_node: Label = instance.get_node_or_null("VBoxContainer/StatusLabel") as Label
+				var title_node: Label = instance.get_node_or_null("UIOverlay/VBoxContainer/TitleLabel") as Label
+				var status_node: Label = instance.get_node_or_null("UIOverlay/VBoxContainer/StatusLabel") as Label
 
 				if title_node == null:
 					printerr("FAIL: TitleLabel node missing from GameRoot scene")
@@ -180,6 +180,21 @@ func _load_and_verify_main_scene(scene_path: String) -> bool:
 					check_success = false
 				else:
 					print("PASS: StatusLabel text matches '%s'" % EXPECTED_STATUS_TEXT)
+
+				# Additional W2 check: Player and WorldRouter exist
+				var player_node: Node = instance.get_node_or_null("Player")
+				var router_node: Node = instance.get_node_or_null("WorldRouter")
+				if player_node == null or not (player_node is PlayerCharacter):
+					printerr("FAIL: PlayerCharacter node missing or invalid type under GameRoot")
+					check_success = false
+				else:
+					print("PASS: PlayerCharacter node present and valid under GameRoot")
+
+				if router_node == null or not (router_node is WorldRouter):
+					printerr("FAIL: WorldRouter node missing or invalid type under GameRoot")
+					check_success = false
+				else:
+					print("PASS: WorldRouter node present and valid under GameRoot")
 
 	OS.remove_logger(logger)
 

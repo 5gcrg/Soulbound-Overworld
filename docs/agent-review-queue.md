@@ -29,3 +29,47 @@ An isolated copy passed the smoke check (exit 0). An injected assertion before a
 - Codex CLI's sandbox logged system certificate and user-directory write errors during its Godot runs. The local runs outside that sandbox did not emit those errors.
 - Codex CLI re-reviewed `eb79b1d` (session `01a1bb71-6842-7962-81c1-2f096538c2c9`). It confirmed four fixes and found that an error after the status update could still pass. agy added scoped engine and script error capture during scene loading and initialization.
 - Codex CLI verified the remaining finding at `97ecd49` (session `01a1bb74-11d0-7661-862b-411c0381c87d`) and found it resolved.
+
+---
+
+## SBL-W2-001 — Overworld Transitions & 8-Direction Controller
+
+- **TASK ID:** SBL-W2-001
+- **REQUIREMENTS:** GDD-001 (connected regions subset), GDD-002, GDD-041 (technical connection subset), GDD-094, GDD-095, GDD-096, GDD-109, GDD-124, GDD-129, FR-WLD-001, TC-WLD-001 (regional transitions subset), TC-AGY-001.
+- **MILESTONE:** Week 2 (MVP)
+- **OWNER:** agy
+- **PLAN OWNER:** Codex
+- **BRANCH/COMMIT:** `feature/w2-overworld-transitions` (based on reviewed M1 `50b01a9`)
+- **FILES CHANGED:**
+  - `project.godot` (input map definitions for WASD and arrow keys, version 0.2.0-w2)
+  - `scenes/player/player.gd` (CharacterBody2D 8-direction movement, get_vector, tunable fixture speed, freeze/resume API)
+  - `scenes/player/player.tscn` (reusable player scene with CollisionShape2D and ColorRect visual fixture)
+  - `scenes/world/portal.gd` (Area2D portal trigger emitting transition request)
+  - `scenes/world/portal.tscn` (reusable portal scene with CollisionShape2D, ColorRect fixture, Label)
+  - `scenes/world/base_region.gd` (base class for region scenes: bounds, spawns, portals, collision disabling)
+  - `scenes/world/test_region_alpha.tscn` (neutral slate test region fixture with perimeter, central pillar, portals, spawns)
+  - `scenes/world/test_region_beta.tscn` (neutral clay test region fixture with perimeter, barrier obstacle, portals, spawns)
+  - `scenes/world/world_router.gd` (persistent scene-owned router managing transitions, candidate staging, physics shape queries, rollbacks)
+  - `scenes/main/game_root.gd` (scene root wiring WorldContainer, Player, WorldRouter, and UI overlay status)
+  - `scenes/main/game_root.tscn` (main scene integrating persistent Player and WorldRouter under WorldContainer)
+  - `tests/headless/smoke_test.gd` (updated M1 smoke assertions verifying GameRoot overworld boot, Player, WorldRouter, and logger error capture)
+  - `tests/headless/transition_test.gd` (deterministic headless test suite validating 8-dir speed normalization, collisions, bidirectional transitions, duplicate guards, locked/unknown destinations, and obstructed spawn rollback)
+  - `docs/asset-register.md` (updated register documenting technical fixture ColorRect primitives; zero image/audio assets)
+  - `docs/traceability-matrix.md` (added SBL-W2-001 requirement rows and verification references)
+  - `docs/agent-review-queue.md` (this audit entry)
+- **ASSET PROVENANCE:** None. All visual elements are engine primitive ColorRect fixtures. No image, audio, or narrative assets generated.
+- **TESTS RUN + RESULTS:** Actual tests pending Codex CLI execution (agy shell execution disabled). Deterministic test script `tests/headless/transition_test.gd` and updated regression test `tests/headless/smoke_test.gd` authored with typed assertions, scoped Logger error capture, and non-zero exit codes on failure.
+- **REVIEW:** REVIEW_PENDING_CODEX
+- **OPEN QUESTIONS:**
+  - Story-specific region registry and narrative unlock criteria remain open (OD-001..OD-016); simple availability dictionary used as testable policy fixture.
+  - Final camera follow and smooth transition/fade polish deferred to future camera task per specification.
+  - Waypoint fast travel deferred per specification.
+
+### Verification Plan for Codex CLI
+
+| Command | Expected Result |
+| --- | --- |
+| `godot --headless --path . --import` | Exit 0. Import all new scenes and scripts without error. |
+| `godot --headless --path . --quit-after 5` | Exit 0. Main scene `scenes/main/game_root.tscn` boots overworld cleanly. |
+| `godot --headless --path . --script tests/headless/smoke_test.gd` | Exit 0. Regression smoke test passes with 0 logged engine/script errors. |
+| `godot --headless --path . --script tests/headless/transition_test.gd` | Exit 0. Verifies 8-direction speed, wall collision, bidirectional transitions, duplicate guard, locked/unknown targets, and obstructed spawn rollbacks under scoped error capture. |

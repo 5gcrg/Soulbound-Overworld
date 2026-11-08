@@ -15,8 +15,9 @@ In accordance with `AGENTS.md` and `NFR-LIC-001`, this document registers all vi
 | Asset ID | Path / Reference | Type | Provenance / Generator | Reviewer / Status | License / Notes |
 |---|---|---|---|---|---|
 | *None* | *None* | *None* | *None* | *N/A* | Task SBL-M1-001 contains zero image, audio, or generated narrative assets. Foundation code, scenes, and test scripts only. |
+| *None* | *None* | *None* | *None* | *N/A* | Task SBL-W2-001 contains zero image, audio, or generated narrative assets. Technical fixture visuals use engine ColorRect primitives exclusively. |
 
 ### Summary
-- Total visual assets: 0
+- Total visual assets: 0 (Technical fixture ColorRect primitives only, no image files)
 - Total audio assets: 0
 - Total generated narrative assets: 0
