@@ -1,0 +1,110 @@
+[gd_scene load_steps=2 format=3 uid="uid://b2k8v5x1q9e01"]
+
+[ext_resource type="Script" path="res://scenes/vertical_slice/quest_dialog.gd" id="1_dialog"]
+
+[node name="QuestDialog" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_dialog")
+
+[node name="Scrim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.04, 0.05, 0.08, 0.75)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="CenterContainer"]
+custom_minimum_size = Vector2(560, 340)
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="CenterContainer/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="CenterContainer/Panel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TitleLabel" type="Label" parent="CenterContainer/Panel/MarginContainer/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Spirit Elder — Trial of Harmony"
+
+[node name="HSeparator" type="HSeparator" parent="CenterContainer/Panel/MarginContainer/VBox"]
+layout_mode = 2
+
+[node name="SpeakerLabel" type="Label" parent="CenterContainer/Panel/MarginContainer/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.3, 0.8, 0.95, 1)
+text = "Spirit Elder:"
+
+[node name="DialogueText" type="Label" parent="CenterContainer/Panel/MarginContainer/VBox"]
+custom_minimum_size = Vector2(510, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Dialogue text goes here..."
+autowrap_mode = 3
+
+[node name="FeedbackLabel" type="Label" parent="CenterContainer/Panel/MarginContainer/VBox"]
+custom_minimum_size = Vector2(510, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = ""
+autowrap_mode = 3
+
+[node name="Spacer" type="Control" parent="CenterContainer/Panel/MarginContainer/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Buttons" type="VBoxContainer" parent="CenterContainer/Panel/MarginContainer/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="AcceptButton" type="Button" parent="CenterContainer/Panel/MarginContainer/VBox/Buttons"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Accept Practice Challenge"
+
+[node name="OptionAButton" type="Button" parent="CenterContainer/Panel/MarginContainer/VBox/Buttons"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Option A: Harmonize with the counter-pulse (Match Frequency)"
+
+[node name="OptionBButton" type="Button" parent="CenterContainer/Panel/MarginContainer/VBox/Buttons"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Option B: Force raw energy into the breach (Overpower Frequency)"
+
+[node name="ProceedButton" type="Button" parent="CenterContainer/Panel/MarginContainer/VBox/Buttons"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Proceed to Southern Combat Field ->"
+
+[node name="TurnInButton" type="Button" parent="CenterContainer/Panel/MarginContainer/VBox/Buttons"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Turn In Quest & Archive Record"
+
+[node name="CloseButton" type="Button" parent="CenterContainer/Panel/MarginContainer/VBox/Buttons"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Close"

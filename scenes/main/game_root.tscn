@@ -42,3 +42,6 @@ text = ""
 
 [node name="BattleLayer" type="CanvasLayer" parent="."]
 layer = 2
+
+[node name="DialogLayer" type="CanvasLayer" parent="."]
+layer = 3

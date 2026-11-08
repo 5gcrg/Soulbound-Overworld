@@ -4,11 +4,18 @@ const EXPECTED_BOOTSTRAP_STAGE: String = "Overworld Active"
 const DEFAULT_START_REGION: String = "test_region_alpha"
 const DEFAULT_START_SPAWN: String = "default"
 const BATTLE_FIXTURE_SCENE: PackedScene = preload("res://scenes/combat/battle_fixture.tscn")
+const QUEST_DIALOG_SCENE: PackedScene = preload("res://scenes/vertical_slice/quest_dialog.tscn")
 const EXPECTED_ENCOUNTER_ID: StringName = &"combat_alpha_fixture"
+const EXPECTED_NPC_ID: StringName = &"quest_guide_alpha"
 
 var _battle: Control = null
 var _battle_pending: bool = false
+var _dialog: Control = null
+var _dialog_pending: bool = false
 var _previous_input_frozen: bool = false
+
+var profile_store: ProfileStore = null
+var slice_progress: SliceProgress = null
 
 @onready var world_container: Node2D = $WorldContainer
 @onready var player: PlayerCharacter = $Player
@@ -16,10 +23,13 @@ var _previous_input_frozen: bool = false
 @onready var status_label: Label = $UIOverlay/VBoxContainer/StatusLabel
 @onready var title_label: Label = $UIOverlay/VBoxContainer/TitleLabel
 @onready var _battle_layer: CanvasLayer = $BattleLayer
+@onready var _dialog_layer: CanvasLayer = $DialogLayer
 
 func _ready() -> void:
 	if status_label != null:
 		status_label.text = ""
+
+	_init_slice_progress()
 
 	if world_router != null and world_container != null and player != null:
 		world_router.setup(world_container, player)
@@ -29,20 +39,39 @@ func _ready() -> void:
 		# Boot into starting test region
 		var booted: bool = world_router.initialize_starting_region(DEFAULT_START_REGION, DEFAULT_START_SPAWN)
 		if booted:
-			_bind_combat_encounter()
+			_bind_region_fixtures()
 			if status_label != null:
 				status_label.text = EXPECTED_BOOTSTRAP_STAGE
 		else:
 			push_error("Failed to initialize starting region: %s at spawn %s" % [DEFAULT_START_REGION, DEFAULT_START_SPAWN])
 
+func _init_slice_progress(store: ProfileStore = null, slot: String = "profile_01") -> void:
+	if store != null:
+		profile_store = store
+	elif profile_store == null:
+		profile_store = ProfileStore.new()
+	if slice_progress == null:
+		slice_progress = SliceProgress.new()
+	var err: Error = slice_progress.configure(profile_store, slot)
+	if err != OK:
+		push_warning("Failed to configure SliceProgress: %s" % error_string(err))
+
 func _on_region_transition_completed(region_id: String, spawn_id: String) -> void:
-	_bind_combat_encounter()
+	_bind_region_fixtures()
 	if status_label != null:
 		status_label.text = "Region: %s (Spawn: %s)" % [region_id, spawn_id]
 
 func _on_region_transition_failed(reason: String, from_id: String, to_id: String) -> void:
 	if status_label != null:
 		status_label.text = "Transition failed (%s): %s -> %s" % [reason, from_id, to_id]
+
+func _bind_region_fixtures() -> void:
+	_bind_combat_encounter()
+	_bind_quest_npc()
+
+# ==============================================================================
+# Combat Encounter Binding & Handling
+# ==============================================================================
 
 func _bind_combat_encounter() -> void:
 	if world_router == null or world_router.active_region == null or not is_instance_valid(world_router.active_region):
@@ -58,6 +87,8 @@ func _on_encounter_body_entered(body: Node2D, encounter_id: int) -> void:
 	if body != player or player == null:
 		return
 	if _battle_pending or (_battle != null and is_instance_valid(_battle)):
+		return
+	if _dialog_pending or (_dialog != null and is_instance_valid(_dialog)):
 		return
 	if world_router == null or world_router.is_transition_in_flight:
 		return
@@ -103,8 +134,103 @@ func _restore_combat_movement() -> void:
 		player.input_frozen = _previous_input_frozen
 
 func _close_combat() -> void:
+	var won: bool = false
+	if _battle != null and is_instance_valid(_battle) and _battle is BattleFixture:
+		won = (_battle.phase == BattleFixture.Phase.VICTORY)
 	_restore_combat_movement()
 	if _battle != null and is_instance_valid(_battle):
 		_battle.hide()
 		_battle.queue_free()
 	_battle = null
+
+	if won and slice_progress != null and slice_progress.stage == SliceProgress.Stage.BATTLE:
+		var err: Error = slice_progress.record_victory()
+		if err == OK and status_label != null:
+			status_label.text = "Victory! Return to Spirit Guide to turn in quest"
+
+# ==============================================================================
+# Quest Guide NPC Binding & Handling
+# ==============================================================================
+
+func _bind_quest_npc() -> void:
+	if world_router == null or world_router.active_region == null or not is_instance_valid(world_router.active_region):
+		return
+	var npc: Area2D = world_router.active_region.get_node_or_null("QuestNpc") as Area2D
+	if npc == null:
+		return
+	var callback: Callable = _on_npc_body_entered.bind(npc.get_instance_id())
+	if not npc.body_entered.is_connected(callback):
+		npc.body_entered.connect(callback)
+
+func _on_npc_body_entered(body: Node2D, npc_id: int) -> void:
+	if body != player or player == null:
+		return
+	if _dialog_pending or (_dialog != null and is_instance_valid(_dialog)):
+		return
+	if _battle_pending or (_battle != null and is_instance_valid(_battle)):
+		return
+	if world_router == null or world_router.is_transition_in_flight:
+		return
+	_dialog_pending = true
+	_previous_input_frozen = player.input_frozen
+	player.input_frozen = true
+	_open_quest_dialog.call_deferred(npc_id)
+
+func _open_quest_dialog(id: int) -> void:
+	if not _try_open_quest_dialog(id):
+		_restore_combat_movement()
+	_dialog_pending = false
+
+func _try_open_quest_dialog(npc_id: int) -> bool:
+	var npc: Area2D = instance_from_id(npc_id) as Area2D
+	if npc == null or not is_instance_valid(npc) or npc.is_queued_for_deletion():
+		return false
+	if world_router == null or world_router.active_region == null or not is_instance_valid(world_router.active_region) or world_router.active_region.is_queued_for_deletion():
+		return false
+	if not world_router.active_region.is_ancestor_of(npc):
+		return false
+	if not npc.has_meta("npc_id") or StringName(npc.get_meta("npc_id")) != EXPECTED_NPC_ID:
+		return false
+	if world_router.is_transition_in_flight:
+		return false
+	if _dialog != null and is_instance_valid(_dialog):
+		return false
+	if player == null:
+		return false
+
+	var target_layer: CanvasLayer = _dialog_layer if _dialog_layer != null else _battle_layer
+	if target_layer == null:
+		return false
+
+	var instance: QuestDialog = QUEST_DIALOG_SCENE.instantiate() as QuestDialog
+	if instance == null:
+		return false
+	_dialog = instance
+	player.freeze_movement()
+	instance.set_progress(slice_progress)
+	instance.quest_accepted.connect(_on_quest_accepted)
+	instance.practice_completed.connect(_on_practice_completed)
+	instance.quest_turned_in.connect(_on_quest_turned_in)
+	instance.closed.connect(_close_quest_dialog)
+	target_layer.add_child(_dialog)
+	return true
+
+func _close_quest_dialog() -> void:
+	_restore_combat_movement()
+	if _dialog != null and is_instance_valid(_dialog):
+		_dialog.hide()
+		_dialog.queue_free()
+	_dialog = null
+
+func _on_quest_accepted() -> void:
+	if status_label != null:
+		status_label.text = "Quest Accepted: Complete Practice Task"
+
+func _on_practice_completed(_choice: String, is_correct: bool) -> void:
+	if status_label != null:
+		var tag: String = "Passed" if is_correct else "Completed (Review)"
+		status_label.text = "Practice %s: Proceed to Combat Field" % tag
+
+func _on_quest_turned_in() -> void:
+	if status_label != null:
+		status_label.text = "Vertical Slice Complete: Record Saved!"

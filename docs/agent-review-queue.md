@@ -154,25 +154,26 @@ The save suite uses disposable test roots. It verifies slot isolation, nested da
 - **Requirements** GDD-067, GDD-068, GDD-069, GDD-071, GDD-098–100, GDD-119, FR-QST-001, FR-EDU-002/003, FR-SAV-001 (partial), TC-EDU-002/003, TC-SAV-001. Scope and evidence are recorded in the [traceability matrix](traceability-matrix.md).
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch and initial implementation** `feature/w4-5-vertical-slice`. Baseline `b427fed`.
-- **Files** `scripts/vertical_slice/slice_progress.gd`, `tests/headless/vertical_slice_test.gd`, `tests/headless/vertical_slice_test.gd.uid`, and documentation in `docs/`.
-- **Asset provenance** None. Uses existing Godot primitives and data structures.
-- **Review** REVIEW_PENDING_CODEX. Codex CLI execution returned usage limit exhaustion (`ERROR: You’ve hit your usage limit... try again at 4:15 AM`). Governed by AGENTS.md Rule 5. Local verification passed 100% cleanly.
+- **Files** `scripts/vertical_slice/slice_progress.gd`, `scenes/vertical_slice/quest_dialog.{tscn,gd}`, `scenes/main/game_root.{tscn,gd}`, `scenes/world/test_region_alpha.tscn`, `tests/headless/vertical_slice_test.gd`, `tests/headless/vertical_slice_loop_test.gd`, tracked UIDs, and documentation in `docs/`.
+- **Asset provenance** None (visuals use Godot UI and ColorRect primitives; educational prompt text authored per Gemini Flash non-image specification).
+- **Review** REVIEW_PENDING_CODEX. Codex CLI execution returned usage limit exhaustion (`ERROR: You’ve hit your usage limit... try again at 4:15 AM`). Governed by AGENTS.md Rule 5. Local verification passed 100% cleanly across all 6 test suites.
 - **Open decisions** OD-002 initiative, OD-003 balance, OD-009 save boundaries.
 
 ### Vertical slice verification
 
 | Command | Result |
 | --- | --- |
-| `godot --headless --path . --import` | Exit 0. Re-imported cleanly, registered `SliceProgress` class. |
+| `godot --headless --path . --import` | Exit 0. Re-imported cleanly, registered `SliceProgress` and `QuestDialog` classes. |
 | `godot --headless --path . --fixed-fps 60 --script tests/headless/smoke_test.gd --quit-after 600` | Exit 0. Smoke checks passed. |
 | `godot --headless --path . --fixed-fps 60 --script tests/headless/transition_test.gd --quit-after 600` | Exit 0. Transition checks passed. |
 | `godot --headless --path . --fixed-fps 60 --script tests/headless/combat_test.gd --quit-after 600` | Exit 0. Combat checks passed. |
 | `godot --headless --path . --fixed-fps 60 --script tests/headless/save_model_test.gd --quit-after 600` | Exit 0. Save model checks passed. |
 | `godot --headless --path . --fixed-fps 60 --script tests/headless/vertical_slice_test.gd --quit-after 600` | Exit 0. `VERTICAL SLICE TESTS PASSED`. |
+| `godot --headless --path . --fixed-fps 60 --script tests/headless/vertical_slice_loop_test.gd --quit-after 600` | Exit 0. `VERTICAL SLICE FULL LOOP INTEGRATION TEST PASSED`. Full interactive cycle verified: NPC offer -> practice assessment (completion-gated unblock) -> combat encounter -> victory checkpoint -> turn-in -> ProfileStore save roundtrip. |
 
 ### Review history
-- agy authored `scripts/vertical_slice/slice_progress.gd` and the automated headless test suite `tests/headless/vertical_slice_test.gd`.
-- Local headless validation verified all 6 acceptance criteria: fresh configuration, full progression lifecycle, completion-gated unblocking despite incorrect answer, persistence roundtrip with slot isolation, corrupt record rejection, and out-of-order transition guards.
+- agy authored `scripts/vertical_slice/slice_progress.gd`, `scenes/vertical_slice/quest_dialog.{tscn,gd}`, overworld NPC integration in `scenes/world/test_region_alpha.tscn` and `scenes/main/game_root.{tscn,gd}`, and automated headless test suites `vertical_slice_test.gd` and `vertical_slice_loop_test.gd`.
+- Local headless validation verified all 6 acceptance criteria and the full interactive loop end-to-end.
 - Codex CLI review was attempted via `codex review --uncommitted` (session `01a1bc01-5b29-7041-afa4-3c92bbd2c320`). Execution was blocked by provider credit quota (`ERROR: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/settings/usage to purchase more credits or try again at 4:15 AM.`).
 - In strict adherence to AGENTS.md Rule 5, work is logged in the queue as `REVIEW_PENDING_CODEX` to await Codex CLI quota reset at 4:15 AM.
 
