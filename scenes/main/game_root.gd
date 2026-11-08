@@ -172,7 +172,7 @@ func _try_open_combat(encounter_id: int) -> bool:
 
 func _restore_combat_movement() -> void:
 	if player != null and is_instance_valid(player):
-		player.input_frozen = _previous_input_frozen
+		player.input_frozen = false
 
 func _close_combat() -> void:
 	var won: bool = false
@@ -347,6 +347,7 @@ func _try_open_expedition(gateway_id: int) -> bool:
 	instance.inventory = inventory_manager
 	instance.expedition_completed.connect(_on_expedition_completed)
 	instance.expedition_failed.connect(_on_expedition_failed)
+	instance.expedition_cancelled.connect(_on_expedition_cancelled)
 	target_layer.add_child(_expedition)
 	instance.setup(1337, 6)
 	if status_label != null:
@@ -358,8 +359,6 @@ func _on_expedition_completed(extracted_items: Dictionary) -> void:
 		inventory_manager.save_to_store(profile_store, "profile_01")
 	if status_label != null:
 		status_label.text = "Expedition Cleared! Extracted %d item types to Bank." % extracted_items.size()
-	if player != null and is_instance_valid(player):
-		player.position = Vector2(600, 220)
 	_close_expedition()
 
 func _on_expedition_failed(lost_items: Dictionary) -> void:
@@ -367,11 +366,16 @@ func _on_expedition_failed(lost_items: Dictionary) -> void:
 		inventory_manager.save_to_store(profile_store, "profile_01")
 	if status_label != null:
 		status_label.text = "Expedition Defeat! Satchel lost (%d items); bank secured." % lost_items.size()
-	if player != null and is_instance_valid(player):
-		player.position = Vector2(600, 220)
+	_close_expedition()
+
+func _on_expedition_cancelled() -> void:
+	if status_label != null:
+		status_label.text = "Expedition cancelled. Returned to overworld."
 	_close_expedition()
 
 func _close_expedition() -> void:
+	if player != null and is_instance_valid(player):
+		player.position = Vector2(600, 220)
 	_restore_combat_movement()
 	if _expedition != null and is_instance_valid(_expedition):
 		_expedition.queue_free()

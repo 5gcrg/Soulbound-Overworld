@@ -82,6 +82,45 @@ func _run_test() -> void:
 	_check(game_root._expedition == null, "Expedition scene cleaned up after defeat")
 	_check(player.input_frozen == false, "Player restored to unfrozen state")
 
+	# Step 4: Test Interactive UI Modal Controls (Step Back / Cancel & Interactive Exploration)
+	gateway.body_entered.emit(player)
+	await process_frame
+
+	_check(game_root._expedition != null, "Third expedition entered")
+	var expedition3: DungeonExpedition = game_root._expedition
+	_check(expedition3.advance_btn != null, "Interactive UI advance button exists")
+	_check(expedition3.step_back_btn != null, "Interactive UI step back button exists")
+	_check(expedition3.step_back_btn.visible == true, "Step back button visible at entrance")
+
+	# Test Step Back / Cancel
+	expedition3.step_back_btn.pressed.emit()
+	await process_frame
+
+	_check(game_root._expedition == null, "Expedition cancelled cleanly via Step Back button")
+	_check(player.input_frozen == false, "Player movement restored immediately after cancelling")
+
+	# Step 5: Test Full Interactive Advance & Extraction Flow via Buttons
+	gateway.body_entered.emit(player)
+	await process_frame
+
+	var expedition4: DungeonExpedition = game_root._expedition
+	_check(expedition4 != null, "Fourth expedition entered for advance flow")
+
+	# Advance room-by-room until extraction portal reached
+	var safety_counter: int = 0
+	while expedition4.extract_btn.disabled and safety_counter < 10:
+		expedition4.advance_btn.pressed.emit()
+		safety_counter += 1
+
+	_check(expedition4.extract_btn.disabled == false, "Reached extraction portal via interactive button navigation")
+
+	# Click Extract Button
+	expedition4.extract_btn.pressed.emit()
+	await process_frame
+
+	_check(game_root._expedition == null, "Expedition cleanly extracted and closed via interactive button")
+	_check(player.input_frozen == false, "Player movement restored immediately after interactive extraction")
+
 	game_root.queue_free()
 
 	# Cleanup temporary profile dir

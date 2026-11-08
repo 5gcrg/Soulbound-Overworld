@@ -87,10 +87,14 @@ Every delivered module is verified by automated headless regression tests execut
   - Defeat wipes the satchel but 100% preserves banked town inventory and equipped gear.
   - Reaching the Extraction Portal transfers satchel loot to the bank exactly once.
 
-### 4.4 Overworld Dungeon Gateway Integration
+### 4.4 Overworld Dungeon Gateway & Interactive Expedition Modal
 - **Requirements**: `GDD-031/032`, `FR-DNG-001/002`.
 - **Gateway Area2D**: Positioned at coordinates `(650, 180)` in [`test_region_alpha.tscn`](file:///c:/Users/ALCOHOL/.codex/worktrees/soulbound-overworld/SoulBound/scenes/world/test_region_alpha.tscn) with visual shrine styling.
-- **Overworld Orchestration**: Seamlessly transitions Ren into the modular dungeon in `game_root.gd`, freezng overworld input.
+- **Interactive Expedition Modal Interface**:
+  - Full-screen modal overlay in [`scenes/dungeon/dungeon_expedition.{tscn,gd}`](file:///c:/Users/ALCOHOL/.codex/worktrees/soulbound-overworld/SoulBound/scenes/dungeon/dungeon_expedition.gd).
+  - Breadcrumb navigation trail tracking chambers from Spawn to Extraction Shrine.
+  - Interactive controls: `[Advance to Next Chamber]`, `[Extract at Portal (Bank Loot)]`, `[Retreat (Lose Satchel)]`, and `[Step Back / Cancel (Esc)]`.
+- **Zero Freeze Invariant**: Closing the expedition (via extract, defeat retreat, or step back) unfreezes Ren's overworld input unconditionally and positions Ren safely at `Vector2(600, 220)` outside the gateway trigger to avoid re-trigger loops.
 - **Extraction & Defeat Invariants**:
   - On extraction: Satchel loot is committed to active `profile_01` bank, Ren is placed safely back in the overworld.
   - On defeat: Satchel is completely wiped, town bank and character stats remain 100% intact, Ren is returned to the overworld shrine.
@@ -116,6 +120,7 @@ Every delivered module is verified by automated headless regression tests execut
 ## 5. Git Commit Log (`feature/w4-5-vertical-slice`)
 
 ```text
+* 0ab0ffe Implement SBL-M3-003 Overworld Gateway, Education Assessment Engine, and UI Sheets [REVIEW_PENDING_CODEX]
 * 27a7c7f Implement SBL-M3-002 Dimension Shift, Kurei Combat, and Dungeon Expedition [REVIEW_PENDING_CODEX]
 * 947bb82 Implement SBL-M3-001 core systems foundations (Progression, Inventory, Kurei, Dungeon) [REVIEW_PENDING_CODEX]
 * e7a869b Add M2 UX objective tracker, interaction prompts, and audio specs [REVIEW_PENDING_CODEX]

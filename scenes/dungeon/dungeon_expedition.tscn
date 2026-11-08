@@ -2,7 +2,13 @@
 
 [ext_resource type="Script" path="res://scenes/dungeon/dungeon_expedition.gd" id="1_dungeon"]
 
-[node name="DungeonExpedition" type="Node2D"]
+[node name="DungeonExpedition" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_dungeon")
 
 [node name="RoomsContainer" type="Node2D" parent="."]
@@ -10,3 +16,142 @@ script = ExtResource("1_dungeon")
 [node name="CorridorsContainer" type="Node2D" parent="."]
 
 [node name="EntitiesContainer" type="Node2D" parent="."]
+
+[node name="UI" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Scrim" type="ColorRect" parent="UI"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.04, 0.04, 0.08, 0.85)
+
+[node name="Panel" type="PanelContainer" parent="UI"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -340.0
+offset_top = -220.0
+offset_right = 340.0
+offset_bottom = 220.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="UI/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="UI/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="VBoxContainer" parent="UI/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="TitleLabel" type="Label" parent="UI/Panel/Margin/VBox/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.75, 0.4, 1)
+theme_override_font_sizes/font_size = 18
+text = "✦ Abyssal Expedition ✦"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="UI/Panel/Margin/VBox/Header"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Modular Procedural Dungeons — Extraction Roguelite"
+horizontal_alignment = 1
+
+[node name="HSeparator1" type="HSeparator" parent="UI/Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="StatusBox" type="HBoxContainer" parent="UI/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="LocationLabel" type="Label" parent="UI/Panel/Margin/VBox/StatusBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = "Chamber 1 / 6 [Spawn]"
+
+[node name="SatchelLabel" type="Label" parent="UI/Panel/Margin/VBox/StatusBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.95, 0.65, 0.35, 1)
+theme_override_font_sizes/font_size = 12
+text = "Satchel: 0 Fragments (At-Risk!)"
+horizontal_alignment = 1
+
+[node name="BankLabel" type="Label" parent="UI/Panel/Margin/VBox/StatusBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.4, 0.85, 0.6, 1)
+theme_override_font_sizes/font_size = 12
+text = "Town Bank: 0 Fragments"
+horizontal_alignment = 2
+
+[node name="PathBox" type="PanelContainer" parent="UI/Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="RoomPathLabel" type="Label" parent="UI/Panel/Margin/VBox/PathBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "[Spawn] ➔ [Chamber 2] ➔ [Chamber 3] ➔ [Extraction Shrine]"
+horizontal_alignment = 1
+
+[node name="DescriptionBox" type="PanelContainer" parent="UI/Panel/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="RoomDescriptionLabel" type="Label" parent="UI/Panel/Margin/VBox/DescriptionBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 12
+text = "You stand at the threshold of the Abyssal depths. Proceed deeper to find ancient relic fragments, or step back to the overworld."
+autowrap_mode = 3
+
+[node name="HSeparator2" type="HSeparator" parent="UI/Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="ActionBox" type="HBoxContainer" parent="UI/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="AdvanceBtn" type="Button" parent="UI/Panel/Margin/VBox/ActionBox"]
+custom_minimum_size = Vector2(160, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Advance to Chamber 2"
+
+[node name="ExtractBtn" type="Button" parent="UI/Panel/Margin/VBox/ActionBox"]
+custom_minimum_size = Vector2(160, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "Extract at Portal"
+
+[node name="RetreatBtn" type="Button" parent="UI/Panel/Margin/VBox/ActionBox"]
+custom_minimum_size = Vector2(140, 34)
+layout_mode = 2
+text = "Retreat (Lose Satchel)"
+
+[node name="StepBackBtn" type="Button" parent="UI/Panel/Margin/VBox/ActionBox"]
+custom_minimum_size = Vector2(120, 34)
+layout_mode = 2
+text = "Step Back [Esc]"
