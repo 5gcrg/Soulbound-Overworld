@@ -22,6 +22,7 @@ var slice_progress: SliceProgress = null
 @onready var world_router: WorldRouter = $WorldRouter
 @onready var status_label: Label = $UIOverlay/VBoxContainer/StatusLabel
 @onready var title_label: Label = $UIOverlay/VBoxContainer/TitleLabel
+@onready var objective_label: Label = $UIOverlay/ObjectivePanel/Margin/VBox/ObjectiveLabel
 @onready var _battle_layer: CanvasLayer = $BattleLayer
 @onready var _dialog_layer: CanvasLayer = $DialogLayer
 
@@ -55,6 +56,7 @@ func _init_slice_progress(store: ProfileStore = null, slot: String = "profile_01
 	var err: Error = slice_progress.configure(profile_store, slot)
 	if err != OK:
 		push_warning("Failed to configure SliceProgress: %s" % error_string(err))
+	_update_objective()
 
 func _on_region_transition_completed(region_id: String, spawn_id: String) -> void:
 	_bind_region_fixtures()
@@ -145,8 +147,10 @@ func _close_combat() -> void:
 
 	if won and slice_progress != null and slice_progress.stage == SliceProgress.Stage.BATTLE:
 		var err: Error = slice_progress.record_victory()
-		if err == OK and status_label != null:
-			status_label.text = "Victory! Return to Spirit Guide to turn in quest"
+		if err == OK:
+			if status_label != null:
+				status_label.text = "Victory! Return to Spirit Guide to turn in quest"
+			_update_objective()
 
 # ==============================================================================
 # Quest Guide NPC Binding & Handling
@@ -225,12 +229,33 @@ func _close_quest_dialog() -> void:
 func _on_quest_accepted() -> void:
 	if status_label != null:
 		status_label.text = "Quest Accepted: Complete Practice Task"
+	_update_objective()
 
 func _on_practice_completed(_choice: String, is_correct: bool) -> void:
 	if status_label != null:
 		var tag: String = "Passed" if is_correct else "Completed (Review)"
 		status_label.text = "Practice %s: Proceed to Combat Field" % tag
+	_update_objective()
 
 func _on_quest_turned_in() -> void:
 	if status_label != null:
 		status_label.text = "Vertical Slice Complete: Record Saved!"
+	_update_objective()
+
+func _update_objective() -> void:
+	if objective_label == null:
+		return
+	if slice_progress == null or not slice_progress.ready:
+		objective_label.text = "Initializing spirit resonance..."
+		return
+	match slice_progress.stage:
+		SliceProgress.Stage.OFFERED:
+			objective_label.text = "Approach the Spirit Guide (northeast) to begin trial."
+		SliceProgress.Stage.PRACTICE:
+			objective_label.text = "Complete the resonant practice evaluation with the Spirit Guide."
+		SliceProgress.Stage.BATTLE:
+			objective_label.text = "Confront and defeat the Corrupted Sentinel in south field."
+		SliceProgress.Stage.TURN_IN:
+			objective_label.text = "Return to the Spirit Guide to turn in your quest."
+		SliceProgress.Stage.COMPLETE:
+			objective_label.text = "Vertical slice trial complete. Profile safely archived."
