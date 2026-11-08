@@ -59,3 +59,26 @@ This matrix covers the M1 bootstrap and SBL-W2-001 overworld transitions under [
 ### Scope Notes and Open Decisions
 - **Open Decisions**: OD-002 (initiative ordering), OD-003 (combat balance and resource costs), OD-004 (status timing and stacking), and OD-009 (save boundaries) remain open.
 - **Asset Scope**: Zero image, audio, or generated narrative assets. Technical fixture UI uses Godot primitives and native controls (see [Asset Register](asset-register.md)).
+
+
+---
+
+## Task SBL-W3-002: Local Save Model and JSON Text
+
+| Requirement ID | Description | Milestone / Scope | Priority | Planned Scene / Script / Data Owner | Corresponding Issue / PR | Tests | Evidence Link | Implementation Status | Review Status | Last Approval Date |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **GDD-098** | Save profile requirement, local model subset | W3 (MVP) | P1 (planned) | `scripts/persistence/profile_store.gd` | Task SBL-W3-002 (`feature/w3-save-model`) | `tests/headless/save_model_test.gd` | [W3 save entry](agent-review-queue.md#save-model-verification) | Partial | CHANGES_REQUESTED (runtime); tests REVIEW_PENDING_CODEX | Pending human acceptance |
+| **GDD-099** | Save profile requirement, local model subset | W3 (MVP) | P1 (planned) | `scripts/persistence/profile_store.gd` | Task SBL-W3-002 (`feature/w3-save-model`) | `tests/headless/save_model_test.gd` | [W3 save entry](agent-review-queue.md#save-model-verification) | Partial | CHANGES_REQUESTED (runtime); tests REVIEW_PENDING_CODEX | Pending human acceptance |
+| **GDD-100** | Save profile requirement, local model subset | W3 (MVP) | P1 (planned) | `scripts/persistence/profile_store.gd` | Task SBL-W3-002 (`feature/w3-save-model`) | `tests/headless/save_model_test.gd` | [W3 save entry](agent-review-queue.md#save-model-verification) | Partial | CHANGES_REQUESTED (runtime); tests REVIEW_PENDING_CODEX | Pending human acceptance |
+| **GDD-102** | Save profile requirement, local model subset | W3 (MVP) | P1 (planned) | `scripts/persistence/profile_store.gd` | Task SBL-W3-002 (`feature/w3-save-model`) | `tests/headless/save_model_test.gd` | [W3 save entry](agent-review-queue.md#save-model-verification) | Partial | CHANGES_REQUESTED (runtime); tests REVIEW_PENDING_CODEX | Pending human acceptance |
+| **FR-SAV-001** | Versioned local profile slots (partial) | W3 (MVP) | P1 (planned) | `scripts/persistence/profile_store.gd` | Task SBL-W3-002 (`feature/w3-save-model`) | Round trip, three-slot and future-revision checks | [W3 save entry](agent-review-queue.md#save-model-verification) | Partial | CHANGES_REQUESTED (runtime); tests REVIEW_PENDING_CODEX | Pending human acceptance |
+| **FR-SAV-002** | Raw JSON text backup export and import (partial) | W3 (MVP) | P1 (planned) | `scripts/persistence/profile_store.gd` | Task SBL-W3-002 (`feature/w3-save-model`) | Same-slot export and import at a fresh root | [W3 save entry](agent-review-queue.md#save-model-verification) | Partial | CHANGES_REQUESTED (runtime); tests REVIEW_PENDING_CODEX | Pending human acceptance |
+| **TC-SAV-001** | Save and load round trip across independent slots | W3 (MVP) | P1 (planned) | `tests/headless/save_model_test.gd` | Task SBL-W3-002 (`feature/w3-save-model`) | Headless save model test | [W3 save entry](agent-review-queue.md#save-model-verification) | Test written, not yet run | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **TC-SAV-002** | Corruption fallback, failed promotion and rejected input | W3 (MVP) | P1 (planned) | `tests/headless/save_model_test.gd` | Task SBL-W3-002 (`feature/w3-save-model`) | Headless save model test | [W3 save entry](agent-review-queue.md#save-model-verification) | Test written, not yet run | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **NFR-REL-001** | Reliability: committed revisions survive failure and corruption | W3 (MVP) | P1 (planned) | `scripts/persistence/profile_store.gd` | Task SBL-W3-002 (`feature/w3-save-model`) | Fallback, no-rewrite and failed-promotion checks | [W3 save entry](agent-review-queue.md#save-model-verification) | Partial | CHANGES_REQUESTED (runtime); tests REVIEW_PENDING_CODEX | Pending human acceptance |
+| **NFR-SEC-001** | Security: strict validation of untrusted JSON text | W3 (MVP) | P1 (planned) | `scripts/persistence/profile_store.gd` | Task SBL-W3-002 (`feature/w3-save-model`) | Malformed, unsafe, wrong-slot, oversized and invalid Variant rejection | [W3 save entry](agent-review-queue.md#save-model-verification) | Partial | CHANGES_REQUESTED (runtime); tests REVIEW_PENDING_CODEX | Pending human acceptance |
+
+### SBL-W3-002 Scope Notes and Open Decisions
+- **Scope**: Local model and JSON text only. Gameplay autosave and the Web file UI are deferred. Expedition state is separate.
+- **Open Decisions**: OD-009 (save boundaries) remains open.
+- **Asset Scope**: Zero image, audio, or generated narrative assets (see [Asset Register](asset-register.md)).

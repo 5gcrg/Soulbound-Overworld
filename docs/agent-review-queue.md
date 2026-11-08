@@ -105,3 +105,36 @@ A second fault probe confirmed a same-frame competing portal could no longer can
 - agy reserved movement and travel when accepting combat, restored the prior lock on rejected deferred admission, and corrected the headless test harness. The complete local suite and both independent runtime probes passed.
 - Codex CLI confirmed the runtime repair at `53851ee` (session `01a1bbc9-f7d5-77f0-b6cd-a43214a83347`) and requested direct regression assertions for exactly-once Continue and stale-trigger rollback. agy added both. In isolated copies, removing the Continue guard and removing stale rollback each made the combat suite exit 1 for the expected assertion. Clean runs exited 0.
 - Codex CLI closed both remaining assertions at `cc20094` (session `01a1bbcc-2dbc-79d2-a011-deccf6483081`). The combat suite also passed in the review sandbox, which logged its existing certificate-store and user log warnings. Local verification produced no Godot errors.
+
+
+---
+
+## SBL-W3-002 — Local save model and JSON text
+
+- **Milestone** Week 2–3 MVP foundation, save model slice.
+- **Requirements** GDD-098, GDD-099, GDD-100, GDD-102, FR-SAV-001/002 (partial), TC-SAV-001/002, NFR-REL-001, and NFR-SEC-001. [Traceability](traceability-matrix.md).
+- **Owner** agy. **Plan owner** Codex.
+- **Branch and base** `feature/w3-save-model` based on `d0fbba9`. Initial store `4822621`.
+- **Files** `tests/headless/save_model_test.gd` (written first), and the review queue, traceability matrix and asset register. No runtime edits in this step.
+- **Asset provenance** None. Code and an automated test only. No images, audio or generated narrative.
+- **Review** CHANGES_REQUESTED from the initial runtime review. The new test is REVIEW_PENDING_CODEX.
+- **Scope** The local profile model and its JSON text. Gameplay autosave and the Web file UI are deferred. Expedition state is separate. OD-009 save boundaries remain open.
+
+### Save model verification
+
+| Command | Result |
+| --- | --- |
+| `godot --headless --path . --script tests/headless/save_model_test.gd` | Not run. This step had no shell. Expected on success: exit 0 and the exact line `SAVE MODEL TESTS PASSED`. Any assertion exits 1. |
+
+The suite uses a unique `user://` root per run (process ID and ticks). It removes only its own known slot directories and `profile.*.json`/`.tmp` files. It never touches normal profiles. It covers:
+
+- Typed bracket-key access, nested ordinary ints persisting with numeric equality, and three independent slots.
+- Two retained revisions, and fallback when the newest is corrupt. Corrupt bytes are never rewritten on load.
+- Raw-text export and import of the same slot at a fresh root.
+- A forced promotion failure that leaves both committed revisions byte-for-byte unchanged.
+- Rejected input: leading-zero numbers, trailing commas, duplicate decoded names, a fractional version, a wrong slot or path, unsafe numbers, a future committed revision, oversized records, and invalid nested Variants. Rejected input creates no files.
+
+### Open items
+
+- `ProfileStore` preloads `res://scripts/persistence/strict_profile_json.gd`. That file was not present in the worktree when this entry was written. The runtime owner must supply it before the suite can run.
+- The test must be executed and reviewed by Codex CLI. Do not treat it as reviewed until that happens.

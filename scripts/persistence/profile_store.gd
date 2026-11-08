@@ -1,513 +1,374 @@
 class_name ProfileStore
 extends RefCounted
 
-## ProfileStore — SBL-W3-002 Storage Foundation
-##
-## Manages atomic, versioned profile storage across three isolated slots:
-## profile_01, profile_02, and profile_03.
-## Conforms to GDD-098/099/100/102, FR-SAV-001/002 partial, and TC-SAV-001/002.
-##
-## Note on scope: Expedition state persistence is separate and future.
-## Only schema_version 1 envelopes with keys: schema_version, profile_id,
-## character, inventory, world, and education are accepted.
-## Any extra/unknown keys (including "expedition") are strictly rejected.
+## ProfileStore — SBL-W3-002 Storage Foundation (Immutable Revisions)
 
-const VALID_PROFILE_IDS: PackedStringArray = [
-	"profile_01",
-	"profile_02",
-	"profile_03"
-]
-
+const VALID_PROFILE_IDS: PackedStringArray = ["profile_01", "profile_02", "profile_03"]
 const REQUIRED_ENVELOPE_KEYS: Array[String] = [
-	"schema_version",
-	"profile_id",
-	"character",
-	"inventory",
-	"world",
-	"education"
+	"schema_version", "profile_id", "character", "inventory", "world", "education"
 ]
-
-const PRIMARY_FILENAME: String = "profile.json"
-const BACKUP_FILENAME: String = "profile.backup.json"
-const PRIMARY_TMP_FILENAME: String = "profile.json.tmp"
-const BACKUP_TMP_FILENAME: String = "profile.backup.json.tmp"
-
 const CURRENT_SCHEMA_VERSION: int = 1
-const MAX_JSON_BYTES: int = 4 * 1024 * 1024 # 4 MiB max payload
+const MAX_JSON_BYTES: int = 4 * 1024 * 1024
 const MAX_DEPTH: int = 64
 const MIN_SAFE_INT: int = -9007199254740991
 const MAX_SAFE_INT: int = 9007199254740991
+const MAX_REVISION: int = 9999999999999999
 
 var _root_path: String
-
+var _file_regex: RegEx
 
 func _init(root_path: String = "user://profiles") -> void:
 	_root_path = root_path
-
+	_file_regex = RegEx.new()
+	_file_regex.compile(r"^profile\.(\d{16})\.(\d+)\.(\d+)\.json$")
 
 # ==============================================================================
 # Public API
 # ==============================================================================
 
-## Returns an empty, valid schema_version 1 envelope for the given slot.
-## Sections are default empty dictionaries with no fabricated game data.
-## Returns an empty Dictionary if profile_id is invalid.
 func new_profile(profile_id: String) -> Dictionary:
 	if not _is_valid_profile_id(profile_id):
 		return {}
-
 	return {
 		"schema_version": CURRENT_SCHEMA_VERSION,
 		"profile_id": profile_id,
-		"character": {},
-		"inventory": {},
-		"world": {},
-		"education": {}
+		"character": {}, "inventory": {}, "world": {}, "education": {}
 	}
 
-
-## Atomically saves validated profile data to the specified slot.
-## Staging, verification, prior primary backup promotion, and atomic rename
-## ensure that at least one recoverable valid copy is preserved on disk.
 func save_profile(profile_id: String, data: Dictionary) -> Error:
 	if not _is_valid_profile_id(profile_id):
 		return ERR_INVALID_PARAMETER
-
-	# 1. Validate data in memory before touching any file on disk.
-	var val_err: Error = _validate_envelope_and_sections(data, profile_id)
+	var val_err: Error = _validate_envelope(data, profile_id)
 	if val_err != OK:
 		return val_err
-
-	# 2. Serialize using full precision and bound payload byte size before writing.
-	var new_text: String = JSON.stringify(data, "\t", true, true)
-	var new_bytes: PackedByteArray = new_text.to_utf8_buffer()
-	if new_bytes.size() > MAX_JSON_BYTES:
+	var raw_text: String = JSON.stringify(data, "\t", true, true)
+	var raw_bytes: PackedByteArray = raw_text.to_utf8_buffer()
+	if raw_bytes.is_empty() or raw_bytes.size() > MAX_JSON_BYTES:
 		return ERR_INVALID_DATA
+	var dec: Dictionary = _decode(raw_text, profile_id)
+	if dec["error"] != OK:
+		return dec["error"]
+	# JSON parses every number as float, so compare numerically rather than by Variant type.
+	if not _same_json(data, dec["data"]):
+		return ERR_INVALID_DATA
+	return _commit_profile(profile_id, raw_text)
 
-	# 3. Ensure destination slot directory exists.
+func load_profile(profile_id: String) -> Dictionary:
+	var rec: Dictionary = _load_active_record(profile_id)
+	return {"error": rec["error"], "profile": rec.get("data", {}), "recovered": rec.get("recovered", false)}
+
+func import_backup(profile_id: String, text: String) -> Error:
+	if not _is_valid_profile_id(profile_id):
+		return ERR_INVALID_PARAMETER
+	var raw_bytes: PackedByteArray = text.to_utf8_buffer()
+	if raw_bytes.is_empty() or raw_bytes.size() > MAX_JSON_BYTES:
+		return ERR_INVALID_DATA
+	if raw_bytes.get_string_from_utf8() != text:
+		return ERR_FILE_CORRUPT
+	var dec: Dictionary = _decode(text, profile_id)
+	if dec["error"] != OK:
+		return dec["error"]
+	return _commit_profile(profile_id, text)
+
+func export_backup(profile_id: String) -> Dictionary:
+	var rec: Dictionary = _load_active_record(profile_id)
+	return {"error": rec["error"], "text": "" if rec["error"] != OK else rec["text"]}
+
+# ==============================================================================
+# Commit & Storage Pipeline
+# ==============================================================================
+
+func _commit_profile(profile_id: String, raw_text: String) -> Error:
+	var bytes: PackedByteArray = raw_text.to_utf8_buffer()
+	if bytes.is_empty() or bytes.size() > MAX_JSON_BYTES:
+		return ERR_INVALID_DATA
 	var slot_dir: String = _get_slot_dir(profile_id)
 	var dir_err: Error = _ensure_dir_exists(slot_dir)
 	if dir_err != OK:
 		return dir_err
 
-	var primary_path: String = _get_primary_path(profile_id)
-	var backup_path: String = _get_backup_path(profile_id)
-	var backup_tmp_path: String = _get_backup_tmp_path(profile_id)
-	var primary_tmp_path: String = _get_primary_tmp_path(profile_id)
+	var listing: Dictionary = _list_profile_files(profile_id)
+	if listing["error"] != OK:
+		return listing["error"]
+	var files: Array[String] = listing["files"]
 
-	# 4. Inspect existing primary if present.
-	if FileAccess.file_exists(primary_path):
-		var primary_file: FileAccess = FileAccess.open(primary_path, FileAccess.READ)
-		if primary_file == null:
-			var open_err: Error = FileAccess.get_open_error()
-			return open_err if open_err != OK else ERR_FILE_CANT_OPEN
-
-		var primary_len: int = primary_file.get_length()
-		if primary_len > MAX_JSON_BYTES:
-			primary_file.close()
-			# Primary is oversized/corrupt. Do not stage as backup.
-		else:
-			var primary_text: String = primary_file.get_as_text()
-			primary_file.close()
-
-			var json: JSON = JSON.new()
-			var parse_err: Error = json.parse(primary_text)
-			if parse_err == OK and json.data is Dictionary:
-				var parsed_primary: Dictionary = json.data as Dictionary
-				# Check for unsupported version before overwriting.
-				if parsed_primary.has("schema_version"):
-					var ver: Variant = parsed_primary["schema_version"]
-					if (ver is int or ver is float) and int(ver) != CURRENT_SCHEMA_VERSION:
-						return ERR_FILE_UNRECOGNIZED
-
-				# If prior primary is valid, stage and promote to backup.
-				if _validate_envelope_and_sections(parsed_primary, profile_id) == OK:
-					var backup_err: Error = _stage_and_promote_backup(
-						backup_tmp_path,
-						backup_path,
-						primary_text,
-						primary_len
-					)
-					if backup_err != OK:
-						return backup_err
-				else:
-					# Corrupt primary: do not overwrite good backup with corrupt primary.
-					pass
+	# Corrupt and unknown revisions are never pruned. Only valid v1 revisions older
+	# than the newest prior valid one are pruned, and only after the commit succeeds.
+	var prior_valid_found: bool = false
+	var to_prune: Array[String] = []
+	for fname in files:
+		var rec: Dictionary = _read_record(slot_dir.path_join(fname), profile_id)
+		if rec["is_unsupported"]:
+			return ERR_FILE_UNRECOGNIZED
+		if rec["is_oversized"]:
+			return ERR_INVALID_DATA
+		if rec["is_io_error"]:
+			return rec["error"]
+		if rec["error"] == OK:
+			if prior_valid_found:
+				to_prune.append(fname)
 			else:
-				# Malformed JSON in primary: do not overwrite good backup.
-				pass
+				prior_valid_found = true
 
-	# 5. Stage write new primary to temporary file, flush, close, and verify read-back.
-	var write_err: Error = _stage_and_verify_file(primary_tmp_path, new_text, new_bytes.size())
-	if write_err != OK:
-		_remove_file_if_exists(primary_tmp_path)
-		return write_err
+	var next_rev: int = 1
+	if not files.is_empty():
+		var m: RegExMatch = _file_regex.search(files[0])
+		if m == null:
+			return ERR_FILE_CORRUPT
+		var newest_rev: int = m.get_string(1).to_int()
+		if newest_rev >= MAX_REVISION:
+			return ERR_PARAMETER_RANGE_ERROR
+		next_rev = newest_rev + 1
 
-	# 6. Atomically rename staged temporary file to final primary file.
-	var rename_err: Error = _atomic_rename(primary_tmp_path, primary_path)
-	if rename_err != OK:
-		_remove_file_if_exists(primary_tmp_path)
-		return rename_err
+	var base_name: String = "profile.%016d.%d.%d" % [next_rev, OS.get_process_id(), Time.get_ticks_usec()]
+	var tmp_path: String = slot_dir.path_join(base_name + ".tmp")
+	var final_path: String = slot_dir.path_join(base_name + ".json")
 
+	var file: FileAccess = FileAccess.open(tmp_path, FileAccess.WRITE)
+	if file == null:
+		var open_err: Error = FileAccess.get_open_error()
+		return open_err if open_err != OK else ERR_FILE_CANT_WRITE
+	file.store_buffer(bytes)
+	file.flush()
+	file.close()
+
+	var vfile: FileAccess = FileAccess.open(tmp_path, FileAccess.READ)
+	if vfile == null:
+		_remove_file_if_exists(tmp_path)
+		var read_open_err: Error = FileAccess.get_open_error()
+		return read_open_err if read_open_err != OK else ERR_FILE_CANT_READ
+	var staged_len: int = vfile.get_length()
+	if staged_len != bytes.size():
+		vfile.close()
+		_remove_file_if_exists(tmp_path)
+		return ERR_FILE_CORRUPT
+	var read_bytes: PackedByteArray = vfile.get_buffer(bytes.size())
+	vfile.close()
+	if read_bytes.size() != bytes.size() or read_bytes != bytes:
+		_remove_file_if_exists(tmp_path)
+		return ERR_FILE_CORRUPT
+
+	var promote_err: Error = _promote_revision(tmp_path, final_path)
+	if promote_err != OK:
+		_remove_file_if_exists(tmp_path)
+		return promote_err
+
+	for fname in to_prune:
+		DirAccess.remove_absolute(_global_path(slot_dir.path_join(fname)))
 	return OK
 
+## Moves a staged temp file onto an absent final revision path. Isolated so tests can inject failures.
+func _promote_revision(temp_path: String, final_path: String) -> Error:
+	if FileAccess.file_exists(final_path):
+		return ERR_ALREADY_EXISTS
+	return DirAccess.rename_absolute(_global_path(temp_path), _global_path(final_path))
 
-## Loads the active profile for the given slot.
-## Tries the primary file first; if missing or corrupt, falls back to the last-good backup.
-## Returns a Dictionary with keys:
-##   - "error": Error
-##   - "profile": Dictionary
-##   - "recovered": bool (true if loaded from backup fallback)
-## Never reads from temp files and executes no implicit writes.
-func load_profile(profile_id: String) -> Dictionary:
-	var result: Dictionary = {
-		"error": OK,
-		"profile": {},
-		"recovered": false
+func _load_active_record(profile_id: String) -> Dictionary:
+	if not _is_valid_profile_id(profile_id):
+		return {"error": ERR_INVALID_PARAMETER, "data": {}, "text": "", "recovered": false}
+	var listing: Dictionary = _list_profile_files(profile_id)
+	if listing["error"] != OK:
+		return {"error": listing["error"], "data": {}, "text": "", "recovered": false}
+	var files: Array[String] = listing["files"]
+	if files.is_empty():
+		return {"error": ERR_FILE_NOT_FOUND, "data": {}, "text": "", "recovered": false}
+	var slot_dir: String = _get_slot_dir(profile_id)
+	var last_corrupt_err: Error = ERR_FILE_CORRUPT
+	for i in range(files.size()):
+		var rec: Dictionary = _read_record(slot_dir.path_join(files[i]), profile_id)
+		if rec["error"] == OK:
+			rec["recovered"] = (i > 0)
+			return rec
+		# Stop at any unsupported/oversized/IO record, even if newer revisions were corrupt.
+		if rec["is_unsupported"] or rec["is_oversized"] or rec["is_io_error"]:
+			return {"error": rec["error"], "data": {}, "text": "", "recovered": false}
+		last_corrupt_err = rec["error"]
+	return {"error": last_corrupt_err, "data": {}, "text": "", "recovered": false}
+
+func _read_record(path: String, profile_id: String) -> Dictionary:
+	var res: Dictionary = {
+		"error": OK, "data": {}, "text": "",
+		"is_unsupported": false, "is_io_error": false, "is_oversized": false
 	}
+	if not FileAccess.file_exists(path):
+		res["error"] = ERR_FILE_NOT_FOUND
+		res["is_io_error"] = true
+		return res
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		var err: Error = FileAccess.get_open_error()
+		res["error"] = err if err != OK else ERR_FILE_CANT_OPEN
+		res["is_io_error"] = true
+		return res
+	var file_len: int = file.get_length()
+	if file_len > MAX_JSON_BYTES or file_len == 0:
+		file.close()
+		res["error"] = ERR_INVALID_DATA if file_len > MAX_JSON_BYTES else ERR_FILE_CORRUPT
+		res["is_oversized"] = file_len > MAX_JSON_BYTES
+		return res
+	var bytes: PackedByteArray = file.get_buffer(file_len)
+	file.close()
+	if bytes.size() != file_len:
+		res["error"] = ERR_FILE_CANT_READ
+		res["is_io_error"] = true
+		return res
+	var text: String = bytes.get_string_from_utf8()
+	if text.is_empty() or text.to_utf8_buffer() != bytes:
+		res["error"] = ERR_FILE_CORRUPT
+		return res
+	var dec: Dictionary = _decode(text, profile_id)
+	var dec_err: Error = ERR_FILE_CORRUPT if dec["error"] == ERR_PARSE_ERROR else dec["error"]
+	if dec_err != OK:
+		res["error"] = dec_err
+		res["is_unsupported"] = (dec_err == ERR_FILE_UNRECOGNIZED)
+		return res
+	res["data"] = dec["data"]
+	res["text"] = text
+	return res
 
-	if not _is_valid_profile_id(profile_id):
-		result["error"] = ERR_INVALID_PARAMETER
-		return result
+# ==============================================================================
+# Validation & Parsing Helpers
+# ==============================================================================
 
-	var primary_path: String = _get_primary_path(profile_id)
-	var backup_path: String = _get_backup_path(profile_id)
-
-	# 1. Check primary file if it exists.
-	if FileAccess.file_exists(primary_path):
-		var primary_read: Dictionary = _read_and_validate_file(primary_path, profile_id)
-		if primary_read["error"] == OK:
-			result["error"] = OK
-			result["profile"] = primary_read["data"]
-			result["recovered"] = false
-			return result
-
-		# Refuse to silently downgrade or bypass unsupported versions / I/O errors.
-		if primary_read["is_unsupported_version"]:
-			result["error"] = ERR_FILE_UNRECOGNIZED
-			return result
-		if primary_read["is_io_error"]:
-			result["error"] = primary_read["error"]
-			return result
-
-		# Primary exists but is corrupt on disk. Proceed to backup fallback.
-
-	# 2. Fallback to backup if primary was missing or corrupt.
-	if FileAccess.file_exists(backup_path):
-		var backup_read: Dictionary = _read_and_validate_file(backup_path, profile_id)
-		if backup_read["error"] == OK:
-			result["error"] = OK
-			result["profile"] = backup_read["data"]
-			result["recovered"] = true
-			return result
-
-		result["error"] = backup_read["error"]
-		return result
-
-	# Neither primary nor backup exists.
-	result["error"] = ERR_FILE_NOT_FOUND
-	return result
-
-
-## Imports and validates an external profile backup JSON string into the slot.
-## Rejects malformed text, wrong slot, or invalid versions without touching disk.
-func import_backup(profile_id: String, text: String) -> Error:
-	if not _is_valid_profile_id(profile_id):
-		return ERR_INVALID_PARAMETER
-
-	var utf8_bytes: PackedByteArray = text.to_utf8_buffer()
-	var byte_size: int = utf8_bytes.size()
-	if byte_size == 0 or byte_size > MAX_JSON_BYTES:
-		return ERR_INVALID_DATA
-
+## Shared decode for disk, import and save paths.
+func _decode(text: String, expected_profile_id: String) -> Dictionary:
+	var strict_json: GDScript = preload("res://scripts/persistence/strict_profile_json.gd")
+	if not strict_json.accepts(text, MAX_DEPTH):
+		return {"error": ERR_PARSE_ERROR, "data": {}}
 	var json: JSON = JSON.new()
-	var parse_err: Error = json.parse(text)
-	if parse_err != OK:
-		return ERR_PARSE_ERROR
-
+	if json.parse(text) != OK:
+		return {"error": ERR_PARSE_ERROR, "data": {}}
 	if not (json.data is Dictionary):
-		return ERR_INVALID_DATA
+		return {"error": ERR_INVALID_DATA, "data": {}}
+	var dict: Dictionary = json.data as Dictionary
+	var err: Error = _validate_envelope(dict, expected_profile_id)
+	return {"error": err, "data": dict if err == OK else {}}
 
-	var parsed_dict: Dictionary = json.data as Dictionary
-
-	# Check schema version explicitly for distinct version error.
-	if parsed_dict.has("schema_version"):
-		var ver: Variant = parsed_dict["schema_version"]
-		if (ver is int or ver is float) and int(ver) != CURRENT_SCHEMA_VERSION:
-			return ERR_FILE_UNRECOGNIZED
-
-	var val_err: Error = _validate_envelope_and_sections(parsed_dict, profile_id)
-	if val_err != OK:
-		return val_err
-
-	# Validated successfully; commit to disk via safe save_profile.
-	return save_profile(profile_id, parsed_dict)
-
-
-## Exports the active profile from the slot as a JSON string.
-## Returns a Dictionary with keys:
-##   - "error": Error
-##   - "text": String
-func export_backup(profile_id: String) -> Dictionary:
-	var result: Dictionary = {
-		"error": OK,
-		"text": ""
-	}
-
-	if not _is_valid_profile_id(profile_id):
-		result["error"] = ERR_INVALID_PARAMETER
-		return result
-
-	var load_res: Dictionary = load_profile(profile_id)
-	if load_res["error"] != OK:
-		result["error"] = load_res["error"]
-		return result
-
-	var profile_dict: Dictionary = load_res["profile"]
-	var text: String = JSON.stringify(profile_dict, "\t", true, true)
-	if text.to_utf8_buffer().size() > MAX_JSON_BYTES:
-		result["error"] = ERR_INVALID_DATA
-		return result
-
-	result["error"] = OK
-	result["text"] = text
-	return result
-
-
-# ==============================================================================
-# Validation Helpers
-# ==============================================================================
-
-func _is_valid_profile_id(profile_id: String) -> bool:
-	return profile_id in VALID_PROFILE_IDS
-
-
-func _validate_envelope_and_sections(data: Dictionary, expected_profile_id: String) -> Error:
-	# Reject unknown or missing envelope keys.
-	if data.size() != REQUIRED_ENVELOPE_KEYS.size():
-		return ERR_INVALID_DATA
-
-	for required_key in REQUIRED_ENVELOPE_KEYS:
-		if not data.has(required_key):
-			return ERR_INVALID_DATA
-
+func _validate_envelope(data: Dictionary, expected_profile_id: String) -> Error:
 	for key in data.keys():
-		if typeof(key) != TYPE_STRING or not REQUIRED_ENVELOPE_KEYS.has(key):
+		if typeof(key) != TYPE_STRING:
 			return ERR_INVALID_DATA
-
-	# Validate schema_version.
+	if not data.has("schema_version"):
+		return ERR_INVALID_DATA
 	var ver: Variant = data["schema_version"]
 	if not (ver is int or ver is float):
 		return ERR_INVALID_DATA
-	if int(ver) != CURRENT_SCHEMA_VERSION:
+	if (ver is int and ver != CURRENT_SCHEMA_VERSION) or (ver is float and ver != 1.0):
 		return ERR_FILE_UNRECOGNIZED
-
-	# Validate profile_id.
-	var pid: Variant = data["profile_id"]
-	if typeof(pid) != TYPE_STRING:
+	if data.size() != REQUIRED_ENVELOPE_KEYS.size():
 		return ERR_INVALID_DATA
-	if pid != expected_profile_id:
+	for k in REQUIRED_ENVELOPE_KEYS:
+		if not data.has(k):
+			return ERR_INVALID_DATA
+	if typeof(data["profile_id"]) != TYPE_STRING or data["profile_id"] != expected_profile_id:
 		return ERR_INVALID_DATA
-
-	# Validate mandatory sections: character, inventory, world, education.
-	var section_names: Array[String] = ["character", "inventory", "world", "education"]
-	for section_name in section_names:
-		var section: Variant = data[section_name]
-		if typeof(section) != TYPE_DICTIONARY:
+	for sec_name in ["character", "inventory", "world", "education"]:
+		var sec: Variant = data[sec_name]
+		if typeof(sec) != TYPE_DICTIONARY or not _validate_json_native_value(sec, 0):
 			return ERR_INVALID_DATA
-		if not _validate_json_native_value(section, 0):
-			return ERR_INVALID_DATA
-
 	return OK
-
 
 func _validate_json_native_value(value: Variant, depth: int) -> bool:
 	if depth > MAX_DEPTH:
 		return false
-
-	var v_type: int = typeof(value)
-	match v_type:
-		TYPE_NIL, TYPE_BOOL:
+	match typeof(value):
+		TYPE_NIL, TYPE_BOOL, TYPE_STRING:
 			return true
 		TYPE_INT:
-			var int_val: int = value as int
-			return int_val >= MIN_SAFE_INT and int_val <= MAX_SAFE_INT
+			return value >= MIN_SAFE_INT and value <= MAX_SAFE_INT
 		TYPE_FLOAT:
-			var float_val: float = value as float
-			return not is_nan(float_val) and not is_inf(float_val) and is_finite(float_val)
-		TYPE_STRING:
-			return true
+			var f: float = value as float
+			return is_finite(f) and not is_nan(f) and (floor(f) != f or (f >= MIN_SAFE_INT and f <= MAX_SAFE_INT))
 		TYPE_ARRAY:
-			var arr: Array = value as Array
-			for elem in arr:
+			for elem in value as Array:
 				if not _validate_json_native_value(elem, depth + 1):
 					return false
 			return true
 		TYPE_DICTIONARY:
-			var dict: Dictionary = value as Dictionary
-			for k in dict.keys():
+			for k in (value as Dictionary).keys():
 				if typeof(k) != TYPE_STRING:
 					return false
-				if not _validate_json_native_value(dict[k], depth + 1):
+				if not _validate_json_native_value(value[k], depth + 1):
 					return false
 			return true
 		_:
 			return false
 
+## Recursive JSON equality: numbers compare by value (JSON has no int/float distinction).
+func _same_json(a: Variant, b: Variant) -> bool:
+	if a is int or a is float:
+		if not (b is int or b is float):
+			return false
+		return float(a) == float(b)
+	if a is Dictionary:
+		if not (b is Dictionary):
+			return false
+		var da: Dictionary = a as Dictionary
+		var db: Dictionary = b as Dictionary
+		if da.size() != db.size():
+			return false
+		for k in da.keys():
+			if not db.has(k):
+				return false
+			if not _same_json(da[k], db[k]):
+				return false
+		return true
+	if a is Array:
+		if not (b is Array):
+			return false
+		var aa: Array = a as Array
+		var ab: Array = b as Array
+		if aa.size() != ab.size():
+			return false
+		for i in range(aa.size()):
+			if not _same_json(aa[i], ab[i]):
+				return false
+		return true
+	return typeof(a) == typeof(b) and a == b
 
 # ==============================================================================
-# File and Path Helpers
+# Filesystem Helpers
 # ==============================================================================
 
-func _get_slot_dir(profile_id: String) -> String:
-	return _root_path.path_join(profile_id)
+## Returns {"error": Error, "files": Array[String]} sorted newest revision first.
+## A missing slot directory is an empty listing; any other DirAccess failure is propagated.
+func _list_profile_files(profile_id: String) -> Dictionary:
+	var files: Array[String] = []
+	var dir_path: String = _get_slot_dir(profile_id)
+	if not DirAccess.dir_exists_absolute(_global_path(dir_path)):
+		return {"error": OK, "files": files}
+	var dir: DirAccess = DirAccess.open(dir_path)
+	if dir == null:
+		var open_err: Error = DirAccess.get_open_error()
+		return {"error": open_err if open_err != OK else ERR_CANT_OPEN, "files": files}
+	var list_err: Error = dir.list_dir_begin()
+	if list_err != OK:
+		return {"error": list_err, "files": files}
+	var fname: String = dir.get_next()
+	while not fname.is_empty():
+		if not dir.current_is_dir() and _file_regex.search(fname) != null:
+			files.append(fname)
+		fname = dir.get_next()
+	dir.list_dir_end()
+	files.sort()
+	files.reverse()
+	return {"error": OK, "files": files}
 
+func _is_valid_profile_id(pid: String) -> bool:
+	return pid in VALID_PROFILE_IDS
 
-func _get_primary_path(profile_id: String) -> String:
-	return _get_slot_dir(profile_id).path_join(PRIMARY_FILENAME)
-
-
-func _get_backup_path(profile_id: String) -> String:
-	return _get_slot_dir(profile_id).path_join(BACKUP_FILENAME)
-
-
-func _get_primary_tmp_path(profile_id: String) -> String:
-	return _get_slot_dir(profile_id).path_join(PRIMARY_TMP_FILENAME)
-
-
-func _get_backup_tmp_path(profile_id: String) -> String:
-	return _get_slot_dir(profile_id).path_join(BACKUP_TMP_FILENAME)
-
+func _get_slot_dir(pid: String) -> String:
+	return _root_path.path_join(pid)
 
 func _global_path(path: String) -> String:
 	return ProjectSettings.globalize_path(path)
 
-
-func _ensure_dir_exists(dir_path: String) -> Error:
-	var global_dir: String = _global_path(dir_path)
-	if DirAccess.dir_exists_absolute(global_dir):
+func _ensure_dir_exists(p: String) -> Error:
+	var gp: String = _global_path(p)
+	if DirAccess.dir_exists_absolute(gp):
 		return OK
-	return DirAccess.make_dir_recursive_absolute(global_dir)
-
+	return DirAccess.make_dir_recursive_absolute(gp)
 
 func _remove_file_if_exists(path: String) -> void:
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(_global_path(path))
-
-
-func _atomic_rename(from_path: String, to_path: String) -> Error:
-	var global_from: String = _global_path(from_path)
-	var global_to: String = _global_path(to_path)
-
-	var err: Error = DirAccess.rename_absolute(global_from, global_to)
-	if err != OK:
-		# Fallback for platforms where rename_absolute fails if destination exists.
-		if FileAccess.file_exists(to_path):
-			DirAccess.remove_absolute(global_to)
-			err = DirAccess.rename_absolute(global_from, global_to)
-	return err
-
-
-func _stage_and_verify_file(tmp_path: String, text: String, expected_byte_size: int) -> Error:
-	var file: FileAccess = FileAccess.open(tmp_path, FileAccess.WRITE)
-	if file == null:
-		var open_err: Error = FileAccess.get_open_error()
-		return open_err if open_err != OK else ERR_FILE_CANT_WRITE
-
-	file.store_string(text)
-	file.flush()
-	file.close()
-
-	var verify_file: FileAccess = FileAccess.open(tmp_path, FileAccess.READ)
-	if verify_file == null:
-		var read_open_err: Error = FileAccess.get_open_error()
-		return read_open_err if read_open_err != OK else ERR_FILE_CANT_READ
-
-	var read_len: int = verify_file.get_length()
-	if read_len != expected_byte_size:
-		verify_file.close()
-		return ERR_FILE_CORRUPT
-
-	var read_text: String = verify_file.get_as_text()
-	verify_file.close()
-
-	if read_text != text:
-		return ERR_FILE_CORRUPT
-
-	return OK
-
-
-func _stage_and_promote_backup(
-	backup_tmp_path: String,
-	backup_path: String,
-	text: String,
-	expected_byte_size: int
-) -> Error:
-	var stage_err: Error = _stage_and_verify_file(backup_tmp_path, text, expected_byte_size)
-	if stage_err != OK:
-		_remove_file_if_exists(backup_tmp_path)
-		return stage_err
-
-	var rename_err: Error = _atomic_rename(backup_tmp_path, backup_path)
-	if rename_err != OK:
-		_remove_file_if_exists(backup_tmp_path)
-		return rename_err
-
-	return OK
-
-
-func _read_and_validate_file(path: String, expected_profile_id: String) -> Dictionary:
-	var result: Dictionary = {
-		"error": OK,
-		"data": {},
-		"is_unsupported_version": false,
-		"is_io_error": false
-	}
-
-	if not FileAccess.file_exists(path):
-		result["error"] = ERR_FILE_NOT_FOUND
-		return result
-
-	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		var open_err: Error = FileAccess.get_open_error()
-		result["error"] = open_err if open_err != OK else ERR_FILE_CANT_OPEN
-		result["is_io_error"] = true
-		return result
-
-	var file_len: int = file.get_length()
-	if file_len == 0 or file_len > MAX_JSON_BYTES:
-		file.close()
-		result["error"] = ERR_INVALID_DATA
-		return result
-
-	var text: String = file.get_as_text()
-	file.close()
-
-	var json: JSON = JSON.new()
-	var parse_err: Error = json.parse(text)
-	if parse_err != OK:
-		result["error"] = ERR_FILE_CORRUPT
-		return result
-
-	if not (json.data is Dictionary):
-		result["error"] = ERR_INVALID_DATA
-		return result
-
-	var parsed: Dictionary = json.data as Dictionary
-
-	if parsed.has("schema_version"):
-		var ver: Variant = parsed["schema_version"]
-		if (ver is int or ver is float) and int(ver) != CURRENT_SCHEMA_VERSION:
-			result["error"] = ERR_FILE_UNRECOGNIZED
-			result["is_unsupported_version"] = true
-			return result
-
-	var val_err: Error = _validate_envelope_and_sections(parsed, expected_profile_id)
-	if val_err != OK:
-		result["error"] = val_err
-		return result
-
-	result["error"] = OK
-	result["data"] = parsed
-	return result
