@@ -1,0 +1,202 @@
+[gd_scene load_steps=2 format=3 uid="uid://ci845k9v2n02r"]
+
+[ext_resource type="Script" path="res://scenes/ui/inventory_sheet.gd" id="1_inv"]
+
+[node name="InventorySheet" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_inv")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.65)
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -200.0
+offset_right = 320.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.8, 0.4, 1)
+theme_override_font_sizes/font_size = 18
+text = "Inventory & Equipment"
+horizontal_alignment = 1
+
+[node name="Columns" type="HBoxContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="BankCol" type="VBoxContainer" parent="Panel/Margin/VBox/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Header" type="Label" parent="Panel/Margin/VBox/Columns/BankCol"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.85, 0.6, 1)
+theme_override_font_sizes/font_size = 13
+text = "Bank (Secured in Town)"
+
+[node name="Scroll" type="ScrollContainer" parent="Panel/Margin/VBox/Columns/BankCol"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BankListLabel" type="Label" parent="Panel/Margin/VBox/Columns/BankCol/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 11
+text = "(No secured items)"
+
+[node name="VSeparator1" type="VSeparator" parent="Panel/Margin/VBox/Columns"]
+layout_mode = 2
+
+[node name="SatchelCol" type="VBoxContainer" parent="Panel/Margin/VBox/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Header" type="Label" parent="Panel/Margin/VBox/Columns/SatchelCol"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.65, 0.4, 1)
+theme_override_font_sizes/font_size = 13
+text = "Satchel (Expedition At-Risk)"
+
+[node name="Scroll" type="ScrollContainer" parent="Panel/Margin/VBox/Columns/SatchelCol"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SatchelListLabel" type="Label" parent="Panel/Margin/VBox/Columns/SatchelCol/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 11
+text = "(Satchel empty)"
+
+[node name="VSeparator2" type="VSeparator" parent="Panel/Margin/VBox/Columns"]
+layout_mode = 2
+
+[node name="EquipCol" type="VBoxContainer" parent="Panel/Margin/VBox/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="Header" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 13
+text = "Equipped Gear"
+
+[node name="WeaponRow" type="HBoxContainer" parent="Panel/Margin/VBox/Columns/EquipCol"]
+layout_mode = 2
+
+[node name="Slot" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/WeaponRow"]
+custom_minimum_size = Vector2(55, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Weapon:"
+
+[node name="Value" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/WeaponRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "(Empty)"
+
+[node name="UnequipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/WeaponRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Unequip"
+
+[node name="ArmorRow" type="HBoxContainer" parent="Panel/Margin/VBox/Columns/EquipCol"]
+layout_mode = 2
+
+[node name="Slot" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/ArmorRow"]
+custom_minimum_size = Vector2(55, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Armor:"
+
+[node name="Value" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/ArmorRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "(Empty)"
+
+[node name="UnequipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/ArmorRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Unequip"
+
+[node name="Relic1Row" type="HBoxContainer" parent="Panel/Margin/VBox/Columns/EquipCol"]
+layout_mode = 2
+
+[node name="Slot" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/Relic1Row"]
+custom_minimum_size = Vector2(55, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Relic 1:"
+
+[node name="Value" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/Relic1Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "(Empty)"
+
+[node name="UnequipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/Relic1Row"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Unequip"
+
+[node name="Relic2Row" type="HBoxContainer" parent="Panel/Margin/VBox/Columns/EquipCol"]
+layout_mode = 2
+
+[node name="Slot" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/Relic2Row"]
+custom_minimum_size = Vector2(55, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Relic 2:"
+
+[node name="Value" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/Relic2Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "(Empty)"
+
+[node name="UnequipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/Relic2Row"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Unequip"
+
+[node name="CloseButton" type="Button" parent="Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+text = "Close Inventory [I]"

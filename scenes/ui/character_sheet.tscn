@@ -1,0 +1,172 @@
+[gd_scene load_steps=2 format=3 uid="uid://cs876h2n3r01q"]
+
+[ext_resource type="Script" path="res://scenes/ui/character_sheet.gd" id="1_sheet"]
+
+[node name="CharacterSheet" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_sheet")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.65)
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -190.0
+offset_right = 220.0
+offset_bottom = 190.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.8, 0.4, 1)
+theme_override_font_sizes/font_size = 18
+text = "Ren — Character Sheet"
+horizontal_alignment = 1
+
+[node name="HeaderBox" type="VBoxContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="LevelLabel" type="Label" parent="Panel/Margin/VBox/HeaderBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Level 1"
+
+[node name="XpLabel" type="Label" parent="Panel/Margin/VBox/HeaderBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "XP: 0 / 100"
+
+[node name="UnspentLabel" type="Label" parent="Panel/Margin/VBox/HeaderBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.85, 0.6, 1)
+theme_override_font_sizes/font_size = 13
+text = "Available Attribute Points: 0"
+
+[node name="HSeparator" type="HSeparator" parent="Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="Grid" type="VBoxContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="VitRow" type="HBoxContainer" parent="Panel/Margin/VBox/Grid"]
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="Panel/Margin/VBox/Grid/VitRow"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+text = "Vitality (Max HP)"
+
+[node name="ValueLabel" type="Label" parent="Panel/Margin/VBox/Grid/VitRow"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+text = "10"
+horizontal_alignment = 1
+
+[node name="AddButton" type="Button" parent="Panel/Margin/VBox/Grid/VitRow"]
+custom_minimum_size = Vector2(32, 28)
+layout_mode = 2
+text = "+"
+
+[node name="ResRow" type="HBoxContainer" parent="Panel/Margin/VBox/Grid"]
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="Panel/Margin/VBox/Grid/ResRow"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+text = "Resonance (Magic)"
+
+[node name="ValueLabel" type="Label" parent="Panel/Margin/VBox/Grid/ResRow"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+text = "10"
+horizontal_alignment = 1
+
+[node name="AddButton" type="Button" parent="Panel/Margin/VBox/Grid/ResRow"]
+custom_minimum_size = Vector2(32, 28)
+layout_mode = 2
+text = "+"
+
+[node name="AgiRow" type="HBoxContainer" parent="Panel/Margin/VBox/Grid"]
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="Panel/Margin/VBox/Grid/AgiRow"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+text = "Agility (Speed)"
+
+[node name="ValueLabel" type="Label" parent="Panel/Margin/VBox/Grid/AgiRow"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+text = "10"
+horizontal_alignment = 1
+
+[node name="AddButton" type="Button" parent="Panel/Margin/VBox/Grid/AgiRow"]
+custom_minimum_size = Vector2(32, 28)
+layout_mode = 2
+text = "+"
+
+[node name="FocRow" type="HBoxContainer" parent="Panel/Margin/VBox/Grid"]
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="Panel/Margin/VBox/Grid/FocRow"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+text = "Focus (Pips/Crit)"
+
+[node name="ValueLabel" type="Label" parent="Panel/Margin/VBox/Grid/FocRow"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+text = "10"
+horizontal_alignment = 1
+
+[node name="AddButton" type="Button" parent="Panel/Margin/VBox/Grid/FocRow"]
+custom_override_constants/outline_size = 0
+custom_minimum_size = Vector2(32, 28)
+layout_mode = 2
+text = "+"
+
+[node name="HSeparator2" type="HSeparator" parent="Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="CombatStatsLabel" type="Label" parent="Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.85, 0.95, 1)
+theme_override_font_sizes/font_size = 12
+text = "Max HP: 100   |   Spirit Power: 50"
+horizontal_alignment = 1
+
+[node name="CloseButton" type="Button" parent="Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+text = "Close Sheet [C]"

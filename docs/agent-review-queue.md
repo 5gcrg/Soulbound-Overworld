@@ -224,5 +224,27 @@ The save suite uses disposable test roots. It verifies slot isolation, nested da
 | `tests/headless/dungeon_scene_test.gd` | Exit 0. Verified procedural room generation, extraction portal, at-risk satchel loot, and exact-once extraction vs defeat wipe. |
 | Full 10-suite regression check | Exit 0. All 10 test suites pass cleanly with zero engine errors. |
 
+---
+
+## SBL-M3-003 — Overworld Dungeon Gateway, Educational Assessment Engine, & UI Sheets (Options 1, 2, 3)
+
+- **Milestone** M2 & M3, Weeks 4–8.
+- **Requirements** GDD-031/032/033/034/035, FR-DNG-001/002 (Dungeon Gateway), GDD-067/068/069/070/071/072, FR-EDU-001/002/003/004 (Educational Assessment & CSV Export), GDD-005/006/007, GDD-025/026/027/028/029/030, FR-PRO-001, FR-INV-001 (UI Sheets). Full formal report in [`report/m2_m3_full_implementation_report.md`](../report/m2_m3_full_implementation_report.md).
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files** `scenes/world/test_region_alpha.tscn`, `scenes/main/game_root.{tscn,gd}`, `scripts/education/question_bank.gd`, `scripts/education/assessment_controller.gd`, `scenes/ui/character_sheet.{tscn,gd}`, `scenes/ui/inventory_sheet.{tscn,gd}`, `project.godot`, `tests/headless/{overworld_gateway_test,education_report_test,ui_sheets_test}.gd`, and tracked UIDs.
+- **Asset provenance** None (Godot ColorRect and Control UI primitives only; educational questions authored per Gemini Flash routing; zero image generation).
+- **Review** REVIEW_PENDING_CODEX per AGENTS.md §5 awaiting Codex quota reset at 4:15 AM.
+
+### Verification across all 13 suites
+
+| Suite | Result |
+| --- | --- |
+| `tests/headless/overworld_gateway_test.gd` | Exit 0. Verified overworld shrine gateway entry, player freeze, satchel extraction to town bank, satchel wipe on defeat with bank preservation. |
+| `tests/headless/education_report_test.gd` | Exit 0. Verified question bank catalog, immutable first-attempt tracking, completion-gated progression, ProfileStore integration, and RFC-4180 CSV report export. |
+| `tests/headless/ui_sheets_test.gd` | Exit 0. Verified hotkey sheet toggles (`C` & `I`), player freezing, attribute allocation and combat stat recalculation, equip/unequip gear, and mutual exclusivity. |
+| Full 13-suite regression check | Exit 0. All 13 test suites pass cleanly with zero engine errors. |
+
+
 
 

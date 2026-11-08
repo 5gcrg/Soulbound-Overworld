@@ -3,20 +3,32 @@ extends Control
 const EXPECTED_BOOTSTRAP_STAGE: String = "Overworld Active"
 const DEFAULT_START_REGION: String = "test_region_alpha"
 const DEFAULT_START_SPAWN: String = "default"
+
 const BATTLE_FIXTURE_SCENE: PackedScene = preload("res://scenes/combat/battle_fixture.tscn")
 const QUEST_DIALOG_SCENE: PackedScene = preload("res://scenes/vertical_slice/quest_dialog.tscn")
+const DUNGEON_EXPEDITION_SCENE: PackedScene = preload("res://scenes/dungeon/dungeon_expedition.tscn")
+const CHARACTER_SHEET_SCENE: PackedScene = preload("res://scenes/ui/character_sheet.tscn")
+const INVENTORY_SHEET_SCENE: PackedScene = preload("res://scenes/ui/inventory_sheet.tscn")
+
 const EXPECTED_ENCOUNTER_ID: StringName = &"combat_alpha_fixture"
 const EXPECTED_NPC_ID: StringName = &"quest_guide_alpha"
+const EXPECTED_GATEWAY_ID: StringName = &"expedition_shrine_alpha"
 
 var _battle: Control = null
 var _battle_pending: bool = false
 var _dialog: Control = null
 var _dialog_pending: bool = false
+var _expedition: DungeonExpedition = null
+var _expedition_pending: bool = false
+var _character_sheet: CharacterSheet = null
+var _inventory_sheet: InventorySheet = null
 var _previous_input_frozen: bool = false
 
 var profile_store: ProfileStore = null
 var slice_progress: SliceProgress = null
 var dimension_manager: DimensionManager = DimensionManager.new()
+var inventory_manager: InventoryManager = InventoryManager.new()
+var character_stats: CharacterStats = CharacterStats.new()
 
 @onready var world_container: Node2D = $WorldContainer
 @onready var player: PlayerCharacter = $Player
@@ -26,6 +38,8 @@ var dimension_manager: DimensionManager = DimensionManager.new()
 @onready var objective_label: Label = $UIOverlay/ObjectivePanel/Margin/VBox/ObjectiveLabel
 @onready var _battle_layer: CanvasLayer = $BattleLayer
 @onready var _dialog_layer: CanvasLayer = $DialogLayer
+@onready var _expedition_layer: CanvasLayer = $ExpeditionLayer
+@onready var _sheet_layer: CanvasLayer = $SheetLayer
 
 func _ready() -> void:
 	if status_label != null:
@@ -57,6 +71,12 @@ func _init_slice_progress(store: ProfileStore = null, slot: String = "profile_01
 	var err: Error = slice_progress.configure(profile_store, slot)
 	if err != OK:
 		push_warning("Failed to configure SliceProgress: %s" % error_string(err))
+
+	character_stats = CharacterStats.new()
+	inventory_manager = InventoryManager.new()
+	character_stats.load_from_store(profile_store, slot)
+	inventory_manager.load_from_store(profile_store, slot)
+
 	_update_objective()
 
 func _on_region_transition_completed(region_id: String, spawn_id: String) -> void:
@@ -71,6 +91,7 @@ func _on_region_transition_failed(reason: String, from_id: String, to_id: String
 func _bind_region_fixtures() -> void:
 	_bind_combat_encounter()
 	_bind_quest_npc()
+	_bind_expedition_gateway()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("shift_dimension"):
@@ -82,6 +103,10 @@ func _unhandled_input(event: InputEvent) -> void:
 				if status_label != null:
 					var dim_name: String = "Spirit Dimension" if dimension_manager.current_dimension == DimensionManager.Dimension.SPIRIT else "Physical Dimension"
 					status_label.text = "Shifted to %s" % dim_name
+	elif event.is_action_pressed("toggle_character"):
+		_toggle_character_sheet()
+	elif event.is_action_pressed("toggle_inventory"):
+		_toggle_inventory_sheet()
 
 # ==============================================================================
 # Combat Encounter Binding & Handling
@@ -103,6 +128,8 @@ func _on_encounter_body_entered(body: Node2D, encounter_id: int) -> void:
 	if _battle_pending or (_battle != null and is_instance_valid(_battle)):
 		return
 	if _dialog_pending or (_dialog != null and is_instance_valid(_dialog)):
+		return
+	if _expedition_pending or (_expedition != null and is_instance_valid(_expedition)):
 		return
 	if world_router == null or world_router.is_transition_in_flight:
 		return
@@ -185,6 +212,8 @@ func _on_npc_body_entered(body: Node2D, npc_id: int) -> void:
 		return
 	if _battle_pending or (_battle != null and is_instance_valid(_battle)):
 		return
+	if _expedition_pending or (_expedition != null and is_instance_valid(_expedition)):
+		return
 	if world_router == null or world_router.is_transition_in_flight:
 		return
 	_dialog_pending = true
@@ -253,6 +282,186 @@ func _on_quest_turned_in() -> void:
 	if status_label != null:
 		status_label.text = "Vertical Slice Complete: Record Saved!"
 	_update_objective()
+
+# ==============================================================================
+# Dungeon Expedition Gateway Binding & Handling
+# ==============================================================================
+
+func _bind_expedition_gateway() -> void:
+	if world_router == null or world_router.active_region == null or not is_instance_valid(world_router.active_region):
+		return
+	var gateway: Area2D = world_router.active_region.get_node_or_null("ExpeditionGateway") as Area2D
+	if gateway == null:
+		return
+	var callback: Callable = _on_gateway_body_entered.bind(gateway.get_instance_id())
+	if not gateway.body_entered.is_connected(callback):
+		gateway.body_entered.connect(callback)
+
+func _on_gateway_body_entered(body: Node2D, gateway_id: int) -> void:
+	if body != player or player == null:
+		return
+	if _expedition_pending or (_expedition != null and is_instance_valid(_expedition)):
+		return
+	if _dialog_pending or (_dialog != null and is_instance_valid(_dialog)):
+		return
+	if _battle_pending or (_battle != null and is_instance_valid(_battle)):
+		return
+	if world_router == null or world_router.is_transition_in_flight:
+		return
+	_expedition_pending = true
+	_previous_input_frozen = player.input_frozen
+	player.input_frozen = true
+	_open_expedition.call_deferred(gateway_id)
+
+func _open_expedition(gateway_id: int) -> void:
+	if not _try_open_expedition(gateway_id):
+		_restore_combat_movement()
+	_expedition_pending = false
+
+func _try_open_expedition(gateway_id: int) -> bool:
+	var gateway: Area2D = instance_from_id(gateway_id) as Area2D
+	if gateway == null or not is_instance_valid(gateway) or gateway.is_queued_for_deletion():
+		return false
+	if world_router == null or world_router.active_region == null or not is_instance_valid(world_router.active_region) or world_router.active_region.is_queued_for_deletion():
+		return false
+	if not world_router.active_region.is_ancestor_of(gateway):
+		return false
+	if not gateway.has_meta("gateway_id") or StringName(gateway.get_meta("gateway_id")) != EXPECTED_GATEWAY_ID:
+		return false
+	if world_router.is_transition_in_flight:
+		return false
+	if _expedition != null and is_instance_valid(_expedition):
+		return false
+	if player == null:
+		return false
+
+	var target_layer: CanvasLayer = _expedition_layer if _expedition_layer != null else _battle_layer
+	if target_layer == null:
+		return false
+
+	var instance: DungeonExpedition = DUNGEON_EXPEDITION_SCENE.instantiate() as DungeonExpedition
+	if instance == null:
+		return false
+	_expedition = instance
+	player.freeze_movement()
+	instance.inventory = inventory_manager
+	instance.expedition_completed.connect(_on_expedition_completed)
+	instance.expedition_failed.connect(_on_expedition_failed)
+	target_layer.add_child(_expedition)
+	instance.setup(1337, 6)
+	if status_label != null:
+		status_label.text = "Expedition active: Reach Extraction Portal"
+	return true
+
+func _on_expedition_completed(extracted_items: Dictionary) -> void:
+	if profile_store != null:
+		inventory_manager.save_to_store(profile_store, "profile_01")
+	if status_label != null:
+		status_label.text = "Expedition Cleared! Extracted %d item types to Bank." % extracted_items.size()
+	if player != null and is_instance_valid(player):
+		player.position = Vector2(600, 220)
+	_close_expedition()
+
+func _on_expedition_failed(lost_items: Dictionary) -> void:
+	if profile_store != null:
+		inventory_manager.save_to_store(profile_store, "profile_01")
+	if status_label != null:
+		status_label.text = "Expedition Defeat! Satchel lost (%d items); bank secured." % lost_items.size()
+	if player != null and is_instance_valid(player):
+		player.position = Vector2(600, 220)
+	_close_expedition()
+
+func _close_expedition() -> void:
+	_restore_combat_movement()
+	if _expedition != null and is_instance_valid(_expedition):
+		_expedition.queue_free()
+	_expedition = null
+
+# ==============================================================================
+# UI Sheet Toggling (Character & Inventory)
+# ==============================================================================
+
+func _toggle_character_sheet() -> void:
+	if _character_sheet != null and is_instance_valid(_character_sheet):
+		_close_character_sheet()
+		return
+
+	if _inventory_sheet != null and is_instance_valid(_inventory_sheet):
+		_close_inventory_sheet()
+
+	if _battle != null or _dialog != null or _expedition != null:
+		return
+
+	var target_layer: CanvasLayer = _sheet_layer if _sheet_layer != null else _dialog_layer
+	if target_layer == null:
+		return
+
+	_previous_input_frozen = player.input_frozen if player != null else false
+	if player != null:
+		player.freeze_movement()
+
+	var sheet: CharacterSheet = CHARACTER_SHEET_SCENE.instantiate() as CharacterSheet
+	if sheet == null:
+		return
+	_character_sheet = sheet
+	sheet.set_stats(character_stats)
+	sheet.closed.connect(_close_character_sheet)
+	target_layer.add_child(sheet)
+
+func _close_character_sheet() -> void:
+	if _character_sheet != null and is_instance_valid(_character_sheet):
+		_character_sheet.closed.disconnect(_close_character_sheet)
+		_character_sheet.queue_free()
+		_character_sheet = null
+
+	if profile_store != null:
+		character_stats.save_to_store(profile_store, "profile_01")
+
+	if _inventory_sheet == null and _battle == null and _dialog == null and _expedition == null:
+		_restore_combat_movement()
+
+func _toggle_inventory_sheet() -> void:
+	if _inventory_sheet != null and is_instance_valid(_inventory_sheet):
+		_close_inventory_sheet()
+		return
+
+	if _character_sheet != null and is_instance_valid(_character_sheet):
+		_close_character_sheet()
+
+	if _battle != null or _dialog != null or _expedition != null:
+		return
+
+	var target_layer: CanvasLayer = _sheet_layer if _sheet_layer != null else _dialog_layer
+	if target_layer == null:
+		return
+
+	_previous_input_frozen = player.input_frozen if player != null else false
+	if player != null:
+		player.freeze_movement()
+
+	var sheet: InventorySheet = INVENTORY_SHEET_SCENE.instantiate() as InventorySheet
+	if sheet == null:
+		return
+	_inventory_sheet = sheet
+	sheet.set_inventory(inventory_manager)
+	sheet.closed.connect(_close_inventory_sheet)
+	target_layer.add_child(sheet)
+
+func _close_inventory_sheet() -> void:
+	if _inventory_sheet != null and is_instance_valid(_inventory_sheet):
+		_inventory_sheet.closed.disconnect(_close_inventory_sheet)
+		_inventory_sheet.queue_free()
+		_inventory_sheet = null
+
+	if profile_store != null:
+		inventory_manager.save_to_store(profile_store, "profile_01")
+
+	if _character_sheet == null and _battle == null and _dialog == null and _expedition == null:
+		_restore_combat_movement()
+
+# ==============================================================================
+# Objective Tracking
+# ==============================================================================
 
 func _update_objective() -> void:
 	if objective_label == null:

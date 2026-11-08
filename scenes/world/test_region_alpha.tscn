@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://d1x47r83w2r01"]
+[gd_scene load_steps=11 format=3 uid="uid://d1x47r83w2r01"]
 
 [ext_resource type="Script" path="res://scenes/world/base_region.gd" id="1_region"]
 [ext_resource type="PackedScene" path="res://scenes/world/portal.tscn" id="2_portal"]
@@ -23,6 +23,9 @@ size = Vector2(54, 54)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_npc"]
 size = Vector2(40, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_gateway"]
+size = Vector2(44, 44)
 
 [node name="TestRegionAlpha" type="Node2D"]
 script = ExtResource("1_region")
@@ -182,3 +185,48 @@ theme_override_font_sizes/font_size = 9
 text = "[Step In to Speak]"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="ExpeditionGateway" type="Area2D" parent="."]
+position = Vector2(650, 180)
+collision_layer = 0
+collision_mask = 1
+metadata/gateway_id = &"expedition_shrine_alpha"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ExpeditionGateway"]
+shape = SubResource("RectangleShape2D_gateway")
+
+[node name="Visual" type="ColorRect" parent="ExpeditionGateway"]
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+color = Color(0.48, 0.22, 0.65, 0.9)
+
+[node name="Inner" type="ColorRect" parent="ExpeditionGateway/Visual"]
+offset_left = 6.0
+offset_top = 6.0
+offset_right = 34.0
+offset_bottom = 34.0
+color = Color(0.85, 0.6, 0.95, 0.9)
+
+[node name="Label" type="Label" parent="ExpeditionGateway"]
+offset_left = -70.0
+offset_top = -36.0
+offset_right = 70.0
+offset_bottom = -18.0
+theme_override_font_sizes/font_size = 11
+text = "Abyssal Gateway"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Prompt" type="Label" parent="ExpeditionGateway"]
+offset_left = -70.0
+offset_top = 20.0
+offset_right = 70.0
+offset_bottom = 36.0
+theme_override_colors/font_color = Color(0.88, 0.72, 1, 0.85)
+theme_override_font_sizes/font_size = 9
+text = "[Step In for Dungeon]"
+horizontal_alignment = 1
+vertical_alignment = 1
+

@@ -75,3 +75,10 @@ layer = 2
 
 [node name="DialogLayer" type="CanvasLayer" parent="."]
 layer = 3
+
+[node name="ExpeditionLayer" type="CanvasLayer" parent="."]
+layer = 4
+
+[node name="SheetLayer" type="CanvasLayer" parent="."]
+layer = 5
+

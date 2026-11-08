@@ -11,15 +11,15 @@
 
 ## 1. Executive Summary
 
-This report documents the end-to-end implementation and automated headless verification of **Milestone M2 (Weeks 4–5 Vertical Slice)** and the foundational delivery of **Milestone M3 (Weeks 6–8 Core Gameplay Systems)** for the educational RPG *Soulbound*.
+This report documents the end-to-end implementation and automated headless verification of **Milestone M2 (Weeks 4–5 Vertical Slice)** and **Milestone M3 (Weeks 6–8 Core Gameplay Systems)** for the educational RPG *Soulbound*.
 
 All features strictly adhere to the requirements in [`Soulbound_GDD_SRS.md`](file:///c:/Users/ALCOHOL/.codex/worktrees/soulbound-overworld/SoulBound/Soulbound_GDD_SRS.md), the asset provenance rules in [`AGENTS.md`](file:///c:/Users/ALCOHOL/.codex/worktrees/soulbound-overworld/SoulBound/AGENTS.md), and single-writer versioned persistence under [`ProfileStore`](file:///c:/Users/ALCOHOL/.codex/worktrees/soulbound-overworld/SoulBound/scripts/persistence/profile_store.gd).
 
-Every delivered module is verified by automated headless regression tests executing on Windows with Godot 4.7.2 Stable, with **10 out of 10 test suites reporting exit code 0 and zero engine/script errors**.
+Every delivered module is verified by automated headless regression tests executing on Windows with Godot 4.7.2 Stable, with **13 out of 13 test suites reporting exit code 0 and zero engine/script errors**.
 
 ---
 
-## 2. Comprehensive Test Verification Matrix (10/10 Suites Passing)
+## 2. Comprehensive Test Verification Matrix (13/13 Suites Passing)
 
 | # | Test Suite Script | Target Module / System | Milestone | Verification Scope | Status | Result |
 |---|---|---|---|---|---|---|
@@ -33,6 +33,9 @@ Every delivered module is verified by automated headless regression tests execut
 | 8 | `tests/headless/dimension_test.gd` | `DimensionManager` | M3 (Path A) | Dual-plane toggle (Physical ↔ Spirit), unlock guard, zero-embed obstacle safety invariant (**FR-WLD-002**) | PASS | Exit 0 |
 | 9 | `tests/headless/kurei_combat_test.gd` | `BattleFixture` Kurei Integration | M3 (Path B) | Kurei spell menu, action pip consumption, Lumina Lance, Flame Burst instant victory, SP regeneration | PASS | Exit 0 |
 | 10 | `tests/headless/dungeon_scene_test.gd` | `DungeonExpedition` | M3 (Path C) | Procedural room spawning from seed, at-risk satchel loot, extraction portal, defeat wipe vs bank retention | PASS | Exit 0 |
+| 11 | `tests/headless/overworld_gateway_test.gd` | Overworld Dungeon Gateway | M3 (Path C) | Overworld Area2D gateway, seamless expedition launch, player freeze, satchel extraction to town bank, defeat wipe vs bank retention | PASS | Exit 0 |
+| 12 | `tests/headless/education_report_test.gd` | Education & CSV Report | M2/M3 | Senior high competency question bank, immutable first attempt invariant, completion-gated progression, RFC-4180 CSV export | PASS | Exit 0 |
+| 13 | `tests/headless/ui_sheets_test.gd` | Character & Inventory Sheets | M3 | Hotkeys (`C` & `I`), attribute point allocation, combat stat recalculation, equip/unequip gear, mutual exclusivity & freeze | PASS | Exit 0 |
 
 ---
 
@@ -84,16 +87,36 @@ Every delivered module is verified by automated headless regression tests execut
   - Defeat wipes the satchel but 100% preserves banked town inventory and equipped gear.
   - Reaching the Extraction Portal transfers satchel loot to the bank exactly once.
 
-### 4.4 Core M3 Data Systems
-- **Character Progression ([`CharacterStats`](file:///c:/Users/ALCOHOL/.codex/worktrees/soulbound-overworld/SoulBound/scripts/progression/character_stats.gd))**: Level-up curve, stat points, Vitality/Resonance/Agility/Focus scaling, and ProfileStore persistence under `profile["character"]`.
-- **Inventory Model ([`InventoryManager`](file:///c:/Users/ALCOHOL/.codex/worktrees/soulbound-overworld/SoulBound/scripts/inventory/inventory_manager.gd))**: Equipment slots (`weapon`, `armor`, `relic_1`, `relic_2`) and bank vs. satchel separation.
-- **Six Kurei Schools ([`KureiSystem`](file:///c:/Users/ALCOHOL/.codex/worktrees/soulbound-overworld/SoulBound/scripts/magic/kurei_system.gd))**: Flame, Torrent, Gale, Earth, Lumina, Umbra with skill catalog and pip constraints.
+### 4.4 Overworld Dungeon Gateway Integration
+- **Requirements**: `GDD-031/032`, `FR-DNG-001/002`.
+- **Gateway Area2D**: Positioned at coordinates `(650, 180)` in [`test_region_alpha.tscn`](file:///c:/Users/ALCOHOL/.codex/worktrees/soulbound-overworld/SoulBound/scenes/world/test_region_alpha.tscn) with visual shrine styling.
+- **Overworld Orchestration**: Seamlessly transitions Ren into the modular dungeon in `game_root.gd`, freezng overworld input.
+- **Extraction & Defeat Invariants**:
+  - On extraction: Satchel loot is committed to active `profile_01` bank, Ren is placed safely back in the overworld.
+  - On defeat: Satchel is completely wiped, town bank and character stats remain 100% intact, Ren is returned to the overworld shrine.
+
+### 4.5 Senior High Educational Question Bank & Assessment Engine ([`AssessmentController`](file:///c:/Users/ALCOHOL/.codex/worktrees/soulbound-overworld/SoulBound/scripts/education/assessment_controller.gd))
+- **Requirements**: `GDD-067`–`072`, `FR-EDU-001`–`004`.
+- **Competencies**: Covers `Critical Thinking`, `Decision-Making`, `Perseverance`, and `Resource Management` in [`QuestionBank`](file:///c:/Users/ALCOHOL/.codex/worktrees/soulbound-overworld/SoulBound/scripts/education/question_bank.gd).
+- **Immutable First Attempt Invariant**: The correctness of the initial attempt (`first_attempt_correct`) is permanently locked upon the first answer and never modified on subsequent retries.
+- **Completion-Gated Progression**: Questions may be retried until answered correctly; progression is gated purely on completion, never blocked by pass/fail thresholds.
+- **RFC-4180 CSV Export**: Generates standardized competency evaluation reports to `user://reports/competency_record.csv` for LMS and educator review.
+
+### 4.6 Character Sheet & Inventory UI Panels ([`scenes/ui/`](file:///c:/Users/ALCOHOL/.codex/worktrees/soulbound-overworld/SoulBound/scenes/ui/))
+- **Requirements**: `GDD-005`–`007`, `GDD-025`–`030`, `FR-PRO-001`, `FR-INV-001`.
+- **Input Actions**:
+  - `C` key toggles [`CharacterSheet`](file:///c:/Users/ALCOHOL/.codex/worktrees/soulbound-overworld/SoulBound/scenes/ui/character_sheet.tscn).
+  - `I` key toggles [`InventorySheet`](file:///c:/Users/ALCOHOL/.codex/worktrees/soulbound-overworld/SoulBound/scenes/ui/inventory_sheet.tscn).
+- **Character Attributes**: Live visual display of Level, XP curve, Max HP, Spirit Power, and unspent stat allocation buttons (`Vitality`, `Resonance`, `Agility`, `Focus`).
+- **Inventory & Gear**: Dual column view displaying secured Town Bank vs at-risk expedition Satchel, plus interactive equip/unequip controls for `weapon`, `armor`, `relic_1`, `relic_2`.
+- **Persistence & Exclusivity**: Toggling sheets freezes Ren's movement, guarantees mutual exclusivity, and commits changes atomically to `ProfileStore`.
 
 ---
 
 ## 5. Git Commit Log (`feature/w4-5-vertical-slice`)
 
 ```text
+* 27a7c7f Implement SBL-M3-002 Dimension Shift, Kurei Combat, and Dungeon Expedition [REVIEW_PENDING_CODEX]
 * 947bb82 Implement SBL-M3-001 core systems foundations (Progression, Inventory, Kurei, Dungeon) [REVIEW_PENDING_CODEX]
 * e7a869b Add M2 UX objective tracker, interaction prompts, and audio specs [REVIEW_PENDING_CODEX]
 * c4c135d Implement SBL-W4-001 interactive overworld quest and educational practice loop [REVIEW_PENDING_CODEX]
