@@ -1,0 +1,158 @@
+[gd_scene load_steps=9 format=3 uid="uid://c7k24n9r4m02b"]
+
+[ext_resource type="Script" path="res://scenes/world/base_region.gd" id="1_region"]
+[ext_resource type="PackedScene" path="res://scenes/world/portal.tscn" id="2_portal"]
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_top"]
+normal = Vector2(0, 1)
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_bottom"]
+normal = Vector2(0, -1)
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_left"]
+normal = Vector2(1, 0)
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_right"]
+normal = Vector2(-1, 0)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_obstacle"]
+size = Vector2(40, 160)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_npc"]
+size = Vector2(40, 40)
+
+[node name="WhisperingGrove" type="Node2D"]
+script = ExtResource("1_region")
+region_id = "whispering_grove"
+region_display_name = "Chapter II: Whispering Grove"
+bounds_rect = Rect2(0, 0, 960, 540)
+
+[node name="Background" type="ColorRect" parent="."]
+offset_right = 960.0
+offset_bottom = 540.0
+color = Color(0.12, 0.20, 0.16, 1)
+
+[node name="RegionIndicator" type="Label" parent="."]
+offset_left = 30.0
+offset_top = 24.0
+offset_right = 450.0
+offset_bottom = 50.0
+theme_override_font_sizes/font_size = 14
+text = "[Chapter II: Whispering Grove — Corrupted Forest Path]"
+
+[node name="Perimeter" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="WallTop" type="CollisionShape2D" parent="Perimeter"]
+position = Vector2(480, 16)
+shape = SubResource("WorldBoundaryShape2D_top")
+
+[node name="WallBottom" type="CollisionShape2D" parent="Perimeter"]
+position = Vector2(480, 524)
+shape = SubResource("WorldBoundaryShape2D_bottom")
+
+[node name="WallLeft" type="CollisionShape2D" parent="Perimeter"]
+position = Vector2(16, 270)
+shape = SubResource("WorldBoundaryShape2D_left")
+
+[node name="WallRight" type="CollisionShape2D" parent="Perimeter"]
+position = Vector2(944, 270)
+shape = SubResource("WorldBoundaryShape2D_right")
+
+[node name="Obstacles" type="Node2D" parent="."]
+
+[node name="PhysicalBrambleWall" type="StaticBody2D" parent="Obstacles" groups=["physical_only"]]
+position = Vector2(480, 270)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Obstacles/PhysicalBrambleWall"]
+shape = SubResource("RectangleShape2D_obstacle")
+
+[node name="Visual" type="ColorRect" parent="Obstacles/PhysicalBrambleWall"]
+offset_left = -20.0
+offset_top = -80.0
+offset_right = 20.0
+offset_bottom = 80.0
+color = Color(0.38, 0.22, 0.18, 1)
+
+[node name="Label" type="Label" parent="Obstacles/PhysicalBrambleWall"]
+offset_left = -60.0
+offset_top = -100.0
+offset_right = 60.0
+offset_bottom = -84.0
+theme_override_colors/font_color = Color(0.85, 0.6, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "[Bramble: Shift Q to Pass]"
+horizontal_alignment = 1
+
+[node name="SpiritBridge" type="Node2D" parent="Obstacles" groups=["spirit_only"]]
+position = Vector2(480, 270)
+
+[node name="Visual" type="ColorRect" parent="Obstacles/SpiritBridge"]
+offset_left = -20.0
+offset_top = -80.0
+offset_right = 20.0
+offset_bottom = 80.0
+color = Color(0.4, 0.7, 0.95, 0.3)
+
+[node name="Portals" type="Node2D" parent="."]
+
+[node name="PortalToVillage" parent="Portals" instance=ExtResource("2_portal")]
+position = Vector2(90, 270)
+target_region_id = "dawnreach_village"
+target_spawn_id = "from_grove"
+portal_label = "<- Dawnreach Village"
+
+[node name="PortalToShrine" parent="Portals" instance=ExtResource("2_portal")]
+position = Vector2(870, 270)
+target_region_id = "forgotten_shrine"
+target_spawn_id = "from_grove"
+portal_label = "To Forgotten Shrine ->"
+
+[node name="Spawns" type="Node2D" parent="."]
+
+[node name="default" type="Marker2D" parent="Spawns"]
+position = Vector2(200, 270)
+
+[node name="from_village" type="Marker2D" parent="Spawns"]
+position = Vector2(200, 270)
+
+[node name="from_shrine" type="Marker2D" parent="Spawns"]
+position = Vector2(760, 270)
+
+[node name="ScoutLyra" type="Area2D" parent="."]
+position = Vector2(280, 180)
+collision_layer = 0
+collision_mask = 1
+metadata/npc_id = &"scout_lyra"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ScoutLyra"]
+shape = SubResource("RectangleShape2D_npc")
+
+[node name="Visual" type="ColorRect" parent="ScoutLyra"]
+offset_left = -16.0
+offset_top = -16.0
+offset_right = 16.0
+offset_bottom = 16.0
+color = Color(0.3, 0.7, 0.5, 1)
+
+[node name="Label" type="Label" parent="ScoutLyra"]
+offset_left = -60.0
+offset_top = -34.0
+offset_right = 60.0
+offset_bottom = -16.0
+theme_override_font_sizes/font_size = 11
+text = "Scout Lyra"
+horizontal_alignment = 1
+
+[node name="Prompt" type="Label" parent="ScoutLyra"]
+offset_left = -60.0
+offset_top = 18.0
+offset_right = 60.0
+offset_bottom = 34.0
+theme_override_colors/font_color = Color(0.65, 0.95, 0.75, 0.85)
+theme_override_font_sizes/font_size = 9
+text = "[Step In to Speak]"
+horizontal_alignment = 1

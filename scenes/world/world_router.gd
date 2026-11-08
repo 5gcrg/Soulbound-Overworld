@@ -7,13 +7,19 @@ signal region_transition_failed(reason: String, from_region_id: String, attempte
 
 const REGION_REGISTRY: Dictionary = {
 	"test_region_alpha": "res://scenes/world/test_region_alpha.tscn",
-	"test_region_beta": "res://scenes/world/test_region_beta.tscn"
+	"test_region_beta": "res://scenes/world/test_region_beta.tscn",
+	"dawnreach_village": "res://scenes/world/dawnreach_village.tscn",
+	"whispering_grove": "res://scenes/world/whispering_grove.tscn",
+	"forgotten_shrine": "res://scenes/world/forgotten_shrine.tscn"
 }
 
 ## Region availability table (simple policy usable by tests and future story hooks)
 var available_regions: Dictionary = {
 	"test_region_alpha": true,
-	"test_region_beta": true
+	"test_region_beta": true,
+	"dawnreach_village": true,
+	"whispering_grove": true,
+	"forgotten_shrine": true
 }
 
 var active_region_id: String = ""

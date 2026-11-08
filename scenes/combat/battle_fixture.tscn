@@ -125,9 +125,13 @@ layout_mode = 2
 text = "Defend"
 
 [node name="KureiButton" type="Button" parent="VBoxContainer/Actions"]
-custom_minimum_size = Vector2(120, 40)
 layout_mode = 2
 text = "Kurei (Magic)"
+
+[node name="ItemButton" type="Button" parent="VBoxContainer/Actions"]
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "Item (Salve)"
 
 [node name="KureiMenu" type="HBoxContainer" parent="VBoxContainer"]
 visible = false

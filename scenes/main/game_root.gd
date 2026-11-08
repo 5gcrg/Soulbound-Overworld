@@ -9,10 +9,13 @@ const QUEST_DIALOG_SCENE: PackedScene = preload("res://scenes/vertical_slice/que
 const DUNGEON_EXPEDITION_SCENE: PackedScene = preload("res://scenes/dungeon/dungeon_expedition.tscn")
 const CHARACTER_SHEET_SCENE: PackedScene = preload("res://scenes/ui/character_sheet.tscn")
 const INVENTORY_SHEET_SCENE: PackedScene = preload("res://scenes/ui/inventory_sheet.tscn")
+const ACADEMIC_COMPLETION_SCENE: PackedScene = preload("res://scenes/ui/academic_completion_modal.tscn")
+const SETTINGS_SHEET_SCENE: PackedScene = preload("res://scenes/ui/settings_sheet.tscn")
 
 const EXPECTED_ENCOUNTER_ID: StringName = &"combat_alpha_fixture"
 const EXPECTED_NPC_ID: StringName = &"quest_guide_alpha"
 const EXPECTED_GATEWAY_ID: StringName = &"expedition_shrine_alpha"
+const EXPECTED_ACADEMIC_PORTAL_ID: StringName = &"academic_mvp_sanctum"
 
 var _battle: Control = null
 var _battle_pending: bool = false
@@ -22,6 +25,8 @@ var _expedition: DungeonExpedition = null
 var _expedition_pending: bool = false
 var _character_sheet: CharacterSheet = null
 var _inventory_sheet: InventorySheet = null
+var _academic_modal: AcademicCompletionModal = null
+var _settings_sheet: SettingsSheet = null
 var _previous_input_frozen: bool = false
 
 var profile_store: ProfileStore = null
@@ -29,6 +34,9 @@ var slice_progress: SliceProgress = null
 var dimension_manager: DimensionManager = DimensionManager.new()
 var inventory_manager: InventoryManager = InventoryManager.new()
 var character_stats: CharacterStats = CharacterStats.new()
+var chapter_manager: ChapterManager = ChapterManager.new()
+var assessment_controller: AssessmentController = AssessmentController.new()
+var settings_manager: SettingsManager = SettingsManager.new()
 
 @onready var world_container: Node2D = $WorldContainer
 @onready var player: PlayerCharacter = $Player
@@ -44,6 +52,9 @@ var character_stats: CharacterStats = CharacterStats.new()
 func _ready() -> void:
 	if status_label != null:
 		status_label.text = ""
+
+	if settings_manager != null:
+		settings_manager.load_settings()
 
 	_init_slice_progress()
 
@@ -74,8 +85,12 @@ func _init_slice_progress(store: ProfileStore = null, slot: String = "profile_01
 
 	character_stats = CharacterStats.new()
 	inventory_manager = InventoryManager.new()
+	chapter_manager = ChapterManager.new()
+	assessment_controller = AssessmentController.new()
 	character_stats.load_from_store(profile_store, slot)
 	inventory_manager.load_from_store(profile_store, slot)
+	chapter_manager.load_from_store(profile_store, slot)
+	assessment_controller.load_from_store(profile_store, slot)
 
 	_update_objective()
 
@@ -92,6 +107,7 @@ func _bind_region_fixtures() -> void:
 	_bind_combat_encounter()
 	_bind_quest_npc()
 	_bind_expedition_gateway()
+	_bind_academic_portal()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("shift_dimension"):
@@ -107,6 +123,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_toggle_character_sheet()
 	elif event.is_action_pressed("toggle_inventory"):
 		_toggle_inventory_sheet()
+	elif event.is_action_pressed("toggle_settings"):
+		_toggle_settings_sheet()
 
 # ==============================================================================
 # Combat Encounter Binding & Handling
@@ -392,6 +410,8 @@ func _toggle_character_sheet() -> void:
 
 	if _inventory_sheet != null and is_instance_valid(_inventory_sheet):
 		_close_inventory_sheet()
+	if _settings_sheet != null and is_instance_valid(_settings_sheet):
+		_close_settings_sheet()
 
 	if _battle != null or _dialog != null or _expedition != null:
 		return
@@ -421,7 +441,7 @@ func _close_character_sheet() -> void:
 	if profile_store != null:
 		character_stats.save_to_store(profile_store, "profile_01")
 
-	if _inventory_sheet == null and _battle == null and _dialog == null and _expedition == null:
+	if _inventory_sheet == null and _settings_sheet == null and _battle == null and _dialog == null and _expedition == null and _academic_modal == null:
 		_restore_combat_movement()
 
 func _toggle_inventory_sheet() -> void:
@@ -431,6 +451,8 @@ func _toggle_inventory_sheet() -> void:
 
 	if _character_sheet != null and is_instance_valid(_character_sheet):
 		_close_character_sheet()
+	if _settings_sheet != null and is_instance_valid(_settings_sheet):
+		_close_settings_sheet()
 
 	if _battle != null or _dialog != null or _expedition != null:
 		return
@@ -460,8 +482,103 @@ func _close_inventory_sheet() -> void:
 	if profile_store != null:
 		inventory_manager.save_to_store(profile_store, "profile_01")
 
-	if _character_sheet == null and _battle == null and _dialog == null and _expedition == null:
+	if _character_sheet == null and _settings_sheet == null and _battle == null and _dialog == null and _expedition == null and _academic_modal == null:
 		_restore_combat_movement()
+
+func _toggle_settings_sheet() -> void:
+	if _settings_sheet != null and is_instance_valid(_settings_sheet):
+		_close_settings_sheet()
+		return
+
+	if _character_sheet != null and is_instance_valid(_character_sheet):
+		_close_character_sheet()
+	if _inventory_sheet != null and is_instance_valid(_inventory_sheet):
+		_close_inventory_sheet()
+
+	if _battle != null or _dialog != null or _expedition != null:
+		return
+
+	var target_layer: CanvasLayer = _sheet_layer if _sheet_layer != null else _dialog_layer
+	if target_layer == null:
+		return
+
+	_previous_input_frozen = player.input_frozen if player != null else false
+	if player != null:
+		player.freeze_movement()
+
+	var sheet: SettingsSheet = SETTINGS_SHEET_SCENE.instantiate() as SettingsSheet
+	if sheet == null:
+		return
+	_settings_sheet = sheet
+	sheet.set_settings(settings_manager)
+	sheet.closed.connect(_close_settings_sheet)
+	target_layer.add_child(sheet)
+
+func _close_settings_sheet() -> void:
+	if _settings_sheet != null and is_instance_valid(_settings_sheet):
+		_settings_sheet.closed.disconnect(_close_settings_sheet)
+		_settings_sheet.queue_free()
+		_settings_sheet = null
+
+	if settings_manager != null:
+		settings_manager.save_settings()
+
+	if _character_sheet == null and _inventory_sheet == null and _battle == null and _dialog == null and _expedition == null and _academic_modal == null:
+		_restore_combat_movement()
+
+# ==============================================================================
+# Academic Completion Portal (Chapter III Sanctum)
+# ==============================================================================
+
+func _bind_academic_portal() -> void:
+	if world_router == null or world_router.active_region == null or not is_instance_valid(world_router.active_region):
+		return
+	var portal: Area2D = world_router.active_region.get_node_or_null("AcademicPortal") as Area2D
+	if portal == null:
+		return
+	var callback: Callable = _on_academic_portal_entered.bind(portal.get_instance_id())
+	if not portal.body_entered.is_connected(callback):
+		portal.body_entered.connect(callback)
+
+func _on_academic_portal_entered(body: Node2D, _portal_id: int) -> void:
+	if body != player or player == null:
+		return
+	if _academic_modal != null and is_instance_valid(_academic_modal):
+		return
+	if _expedition != null or _dialog != null or _battle != null:
+		return
+	_open_academic_modal()
+
+func _open_academic_modal() -> void:
+	if player != null:
+		player.freeze_movement()
+	var target_layer: CanvasLayer = _sheet_layer if _sheet_layer != null else _dialog_layer
+	if target_layer == null:
+		return
+
+	chapter_manager.current_chapter = ChapterManager.ACADEMIC_COMPLETE
+	chapter_manager.is_academic_complete = true
+	if profile_store != null:
+		chapter_manager.save_to_store(profile_store, "profile_01")
+		assessment_controller.save_to_store(profile_store, "profile_01")
+
+	var modal: AcademicCompletionModal = ACADEMIC_COMPLETION_SCENE.instantiate() as AcademicCompletionModal
+	if modal == null:
+		return
+	_academic_modal = modal
+	modal.configure(chapter_manager, assessment_controller, character_stats, inventory_manager)
+	modal.closed.connect(_close_academic_modal)
+	target_layer.add_child(modal)
+
+	if status_label != null:
+		status_label.text = "Soulbound Academic MVP Cleared! Congratulations!"
+	_update_objective()
+
+func _close_academic_modal() -> void:
+	_restore_combat_movement()
+	if _academic_modal != null and is_instance_valid(_academic_modal):
+		_academic_modal.queue_free()
+	_academic_modal = null
 
 # ==============================================================================
 # Objective Tracking
@@ -469,6 +586,9 @@ func _close_inventory_sheet() -> void:
 
 func _update_objective() -> void:
 	if objective_label == null:
+		return
+	if chapter_manager != null and chapter_manager.is_academic_complete:
+		objective_label.text = "Academic MVP Complete! Free exploration active across all chapters and modular dungeons."
 		return
 	if slice_progress == null or not slice_progress.ready:
 		objective_label.text = "Initializing spirit resonance..."
@@ -483,4 +603,15 @@ func _update_objective() -> void:
 		SliceProgress.Stage.TURN_IN:
 			objective_label.text = "Return to the Spirit Guide to turn in your quest."
 		SliceProgress.Stage.COMPLETE:
-			objective_label.text = "Vertical slice trial complete. Profile safely archived."
+			if chapter_manager != null:
+				match chapter_manager.current_chapter:
+					ChapterManager.CHAPTER_1:
+						objective_label.text = "Chapter I: Consult Elder Kael in Dawnreach Village."
+					ChapterManager.CHAPTER_2:
+						objective_label.text = "Chapter II: Use Dimension Shift [Q] to navigate Whispering Grove."
+					ChapterManager.CHAPTER_3:
+						objective_label.text = "Chapter III: Step into Academic Sanctum in Forgotten Shrine."
+					_:
+						objective_label.text = "Vertical slice trial complete. Profile safely archived."
+			else:
+				objective_label.text = "Vertical slice trial complete. Profile safely archived."

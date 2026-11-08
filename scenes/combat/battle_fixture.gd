@@ -30,6 +30,7 @@ var kurei: KureiSystem = KureiSystem.new()
 @onready var attack_button: Button = $VBoxContainer/Actions/AttackButton
 @onready var defend_button: Button = $VBoxContainer/Actions/DefendButton
 @onready var kurei_button: Button = $VBoxContainer/Actions/KureiButton
+@onready var item_button: Button = $VBoxContainer/Actions/ItemButton
 @onready var continue_button: Button = $VBoxContainer/ContinueButton
 
 @onready var kurei_menu: HBoxContainer = $VBoxContainer/KureiMenu
@@ -42,6 +43,8 @@ func _ready() -> void:
 	attack_button.pressed.connect(func() -> void: request_action(&"attack"))
 	defend_button.pressed.connect(func() -> void: request_action(&"defend"))
 	kurei_button.pressed.connect(_on_kurei_button_pressed)
+	if item_button != null:
+		item_button.pressed.connect(func() -> void: request_action(&"item"))
 	cancel_kurei_btn.pressed.connect(func() -> void: kurei_menu.visible = false)
 
 	flame_burst_btn.pressed.connect(func() -> void: request_action(&"kurei_flame_burst"))
@@ -69,7 +72,7 @@ func request_action(action: StringName) -> bool:
 		return false
 
 	var is_kurei: bool = action.begins_with("kurei_")
-	if action != &"attack" and action != &"defend" and not is_kurei:
+	if action != &"attack" and action != &"defend" and action != &"item" and not is_kurei:
 		return false
 
 	if is_kurei:
@@ -105,6 +108,8 @@ func request_action(action: StringName) -> bool:
 			phase = Phase.VICTORY
 			_update_ui()
 			return true
+	elif action == &"item":
+		ren_pips += 1
 
 	_update_ui()
 	_resolve_enemy_turn.call_deferred()
@@ -151,6 +156,8 @@ func _update_ui() -> void:
 	attack_button.disabled = not is_player
 	defend_button.disabled = not is_player
 	kurei_button.disabled = not is_player
+	if item_button != null:
+		item_button.disabled = not is_player
 	continue_button.visible = is_terminal
 	continue_button.disabled = not is_terminal or _continued_emitted
 

@@ -1,0 +1,153 @@
+[gd_scene load_steps=8 format=3 uid="uid://df674h3n8r12m"]
+
+[ext_resource type="Script" path="res://scenes/world/base_region.gd" id="1_region"]
+[ext_resource type="PackedScene" path="res://scenes/world/portal.tscn" id="2_portal"]
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_top"]
+normal = Vector2(0, 1)
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_bottom"]
+normal = Vector2(0, -1)
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_left"]
+normal = Vector2(1, 0)
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_right"]
+normal = Vector2(-1, 0)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_altar"]
+size = Vector2(50, 50)
+
+[node name="ForgottenShrine" type="Node2D"]
+script = ExtResource("1_region")
+region_id = "forgotten_shrine"
+region_display_name = "Chapter III: Forgotten Shrine"
+bounds_rect = Rect2(0, 0, 960, 540)
+
+[node name="Background" type="ColorRect" parent="."]
+offset_right = 960.0
+offset_bottom = 540.0
+color = Color(0.08, 0.10, 0.22, 1)
+
+[node name="RegionIndicator" type="Label" parent="."]
+offset_left = 30.0
+offset_top = 24.0
+offset_right = 500.0
+offset_bottom = 50.0
+theme_override_font_sizes/font_size = 14
+text = "[Chapter III: Forgotten Shrine — Academic Completion Sanctum]"
+
+[node name="Perimeter" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="WallTop" type="CollisionShape2D" parent="Perimeter"]
+position = Vector2(480, 16)
+shape = SubResource("WorldBoundaryShape2D_top")
+
+[node name="WallBottom" type="CollisionShape2D" parent="Perimeter"]
+position = Vector2(480, 524)
+shape = SubResource("WorldBoundaryShape2D_bottom")
+
+[node name="WallLeft" type="CollisionShape2D" parent="Perimeter"]
+position = Vector2(16, 270)
+shape = SubResource("WorldBoundaryShape2D_left")
+
+[node name="WallRight" type="CollisionShape2D" parent="Perimeter"]
+position = Vector2(944, 270)
+shape = SubResource("WorldBoundaryShape2D_right")
+
+[node name="Obstacles" type="Node2D" parent="."]
+
+[node name="Portals" type="Node2D" parent="."]
+
+[node name="PortalToGrove" parent="Portals" instance=ExtResource("2_portal")]
+position = Vector2(90, 270)
+target_region_id = "whispering_grove"
+target_spawn_id = "from_shrine"
+portal_label = "<- Whispering Grove"
+
+[node name="Spawns" type="Node2D" parent="."]
+
+[node name="default" type="Marker2D" parent="Spawns"]
+position = Vector2(200, 270)
+
+[node name="from_grove" type="Marker2D" parent="Spawns"]
+position = Vector2(200, 270)
+
+[node name="AwakeningAltar" type="Area2D" parent="."]
+position = Vector2(480, 240)
+collision_layer = 0
+collision_mask = 1
+metadata/npc_id = &"shrine_altar"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AwakeningAltar"]
+shape = SubResource("RectangleShape2D_altar")
+
+[node name="Visual" type="ColorRect" parent="AwakeningAltar"]
+offset_left = -25.0
+offset_top = -25.0
+offset_right = 25.0
+offset_bottom = 25.0
+color = Color(0.65, 0.45, 0.85, 0.9)
+
+[node name="Inner" type="ColorRect" parent="AwakeningAltar/Visual"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 42.0
+offset_bottom = 42.0
+color = Color(0.9, 0.8, 1, 1)
+
+[node name="Label" type="Label" parent="AwakeningAltar"]
+offset_left = -80.0
+offset_top = -42.0
+offset_right = 80.0
+offset_bottom = -24.0
+theme_override_font_sizes/font_size = 11
+text = "Altar of Awakening"
+horizontal_alignment = 1
+
+[node name="Prompt" type="Label" parent="AwakeningAltar"]
+offset_left = -80.0
+offset_top = 26.0
+offset_right = 80.0
+offset_bottom = 42.0
+theme_override_colors/font_color = Color(0.85, 0.75, 1, 0.85)
+theme_override_font_sizes/font_size = 9
+text = "[Step In for Chapter III Trial]"
+horizontal_alignment = 1
+
+[node name="AcademicPortal" type="Area2D" parent="."]
+position = Vector2(780, 270)
+collision_layer = 0
+collision_mask = 1
+metadata/gateway_id = &"academic_mvp_sanctum"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AcademicPortal"]
+shape = SubResource("RectangleShape2D_altar")
+
+[node name="Visual" type="ColorRect" parent="AcademicPortal"]
+offset_left = -22.0
+offset_top = -22.0
+offset_right = 22.0
+offset_bottom = 22.0
+color = Color(0.2, 0.8, 0.6, 0.85)
+
+[node name="Label" type="Label" parent="AcademicPortal"]
+offset_left = -90.0
+offset_top = -38.0
+offset_right = 90.0
+offset_bottom = -20.0
+theme_override_font_sizes/font_size = 11
+text = "Academic MVP Sanctum"
+horizontal_alignment = 1
+
+[node name="Prompt" type="Label" parent="AcademicPortal"]
+offset_left = -90.0
+offset_top = 24.0
+offset_right = 90.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(0.65, 1, 0.85, 0.85)
+theme_override_font_sizes/font_size = 9
+text = "[Step In for MVP Completion]"
+horizontal_alignment = 1

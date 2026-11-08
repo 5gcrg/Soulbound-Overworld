@@ -91,6 +91,12 @@ target_region_id = "test_region_beta"
 target_spawn_id = "from_alpha"
 portal_label = "To Beta ->"
 
+[node name="PortalToVillage" parent="Portals" instance=ExtResource("2_portal")]
+position = Vector2(480, 70)
+target_region_id = "dawnreach_village"
+target_spawn_id = "from_alpha"
+portal_label = "^ To Dawnreach Village"
+
 [node name="Spawns" type="Node2D" parent="."]
 
 [node name="default" type="Marker2D" parent="Spawns"]
@@ -98,6 +104,9 @@ position = Vector2(180, 270)
 
 [node name="from_beta" type="Marker2D" parent="Spawns"]
 position = Vector2(740, 270)
+
+[node name="from_village" type="Marker2D" parent="Spawns"]
+position = Vector2(480, 140)
 
 [node name="obstructed_spawn" type="Marker2D" parent="Spawns"]
 position = Vector2(480, 270)

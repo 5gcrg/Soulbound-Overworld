@@ -167,3 +167,24 @@ This matrix covers the M1 bootstrap and SBL-W2-001 overworld transitions under [
 - **Review**: REVIEW_PENDING_CODEX per AGENTS.md §5 awaiting Codex quota reset at 4:15 AM.
 - **Asset Scope**: Zero image generation (ColorRect primitives and native Control containers); educational content authored per Gemini Flash routing.
 
+---
+
+## Task SBL-M4-001: Three Academic Chapters, Settings & Accessibility, and Combat Item Action
+
+| Requirement ID | Description | Milestone / Scope | Priority | Planned Scene / Script / Data Owner | Corresponding Issue / PR | Tests | Evidence Link | Implementation Status | Review Status | Last Approval Date |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **GDD-037** | 3-Chapter Academic MVP overworld structure | M4 (Weeks 9–10) | P1 (planned) | `scripts/story/chapter_manager.gd`, `scenes/world/` | Task SBL-M4-001 (`feature/w4-5-vertical-slice`) | `tests/headless/chapter_progression_test.gd` | [M4 review entry](agent-review-queue.md#sbl-m4-001--three-academic-chapters-settings--accessibility-and-combat-item-action) | Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **GDD-038** | Chapter I: Dawnreach Village sanctuary & guidance | M4 (Weeks 9–10) | P1 (planned) | `scenes/world/dawnreach_village.tscn` | Task SBL-M4-001 (`feature/w4-5-vertical-slice`) | `tests/headless/chapter_progression_test.gd` | [M4 review entry](agent-review-queue.md#sbl-m4-001--three-academic-chapters-settings--accessibility-and-combat-item-action) | Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **GDD-039** | Chapter II: Whispering Grove dual-plane puzzle navigation | M4 (Weeks 9–10) | P1 (planned) | `scenes/world/whispering_grove.tscn` | Task SBL-M4-001 (`feature/w4-5-vertical-slice`) | `tests/headless/chapter_progression_test.gd` | [M4 review entry](agent-review-queue.md#sbl-m4-001--three-academic-chapters-settings--accessibility-and-combat-item-action) | Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **GDD-040** | Chapter III: Forgotten Shrine sanctum & completion portal | M4 (Weeks 9–10) | P1 (planned) | `scenes/world/forgotten_shrine.tscn`, `scenes/ui/academic_completion_modal.{tscn,gd}` | Task SBL-M4-001 (`feature/w4-5-vertical-slice`) | `tests/headless/chapter_progression_test.gd` | [M4 review entry](agent-review-queue.md#sbl-m4-001--three-academic-chapters-settings--accessibility-and-combat-item-action) | Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **FR-WLD-003** | Completion-gated chapter progression | M4 (Weeks 9–10) | P1 (planned) | `scripts/story/chapter_manager.gd` | Task SBL-M4-001 (`feature/w4-5-vertical-slice`) | `tests/headless/chapter_progression_test.gd` | [M4 review entry](agent-review-queue.md#sbl-m4-001--three-academic-chapters-settings--accessibility-and-combat-item-action) | Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **GDD-016** | Side-view battle 4-action system (Attack, Defend, Kurei, Item) | M4 (Weeks 9–10) | P1 (planned) | `scenes/combat/battle_fixture.{tscn,gd}` | Task SBL-M4-001 (`feature/w4-5-vertical-slice`) | `tests/headless/combat_test.gd` | [M4 review entry](agent-review-queue.md#sbl-m4-001--three-academic-chapters-settings--accessibility-and-combat-item-action) | Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **GDD-103** | Audio volume controls (Master, Music, SFX) | M4 (Weeks 9–10) | P1 (planned) | `scripts/settings/settings_manager.gd`, `scenes/ui/settings_sheet.{tscn,gd}` | Task SBL-M4-001 (`feature/w4-5-vertical-slice`) | `tests/headless/settings_accessibility_test.gd` | [M4 review entry](agent-review-queue.md#sbl-m4-001--three-academic-chapters-settings--accessibility-and-combat-item-action) | Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **TC-ACC-001** | Accessibility options: Reduced motion, high contrast, text scaling | M4 (Weeks 9–10) | P1 (planned) | `scripts/settings/settings_manager.gd`, `scenes/ui/settings_sheet.{tscn,gd}` | Task SBL-M4-001 (`feature/w4-5-vertical-slice`) | `tests/headless/settings_accessibility_test.gd` | [M4 review entry](agent-review-queue.md#sbl-m4-001--three-academic-chapters-settings--accessibility-and-combat-item-action) | Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+
+### SBL-M4-001 Scope Notes
+- **Scope**: Implemented full three-chapter progression arc (Chapters I, II, III), Whispering Grove dual-plane bramble puzzle via Dimension Shift, Forgotten Shrine Academic Completion Portal & Modal with educator CSV export, combat Item action, SettingsManager (Master/Music/SFX linear-to-dB, reduced motion, high contrast, text scale), and SettingsSheet UI (`O`). Formal report at `report/m4_academic_candidate_report.md`.
+- **Review**: REVIEW_PENDING_CODEX per AGENTS.md §5 awaiting Codex quota reset at 4:15 AM.
+- **Asset Scope**: Zero image generation (Godot primitives and native Control UI); educational questions authored per Gemini Flash routing.
+
+

@@ -245,6 +245,27 @@ The save suite uses disposable test roots. It verifies slot isolation, nested da
 | `tests/headless/ui_sheets_test.gd` | Exit 0. Verified hotkey sheet toggles (`C` & `I`), player freezing, attribute allocation and combat stat recalculation, equip/unequip gear, and mutual exclusivity. |
 | Full 13-suite regression check | Exit 0. All 13 test suites pass cleanly with zero engine errors. |
 
+---
+
+## SBL-M4-001 — Three Academic Chapters, Settings & Accessibility, and Combat Item Action
+
+- **Milestone** M4, Weeks 9–10 Academic Content Candidate.
+- **Requirements** GDD-037–040, FR-WLD-001/003 (Three Chapters), GDD-016/018/023, FR-CMB-001/004 (Combat Item), GDD-103, TC-ACC-001 (Settings & Accessibility). Full formal report in [`report/m4_academic_candidate_report.md`](../report/m4_academic_candidate_report.md).
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files** `scripts/story/chapter_manager.gd`, `scenes/world/{dawnreach_village,whispering_grove,forgotten_shrine}.tscn`, `scenes/ui/academic_completion_modal.{tscn,gd}`, `scenes/combat/battle_fixture.{tscn,gd}`, `scripts/settings/settings_manager.gd`, `scenes/ui/settings_sheet.{tscn,gd}`, `scenes/main/game_root.gd`, `project.godot`, `tests/headless/{chapter_progression_test,settings_accessibility_test}.gd`, and tracked UIDs.
+- **Asset provenance** None (ColorRect primitives and native Control UI containers; educational questions authored per Gemini Flash routing; zero image generation).
+- **Review** REVIEW_PENDING_CODEX per AGENTS.md §5 awaiting Codex quota reset at 4:15 AM.
+
+### Verification across all 15 suites
+
+| Suite | Result |
+| --- | --- |
+| `tests/headless/chapter_progression_test.gd` | Exit 0. Verified 3-chapter lifecycle, completion gating, Whispering Grove dimension shift bramble dissolve, academic completion portal, and RFC-4180 CSV export. |
+| `tests/headless/settings_accessibility_test.gd` | Exit 0. Verified master/music/sfx volume controls, reduced motion, high contrast, text scaling (0.8–1.5), sheet toggle (`O`), and `user://settings.json` persistence. |
+| Full 15-suite regression check | Exit 0. All 15 test suites pass cleanly with zero engine errors. |
+
+
 
 
 

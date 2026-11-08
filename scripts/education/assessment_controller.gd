@@ -67,6 +67,10 @@ func is_question_completed(question_id: String) -> bool:
 		return bool(records[question_id].get("completed", false))
 	return false
 
+func is_chapter_activity_completed(chapter_num: int) -> bool:
+	var req_id: String = QuestionBank.get_required_question_id_for_chapter(chapter_num)
+	return is_question_completed(req_id)
+
 func is_competency_completed(competency: String) -> bool:
 	var questions: Array[Dictionary] = QuestionBank.get_questions_by_competency(competency)
 	if questions.is_empty():
