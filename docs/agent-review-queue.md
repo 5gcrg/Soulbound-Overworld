@@ -148,6 +148,24 @@ The save suite uses disposable test roots. It verifies slot isolation, nested da
 
 ---
 
+## Codex CLI review of queued M2–M6 work
+
+- **Snapshot** `feature/w4-5-vertical-slice`, nine agy commits from `b427fed..e9824a7`.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1bd84-e6f1-7722-ae1b-6c1710b56c8e` finished and reported 8 P1 and 13 P2 findings. Human acceptance remains pending.
+- **Verification** Windows Godot 4.7.2 Stable `ed1daf0bf` imported and booted the committed snapshot and passed all 18 existing headless suites with zero engine errors. The copy used a separate user-data directory. Chromium and Firefox were outside this verification.
+
+| Scope | Changes requested |
+| --- | --- |
+| M2 quest | Merge quest writes into the latest profile, gate the sentinel on practice completion, and surface save failures with a keyboard-accessible exit. |
+| M3 systems | Preserve first-attempt evidence when saving the assessment record. Separate learning completion from correctness. Fix dimension collision and travel synchronization. Make extraction atomic and guard early or duplicate requests. Persist the active expedition for resume and connect the inventory UI to equip actions. |
+| M4 chapters | Wire the three required activities to live NPCs, gate travel and final completion, and commit completion with its assessment evidence. Validate item ownership and healing caps, apply contrast and text scale to the actual UI, and prevent sheet hotkeys from stacking over results. |
+| M5 evidence | Exercise normal player interactions and autosaves in the full-playthrough test. The current test calls assessment, progression, and save helpers directly. |
+| M6 backups and reports | Validate gameplay records before import, reload the live profile before another write, provide a browser backup path independent of clipboard access, and make the competency CSV downloadable on Web. |
+
+Independent probes reproduced newer banked gear disappearing on a quest checkpoint, an incorrect answer leaving its required activity incomplete, a fresh profile reaching final completion with no assessment records, an extraction reporting success after an injected save failure, and an imported inventory disappearing on the next quest checkpoint.
+
+Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue-headless-20261109-073625.log`, and `agy-queue-review-probes-20261109.log`.
+
 ## SBL-W4-001 — One-region vertical slice progress and loop integration
 
 - **Milestone** M2, Week 4–5.
@@ -156,7 +174,7 @@ The save suite uses disposable test roots. It verifies slot isolation, nested da
 - **Branch and initial implementation** `feature/w4-5-vertical-slice`. Baseline `b427fed`.
 - **Files** `scripts/vertical_slice/slice_progress.gd`, `scenes/vertical_slice/quest_dialog.{tscn,gd}`, `scenes/main/game_root.{tscn,gd}`, `scenes/world/test_region_alpha.tscn`, `tests/headless/vertical_slice_test.gd`, `tests/headless/vertical_slice_loop_test.gd`, tracked UIDs, and documentation in `docs/`.
 - **Asset provenance** None (visuals use Godot UI and ColorRect primitives; educational prompt text authored per Gemini Flash non-image specification).
-- **Review** REVIEW_PENDING_CODEX. Codex CLI execution returned usage limit exhaustion (`ERROR: You’ve hit your usage limit... try again at 4:15 AM`). Governed by AGENTS.md Rule 5. Local verification passed 100% cleanly across all 6 test suites.
+- **Review** CHANGES_REQUESTED. See the [Codex CLI batch verdict](#codex-cli-review-of-queued-m2m6-work).
 - **Open decisions** OD-002 initiative, OD-003 balance, OD-009 save boundaries.
 
 ### Vertical slice verification
@@ -187,7 +205,7 @@ The save suite uses disposable test roots. It verifies slot isolation, nested da
 - **Branch and initial implementation** `feature/w4-5-vertical-slice`.
 - **Files** `scripts/progression/character_stats.gd`, `scripts/inventory/inventory_manager.gd`, `scripts/magic/kurei_system.gd`, `scripts/dungeon/dungeon_generator.gd`, `tests/headless/m3_systems_test.gd`, and tracked script UIDs.
 - **Asset provenance** None (pure typed GDScript system classes only).
-- **Review** REVIEW_PENDING_CODEX. Codex CLI execution blocked by usage limit until 4:15 AM. Local verification passed 100% cleanly across all 7 test suites.
+- **Review** CHANGES_REQUESTED. See the [Codex CLI batch verdict](#codex-cli-review-of-queued-m2m6-work).
 - **Open decisions** OD-002 initiative, OD-003 balance, OD-004 status timing, OD-008 extraction penalty, OD-011 dungeon branch budget.
 
 ### M3 systems verification
@@ -213,7 +231,7 @@ The save suite uses disposable test roots. It verifies slot isolation, nested da
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files** `scripts/world/dimension_manager.gd`, `scenes/combat/battle_fixture.{tscn,gd}`, `scenes/dungeon/dungeon_expedition.{tscn,gd}`, `scenes/main/game_root.gd`, `project.godot`, `tests/headless/{dimension_test,kurei_combat_test,dungeon_scene_test}.gd`, and tracked UIDs.
 - **Asset provenance** None (Godot ColorRect and Control UI primitives only; zero image or binary audio assets).
-- **Review** REVIEW_PENDING_CODEX per AGENTS.md §5 awaiting Codex quota reset at 4:15 AM.
+- **Review** CHANGES_REQUESTED. See the [Codex CLI batch verdict](#codex-cli-review-of-queued-m2m6-work).
 
 ### Verification across all 10 suites
 
@@ -234,7 +252,7 @@ The save suite uses disposable test roots. It verifies slot isolation, nested da
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files** `scenes/world/test_region_alpha.tscn`, `scenes/main/game_root.{tscn,gd}`, `scripts/education/question_bank.gd`, `scripts/education/assessment_controller.gd`, `scenes/ui/character_sheet.{tscn,gd}`, `scenes/ui/inventory_sheet.{tscn,gd}`, `project.godot`, `tests/headless/{overworld_gateway_test,education_report_test,ui_sheets_test}.gd`, and tracked UIDs.
 - **Asset provenance** None (Godot ColorRect and Control UI primitives only; educational questions authored per Gemini Flash routing; zero image generation).
-- **Review** REVIEW_PENDING_CODEX per AGENTS.md §5 awaiting Codex quota reset at 4:15 AM.
+- **Review** CHANGES_REQUESTED. See the [Codex CLI batch verdict](#codex-cli-review-of-queued-m2m6-work).
 
 ### Verification across all 13 suites
 
@@ -255,7 +273,7 @@ The save suite uses disposable test roots. It verifies slot isolation, nested da
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files** `scripts/story/chapter_manager.gd`, `scenes/world/{dawnreach_village,whispering_grove,forgotten_shrine}.tscn`, `scenes/ui/academic_completion_modal.{tscn,gd}`, `scenes/combat/battle_fixture.{tscn,gd}`, `scripts/settings/settings_manager.gd`, `scenes/ui/settings_sheet.{tscn,gd}`, `scenes/main/game_root.gd`, `project.godot`, `tests/headless/{chapter_progression_test,settings_accessibility_test}.gd`, and tracked UIDs.
 - **Asset provenance** None (ColorRect primitives and native Control UI containers; educational questions authored per Gemini Flash routing; zero image generation).
-- **Review** REVIEW_PENDING_CODEX per AGENTS.md §5 awaiting Codex quota reset at 4:15 AM.
+- **Review** CHANGES_REQUESTED. See the [Codex CLI batch verdict](#codex-cli-review-of-queued-m2m6-work).
 
 ### Verification across all 15 suites
 
@@ -275,7 +293,7 @@ The save suite uses disposable test roots. It verifies slot isolation, nested da
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files** `tests/headless/{e2e_academic_playthrough_test,educator_analytics_test}.gd` and tracked UIDs.
 - **Asset provenance** None (Test harnesses and algorithmic simulators only).
-- **Review** REVIEW_PENDING_CODEX per AGENTS.md §5 awaiting Codex quota reset.
+- **Review** CHANGES_REQUESTED. See the [Codex CLI batch verdict](#codex-cli-review-of-queued-m2m6-work).
 
 ### Verification
 
@@ -294,7 +312,7 @@ The save suite uses disposable test roots. It verifies slot isolation, nested da
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files** `export_presets.cfg`, `scenes/ui/settings_sheet.{tscn,gd}`, `scenes/main/game_root.gd`, `tests/headless/web_backup_test.gd`, `docs/evaluator_walkthrough.md`, `report/academic_defense_checklist.md`, and tracked UIDs.
 - **Asset provenance** None (Godot Control UI containers and config files only).
-- **Review** REVIEW_PENDING_CODEX per AGENTS.md §5 awaiting Codex quota reset.
+- **Review** CHANGES_REQUESTED. See the [Codex CLI batch verdict](#codex-cli-review-of-queued-m2m6-work).
 
 ### Verification across all 18 suites
 
@@ -302,9 +320,3 @@ The save suite uses disposable test roots. It verifies slot isolation, nested da
 | --- | --- |
 | `tests/headless/web_backup_test.gd` | Exit 0. Verified profile string export, import into fresh slot, rejection of corrupted/invalid JSON, and SettingsSheet UI clipboard bridge with headless fallback. |
 | Full 18-suite regression check | Exit 0. All 18 test suites pass cleanly with zero engine errors. |
-
-
-
-
-
-
