@@ -16,8 +16,9 @@ In accordance with `AGENTS.md` and `NFR-LIC-001`, this document registers all vi
 |---|---|---|---|---|---|
 | *None* | *None* | *None* | *None* | *N/A* | Task SBL-M1-001 contains zero image, audio, or generated narrative assets. Foundation code, scenes, and test scripts only. |
 | *None* | *None* | *None* | *None* | *N/A* | Task SBL-W2-001 contains zero image, audio, or generated narrative assets. Technical fixture visuals use engine ColorRect primitives exclusively. |
+| *None* | *None* | *None* | *None* | *N/A* | Task SBL-W3-001 contains zero image, audio, or generated narrative assets. Combat fixture UI uses Godot primitives and native controls. |
 
 ### Summary
-- Total visual assets: 0 (Technical fixture ColorRect primitives only, no image files)
+- Total visual assets: 0 (Technical fixture ColorRect primitives and Label controls only, no image files)
 - Total audio assets: 0
 - Total generated narrative assets: 0

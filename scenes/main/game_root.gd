@@ -62,39 +62,48 @@ func _on_encounter_body_entered(body: Node2D, encounter_id: int) -> void:
 	if world_router == null or world_router.is_transition_in_flight:
 		return
 	_battle_pending = true
+	_previous_input_frozen = player.input_frozen
+	player.input_frozen = true
 	_open_combat.call_deferred(encounter_id)
 
-func _open_combat(encounter_id: int) -> void:
+func _open_combat(id: int) -> void:
+	if not _try_open_combat(id):
+		_restore_combat_movement()
 	_battle_pending = false
+
+func _try_open_combat(encounter_id: int) -> bool:
 	var encounter: Area2D = instance_from_id(encounter_id) as Area2D
 	if encounter == null or not is_instance_valid(encounter) or encounter.is_queued_for_deletion():
-		return
+		return false
 	if world_router == null or world_router.active_region == null or not is_instance_valid(world_router.active_region) or world_router.active_region.is_queued_for_deletion():
-		return
+		return false
 	if not world_router.active_region.is_ancestor_of(encounter):
-		return
+		return false
 	if not encounter.has_meta("encounter_id") or StringName(encounter.get_meta("encounter_id")) != EXPECTED_ENCOUNTER_ID:
-		return
+		return false
 	if world_router.is_transition_in_flight:
-		return
+		return false
 	if _battle != null and is_instance_valid(_battle):
-		return
+		return false
 	if player == null or _battle_layer == null:
-		return
+		return false
 
 	var instance: Control = BATTLE_FIXTURE_SCENE.instantiate() as Control
 	if instance == null:
-		return
+		return false
 	_battle = instance
-	_previous_input_frozen = player.input_frozen
 	player.freeze_movement()
 	if not _battle.is_connected("continued", _close_combat):
 		_battle.connect("continued", _close_combat, CONNECT_ONE_SHOT)
 	_battle_layer.add_child(_battle)
+	return true
 
-func _close_combat() -> void:
+func _restore_combat_movement() -> void:
 	if player != null and is_instance_valid(player):
 		player.input_frozen = _previous_input_frozen
+
+func _close_combat() -> void:
+	_restore_combat_movement()
 	if _battle != null and is_instance_valid(_battle):
 		_battle.hide()
 		_battle.queue_free()

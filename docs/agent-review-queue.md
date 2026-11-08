@@ -67,3 +67,39 @@ Two isolated fault injections also exited 1. Disabling the player movement integ
 - Codex CLI re-reviewed `194cf75` (session `01a1bb8b-3885-7cc1-9eb1-b1c753ada733`), cleared the runtime fixes, and requested stronger evidence for actual movement and suite completion. agy added displacement assertions over physics frames and a watchdog. Clean and fault-injected runs behaved as expected.
 - agy ran a high-effort verification pass with `gemini-3.8-flash-high --effort high` and found both test repairs in place.
 - Codex CLI closed both findings at `05e121a` (session `01a1bb8f-5d02-7cf0-b7e7-77dc1c67dac3`). Its sandbox reproduced the known Windows certificate-store error. The same tests passed with zero Godot errors in the local environment.
+
+---
+
+## SBL-W3-001 — Simple combat in Alpha
+
+- **Milestone** Week 2–3 MVP foundation, simple combat slice.
+- **Requirements** GDD-003, GDD-016, GDD-018, GDD-023, GDD-089, FR-CMB-001/003/004/005, and the action economy and intent portions of TC-CMB-001/003. [Traceability](traceability-matrix.md).
+- **Owner** agy. **Plan, validation, and Git operations** Codex.
+- **Branch and base** `feature/w3-simple-combat` based on reviewed overworld `472f696`. Initial runtime `07ab422`.
+- **Files** `scenes/combat/battle_fixture.*`, `scenes/main/game_root.*`, `scenes/world/{test_region_alpha.tscn,world_router.gd}`, `tests/headless/combat_test.gd` and its UID, and the review queue, traceability matrix and asset register.
+- **Asset provenance** None. Godot primitives and native controls are used for the fixture. No saves, progression, or rewards are written.
+- **Review** CHANGES_REQUESTED.
+- **Open decisions** OD-002 initiative ordering, OD-003 balance formulas and resource costs, OD-004 status timing and stacking, and OD-009 save boundaries. The scripted pips and enemy intent cycle are fixture data.
+
+Start the game in Godot and walk southeast from the Alpha spawn to the marker labeled **Combat test**. Defend against Strike and attack while the enemy recovers. Use **Continue** after either outcome. Leave the marker and walk back in to replay.
+
+### Combat verification
+
+| Command | Result |
+| --- | --- |
+| `godot --version` | Exit 0. Godot 4.7.2 Stable, official build `ed1daf0bf`. |
+| `godot --headless --path . --import` | Exit 0 on the repaired build. |
+| `godot --headless --path . --fixed-fps 60 --quit-after 120` | Exit 0 on the repaired build. |
+| `godot --headless --path . --fixed-fps 60 --script tests/headless/smoke_test.gd --quit-after 600` | Exit 0 on the repaired build. |
+| `godot --headless --path . --fixed-fps 60 --script tests/headless/transition_test.gd --quit-after 600` | Exit 0 on the repaired build. |
+| `godot --headless --path . --fixed-fps 60 --script tests/headless/combat_test.gd --quit-after 600` | Exit 0. Tests verified duplicate actions, enemy intent, both outcomes, exactly-once Continue, overworld restoration, replay, and the portal race. |
+
+A standalone Godot probe passed the invalid-action, duplicate-action, guard and victory checks. A keyboard probe walked into the Alpha encounter, lost the fight, and returned to the same player, position and region.
+
+A second fault probe confirmed a same-frame competing portal could no longer cancel combat. Removing the trigger before deferred opening released the reservation and restored movement.
+
+### Combat review history
+
+- agy implemented the fixture with high-effort Flash and integrated the encounter with high-effort Argon. One integration attempt timed out and a later Argon request hit quota. Work continued on the high-effort Flash preset.
+- Codex CLI reviewed `07ab422` (session `01a1bbbe-cf5e-7281-bda8-a6d4392c9ddd`) and found a competing portal request could cancel a pending combat encounter. A local fault probe reproduced the issue.
+- agy reserved movement and travel when accepting combat, restored the prior lock on rejected deferred admission, and corrected the headless test harness. The complete local suite and both independent runtime probes passed.
