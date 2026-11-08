@@ -58,6 +58,7 @@ func _run() -> void:
 	_test_rejections()
 	_test_future_revision()
 	_test_schema_version_tokens()
+	_test_legacy_schema_spellings()
 	_test_size_limits()
 	_test_unsafe_int_in_unsupported_schema()
 	_test_slot_path_is_regular_file()
@@ -313,7 +314,7 @@ func _test_rejections() -> void:
 
 func _test_schema_version_tokens() -> void:
 	var slot: String = SLOTS[0]
-	var rounded: Array[String] = ["1.00000000000000001", "0.99999999999999999", "1.0", "2"]
+	var rounded: Array[String] = ["1.00000000000000001", "0.99999999999999999", "2"]
 	var late_version: String = '{"character":{"schema_version":1},"inventory":{},"world":{},"education":{},"profile_id":"%s","schema_version":%s}'
 
 	# Imports: native JSON rounds the first two tokens to 1, but only the exact token 1 is schema 1.
@@ -360,6 +361,56 @@ func _test_schema_version_tokens() -> void:
 	_check(resave_store.save_profile(slot, float_version) == OK and typeof(float_version["schema_version"]) == TYPE_FLOAT, "float 1.0 version saves, caller unchanged")
 	var newest: String = _files(resave_root, slot).back()
 	_check(StrictProfileJson.inspect(_file_bytes(resave_root, slot, newest).get_string_from_utf8())["schema_version_token"] == "1", "float 1.0 serialized as token 1")
+
+## Prior builds stored mathematically exact spellings of 1 (1.0, 1e0, ...). They stay loadable,
+## exportable and re-importable byte-for-byte, while near-1, negative and future tokens stay unsupported.
+func _test_legacy_schema_spellings() -> void:
+	var slot: String = SLOTS[0]
+	var exact: Array[String] = ["1.0", "1e0", "1E0", "0.01e2", "100e-2", "10e-1", "1.0E+0", "1e-0", "1e+00", "0.1e1"]
+	var inexact: Array[String] = ["1.1", "1.0000000000000000001", "0.9", "10", "1e1", "1e-1", "0.01e1", "100e-1", "1e00001", "11e-1", "-1", "-1.0", "0", "0.0", "2.0"]
+
+	# Exact decimal equivalents import, load and export; everything else is unsupported.
+	var import_store: StoreScript = _store(_root("lg_i"))
+	for token: String in exact:
+		var text: String = _text(token, slot, '"level":1')
+		_check(import_store.import_backup(slot, text) == OK, "import accepts exact version spelling " + token)
+		var rec: Dictionary = import_store.load_profile(slot)
+		_check(rec["error"] == OK and rec["profile"]["character"]["level"] == 1, "load accepts exact version spelling " + token)
+		_check(import_store.export_backup(slot)["text"] == text, "export preserves exact text for " + token)
+	var reject_root: String = _root("lg_r")
+	var reject_store: StoreScript = _store(reject_root)
+	for token: String in inexact:
+		_check(reject_store.import_backup(slot, _text(token, slot, '"level":1')) == ERR_FILE_UNRECOGNIZED, "import keeps version spelling unsupported " + token)
+	_check(not DirAccess.dir_exists_absolute(_global(reject_root)) or DirAccess.get_directories_at(reject_root).is_empty(), "unsupported spellings create nothing")
+
+	# Committed legacy fixture: exact text survives load, export and re-import; next save is canonical.
+	var legacy_root: String = _root("lg_c")
+	var legacy_store: StoreScript = _store(legacy_root)
+	var legacy_name: String = "profile.0000000000000001.1.1.json"
+	var legacy_text: String = _text("1.0", slot, '"level":9')
+	_write_fixture(legacy_root, slot, legacy_name, legacy_text)
+	var legacy_before: Dictionary = _snapshot(legacy_root, slot)
+	var loaded: Dictionary = legacy_store.load_profile(slot)
+	_check(loaded["error"] == OK and not loaded["recovered"] and loaded["profile"]["character"]["level"] == 9, "legacy 1.0 committed record loads")
+	_check(_same_snapshot(legacy_before, _snapshot(legacy_root, slot)), "load leaves legacy file untouched")
+	var exported: Dictionary = legacy_store.export_backup(slot)
+	_check(exported["error"] == OK and exported["text"] == legacy_text, "legacy 1.0 export preserves exact text")
+	var reimport_root: String = _root("lg_e")
+	var reimport_store: StoreScript = _store(reimport_root)
+	_check(reimport_store.import_backup(slot, exported["text"]) == OK, "legacy 1.0 export re-imports")
+	_check(reimport_store.export_backup(slot)["text"] == legacy_text, "legacy 1.0 re-export identical text")
+	_check(_file_bytes(reimport_root, slot, _files(reimport_root, slot)[0]) == legacy_text.to_utf8_buffer(), "re-imported legacy bytes identical")
+
+	# Next save over the legacy record succeeds, commits canonical integer token 1, keeps legacy bytes.
+	_check(legacy_store.save_profile(slot, loaded["profile"]) == OK, "save over legacy 1.0 record")
+	var names: Array[String] = _files(legacy_root, slot)
+	_check(names.size() == 2 and names[0] == legacy_name, "legacy revision kept beside new revision")
+	_check(_file_bytes(legacy_root, slot, legacy_name) == legacy_text.to_utf8_buffer(), "legacy bytes unchanged after next save")
+	var newest_text: String = _file_bytes(legacy_root, slot, names[1]).get_string_from_utf8()
+	_check(StrictProfileJson.inspect(newest_text)["schema_version_token"] == "1", "next save after legacy record is canonical token 1")
+	var latest: Dictionary = legacy_store.load_profile(slot)
+	_check(latest["error"] == OK and not latest["recovered"] and latest["profile"]["character"]["level"] == 9, "canonical save loads after legacy record")
+	_check(legacy_store.export_backup(slot)["text"] == newest_text, "export returns canonical newest text")
 
 func _test_size_limits() -> void:
 	var slot: String = SLOTS[0]

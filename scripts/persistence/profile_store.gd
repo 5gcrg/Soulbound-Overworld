@@ -239,10 +239,13 @@ func _decode(text: String, expected_profile_id: String) -> Dictionary:
 	var info: Dictionary = strict_json.inspect(text, MAX_DEPTH)
 	if not info["accepted"]:
 		return {"error": ERR_PARSE_ERROR, "data": {}}
-	# Native JSON rounds e.g. 1.00000000000000001 to 1, so require the exact raw token "1".
-	# Any other numeric top-level version is a well-formed unsupported schema, not corruption.
+	# Native JSON rounds e.g. 1.00000000000000001 to 1, so judge the raw token text, never the parsed float.
+	# Mathematically exact spellings of 1 (1.0, 1e0, 100e-2) are legacy schema 1; any other numeric
+	# top-level version is a well-formed unsupported schema, not corruption.
 	var token: String = info["schema_version_token"]
-	if token != "1" and _is_number_token(token):
+	var numeric_token: bool = _is_number_token(token)
+	var exact_one: bool = numeric_token and _is_exact_schema_one(token)
+	if numeric_token and not exact_one:
 		return {"error": ERR_FILE_UNRECOGNIZED, "data": {}}
 	# Exact version 1 (or a non-numeric token) must not carry numbers violating schema-1 rules.
 	if not info["numbers_valid"]:
@@ -253,6 +256,9 @@ func _decode(text: String, expected_profile_id: String) -> Dictionary:
 	if not (json.data is Dictionary):
 		return {"error": ERR_INVALID_DATA, "data": {}}
 	var dict: Dictionary = json.data as Dictionary
+	if exact_one and dict.has("schema_version"):
+		# The token was proven exactly 1 by text; do not let float parsing of the spelling decide.
+		dict["schema_version"] = 1.0
 	var err: Error = _validate_envelope(dict, expected_profile_id)
 	return {"error": err, "data": dict if err == OK else {}}
 
@@ -261,6 +267,51 @@ func _is_number_token(token: String) -> bool:
 		return false
 	var c: int = token.unicode_at(0)
 	return c == 0x2D or (c >= 0x30 and c <= 0x39)
+
+## Exact decimal check on the raw (already syntax-validated) number token: true only when its
+## mathematical value is exactly 1. Pure text arithmetic, no float conversion, no overflow.
+func _is_exact_schema_one(token: String) -> bool:
+	if token == "1":
+		return true
+	if token.is_empty() or token.begins_with("-"):
+		return false
+	var e_pos: int = -1
+	for i in range(token.length()):
+		var ch: String = token[i]
+		if ch == "e" or ch == "E":
+			e_pos = i
+			break
+	var mantissa: String = token
+	var exp_text: String = ""
+	if e_pos >= 0:
+		mantissa = token.substr(0, e_pos)
+		exp_text = token.substr(e_pos + 1)
+	var int_part: String = mantissa
+	var frac_part: String = ""
+	var dot_pos: int = mantissa.find(".")
+	if dot_pos >= 0:
+		int_part = mantissa.substr(0, dot_pos)
+		frac_part = mantissa.substr(dot_pos + 1)
+	# Value = digits * 10^(exponent - fractional digits); drop the dot and leading zeros.
+	var digits: String = (int_part + frac_part).lstrip("0")
+	var significant: String = digits.rstrip("0")
+	if significant != "1":
+		return false
+	var trailing_zeros: int = digits.length() - significant.length()
+	var required_exp: int = frac_part.length() - trailing_zeros
+	# Normalize the actual exponent text (optional sign, leading zeros) and compare textually.
+	var exp_negative: bool = false
+	var exp_digits: String = exp_text
+	if exp_digits.begins_with("-"):
+		exp_negative = true
+		exp_digits = exp_digits.substr(1)
+	elif exp_digits.begins_with("+"):
+		exp_digits = exp_digits.substr(1)
+	exp_digits = exp_digits.lstrip("0")
+	if exp_digits.is_empty():
+		exp_negative = false
+	var required_digits: String = "" if required_exp == 0 else str(absi(required_exp))
+	return exp_negative == (required_exp < 0) and exp_digits == required_digits
 
 func _validate_envelope(data: Dictionary, expected_profile_id: String) -> Error:
 	for key in data.keys():
