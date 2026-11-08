@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://d1x47r83w2r01"]
+[gd_scene load_steps=9 format=3 uid="uid://d1x47r83w2r01"]
 
 [ext_resource type="Script" path="res://scenes/world/base_region.gd" id="1_region"]
 [ext_resource type="PackedScene" path="res://scenes/world/portal.tscn" id="2_portal"]
@@ -17,6 +17,9 @@ normal = Vector2(-1, 0)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_obstacle"]
 size = Vector2(100, 100)
+
+[sub_resource type="RectangleShape2D" id="CombatTrigger"]
+size = Vector2(54, 54)
 
 [node name="TestRegionAlpha" type="Node2D"]
 script = ExtResource("1_region")
@@ -95,3 +98,29 @@ position = Vector2(480, 270)
 
 [node name="out_of_bounds_spawn" type="Marker2D" parent="Spawns"]
 position = Vector2(1200, 270)
+
+[node name="CombatEncounter" type="Area2D" parent="."]
+position = Vector2(300, 390)
+collision_layer = 0
+collision_mask = 1
+metadata/encounter_id = &"combat_alpha_fixture"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="CombatEncounter"]
+shape = SubResource("CombatTrigger")
+
+[node name="ColorRect" type="ColorRect" parent="CombatEncounter"]
+offset_left = -27.0
+offset_top = -27.0
+offset_right = 27.0
+offset_bottom = 27.0
+color = Color(0.68, 0.24, 0.24, 0.85)
+
+[node name="Label" type="Label" parent="CombatEncounter"]
+offset_left = -48.0
+offset_top = -12.0
+offset_right = 48.0
+offset_bottom = 12.0
+theme_override_font_sizes/font_size = 12
+text = "Combat test"
+horizontal_alignment = 1
+vertical_alignment = 1

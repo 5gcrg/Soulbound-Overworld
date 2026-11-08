@@ -91,6 +91,9 @@ func request_transition(portal_emitter: RegionPortal, target_region_id: String, 
 	if world_container == null or player == null:
 		return
 
+	if player.input_frozen:
+		return
+
 	# Guard: in-flight transition check immediately before deferring
 	if is_transition_in_flight:
 		return
@@ -114,6 +117,10 @@ func request_transition(portal_emitter: RegionPortal, target_region_id: String, 
 	call_deferred("_execute_transition", portal_emitter.get_instance_id(), active_region.get_instance_id(), target_region_id, target_spawn_id)
 
 func _execute_transition(emitter_id: int, original_active_region_id: int, target_region_id: String, target_spawn_id: String) -> void:
+	if player == null or not is_instance_valid(player) or player.input_frozen:
+		is_transition_in_flight = false
+		return
+
 	# Recheck original active region validity upon dispatch
 	if active_region == null or not is_instance_valid(active_region) or active_region.is_queued_for_deletion():
 		is_transition_in_flight = false

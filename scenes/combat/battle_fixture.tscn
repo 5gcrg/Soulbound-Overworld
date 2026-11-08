@@ -1,0 +1,118 @@
+[gd_scene load_steps=2 format=3 uid="uid://d3u7vxr4k1q9a"]
+
+[ext_resource type="Script" path="res://scenes/combat/battle_fixture.gd" id="1_battle"]
+
+[node name="BattleFixture" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_battle")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = 30.0
+offset_right = -40.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+
+[node name="TitleLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Combat test"
+horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Phase: PLAYER"
+horizontal_alignment = 1
+
+[node name="OutcomeLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Outcome: In Progress"
+horizontal_alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 40
+alignment = 1
+
+[node name="RenPanel" type="VBoxContainer" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="RenName" type="Label" parent="VBoxContainer/HBoxContainer/RenPanel"]
+layout_mode = 2
+text = "Ren (Player)"
+horizontal_alignment = 1
+
+[node name="RenSilhouette" type="ColorRect" parent="VBoxContainer/HBoxContainer/RenPanel"]
+custom_minimum_size = Vector2(100, 140)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.2, 0.45, 0.85, 1)
+
+[node name="RenPips" type="Label" parent="VBoxContainer/HBoxContainer/RenPanel"]
+layout_mode = 2
+text = "Ren HP: 1"
+horizontal_alignment = 1
+
+[node name="EnemyPanel" type="VBoxContainer" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="EnemyName" type="Label" parent="VBoxContainer/HBoxContainer/EnemyPanel"]
+layout_mode = 2
+text = "Adversary (Enemy)"
+horizontal_alignment = 1
+
+[node name="EnemySilhouette" type="ColorRect" parent="VBoxContainer/HBoxContainer/EnemyPanel"]
+custom_minimum_size = Vector2(100, 140)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.85, 0.25, 0.25, 1)
+
+[node name="EnemyPips" type="Label" parent="VBoxContainer/HBoxContainer/EnemyPanel"]
+layout_mode = 2
+text = "Enemy HP: 2"
+horizontal_alignment = 1
+
+[node name="EnemyIntent" type="Label" parent="VBoxContainer/HBoxContainer/EnemyPanel"]
+layout_mode = 2
+text = "Intent: Strike"
+horizontal_alignment = 1
+
+[node name="Actions" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="AttackButton" type="Button" parent="VBoxContainer/Actions"]
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "Attack"
+
+[node name="DefendButton" type="Button" parent="VBoxContainer/Actions"]
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "Defend"
+
+[node name="ContinueButton" type="Button" parent="VBoxContainer"]
+visible = false
+custom_minimum_size = Vector2(160, 40)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Continue"

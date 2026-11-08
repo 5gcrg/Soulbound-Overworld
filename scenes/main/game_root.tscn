@@ -39,3 +39,6 @@ text = "Soulbound"
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = ""
+
+[node name="BattleLayer" type="CanvasLayer" parent="."]
+layer = 2
