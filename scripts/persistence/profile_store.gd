@@ -41,7 +41,10 @@ func save_profile(profile_id: String, data: Dictionary) -> Error:
 	var val_err: Error = _validate_envelope(data, profile_id)
 	if val_err != OK:
 		return val_err
-	var raw_text: String = JSON.stringify(data, "\t", true, true)
+	# Godot parses 1 as float; serialize the envelope version as integer 1 without mutating the caller.
+	var envelope: Dictionary = data.duplicate(false)
+	envelope["schema_version"] = CURRENT_SCHEMA_VERSION
+	var raw_text: String = JSON.stringify(envelope, "\t", true, true)
 	var raw_bytes: PackedByteArray = raw_text.to_utf8_buffer()
 	if raw_bytes.is_empty() or raw_bytes.size() > MAX_JSON_BYTES:
 		return ERR_INVALID_DATA
@@ -49,7 +52,7 @@ func save_profile(profile_id: String, data: Dictionary) -> Error:
 	if dec["error"] != OK:
 		return dec["error"]
 	# JSON parses every number as float, so compare numerically rather than by Variant type.
-	if not _same_json(data, dec["data"]):
+	if not _same_json(envelope, dec["data"]):
 		return ERR_INVALID_DATA
 	return _commit_profile(profile_id, raw_text)
 
@@ -233,7 +236,16 @@ func _read_record(path: String, profile_id: String) -> Dictionary:
 ## Shared decode for disk, import and save paths.
 func _decode(text: String, expected_profile_id: String) -> Dictionary:
 	var strict_json: GDScript = preload("res://scripts/persistence/strict_profile_json.gd")
-	if not strict_json.accepts(text, MAX_DEPTH):
+	var info: Dictionary = strict_json.inspect(text, MAX_DEPTH)
+	if not info["accepted"]:
+		return {"error": ERR_PARSE_ERROR, "data": {}}
+	# Native JSON rounds e.g. 1.00000000000000001 to 1, so require the exact raw token "1".
+	# Any other numeric top-level version is a well-formed unsupported schema, not corruption.
+	var token: String = info["schema_version_token"]
+	if token != "1" and _is_number_token(token):
+		return {"error": ERR_FILE_UNRECOGNIZED, "data": {}}
+	# Exact version 1 (or a non-numeric token) must not carry numbers violating schema-1 rules.
+	if not info["numbers_valid"]:
 		return {"error": ERR_PARSE_ERROR, "data": {}}
 	var json: JSON = JSON.new()
 	if json.parse(text) != OK:
@@ -243,6 +255,12 @@ func _decode(text: String, expected_profile_id: String) -> Dictionary:
 	var dict: Dictionary = json.data as Dictionary
 	var err: Error = _validate_envelope(dict, expected_profile_id)
 	return {"error": err, "data": dict if err == OK else {}}
+
+func _is_number_token(token: String) -> bool:
+	if token.is_empty():
+		return false
+	var c: int = token.unicode_at(0)
+	return c == 0x2D or (c >= 0x30 and c <= 0x39)
 
 func _validate_envelope(data: Dictionary, expected_profile_id: String) -> Error:
 	for key in data.keys():
@@ -335,12 +353,12 @@ func _same_json(a: Variant, b: Variant) -> bool:
 func _list_profile_files(profile_id: String) -> Dictionary:
 	var files: Array[String] = []
 	var dir_path: String = _get_slot_dir(profile_id)
-	if not DirAccess.dir_exists_absolute(_global_path(dir_path)):
-		return {"error": OK, "files": files}
 	var dir: DirAccess = DirAccess.open(dir_path)
 	if dir == null:
 		var open_err: Error = DirAccess.get_open_error()
-		return {"error": open_err if open_err != OK else ERR_CANT_OPEN, "files": files}
+		if open_err == OK:
+			open_err = ERR_CANT_OPEN
+		return {"error": _missing_slot_error(dir_path, open_err), "files": files}
 	var list_err: Error = dir.list_dir_begin()
 	if list_err != OK:
 		return {"error": list_err, "files": files}
@@ -353,6 +371,36 @@ func _list_profile_files(profile_id: String) -> Dictionary:
 	files.sort()
 	files.reverse()
 	return {"error": OK, "files": files}
+
+## Classifies a failed slot open. Walks upward from the globalized slot path to the nearest
+## accessible parent and lists it (hidden entries included) looking for the missing child.
+## Returns OK when the child is absent from that parent (slot genuinely missing); returns
+## open_err when the child is present or no parent can be inspected.
+func _missing_slot_error(slot_path: String, open_err: Error) -> Error:
+	var child: String = _global_path(slot_path).simplify_path()
+	var case_insensitive: bool = OS.get_name() == "Windows"
+	while true:
+		if child.length() > 1 and not child.ends_with(":/"):
+			child = child.rstrip("/")
+		var child_name: String = child.get_file()
+		var parent: String = child.get_base_dir()
+		if child_name.is_empty() or parent.is_empty() or parent == child:
+			return open_err
+		var parent_dir: DirAccess = DirAccess.open(parent)
+		if parent_dir != null:
+			parent_dir.include_hidden = true
+			if parent_dir.list_dir_begin() == OK:
+				var found: bool = false
+				var entry: String = parent_dir.get_next()
+				while not entry.is_empty():
+					if (entry.nocasecmp_to(child_name) == 0) if case_insensitive else (entry == child_name):
+						found = true
+						break
+					entry = parent_dir.get_next()
+				parent_dir.list_dir_end()
+				return open_err if found else OK
+		child = parent
+	return open_err
 
 func _is_valid_profile_id(pid: String) -> bool:
 	return pid in VALID_PROFILE_IDS

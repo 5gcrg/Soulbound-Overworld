@@ -14,13 +14,32 @@ var _text: String = ""
 var _length: int = 0
 var _pos: int = 0
 var _max_depth: int = 64
+## Exact source text of the top-level "schema_version" value ("" when absent).
+var _schema_version_token: String = ""
+## False when any syntactically valid number violates the schema-1 numeric rules.
+## Such numbers do not stop the syntax scan.
+var _numbers_valid: bool = true
 
 
 static func accepts(text: String, max_depth: int = 64) -> bool:
+	return inspect(text, max_depth)["accepted"]
+
+
+## Strictly validates text and also reports the exact raw token of the top-level
+## "schema_version" member, since native JSON rounds e.g. 1.00000000000000001 to 1.
+## Returns {"accepted": bool, "schema_version_token": String, "numbers_valid": bool}.
+## "accepted" reflects syntax only; "numbers_valid" is false when a well-formed number
+## fails the schema-1 numeric rules (unsafe integer, non-finite, nonzero underflow).
+static func inspect(text: String, max_depth: int = 64) -> Dictionary:
 	if text == null:
-		return false
+		return {"accepted": false, "schema_version_token": "", "numbers_valid": false}
 	var parser := StrictProfileJson.new()
-	return parser._validate(text, max_depth)
+	var accepted: bool = parser._validate(text, max_depth)
+	return {
+		"accepted": accepted,
+		"schema_version_token": parser._schema_version_token if accepted else "",
+		"numbers_valid": parser._numbers_valid if accepted else false,
+	}
 
 
 func _validate(text: String, max_depth: int) -> bool:
@@ -30,6 +49,8 @@ func _validate(text: String, max_depth: int) -> bool:
 	_length = text.length()
 	_pos = 0
 	_max_depth = max_depth
+	_schema_version_token = ""
+	_numbers_valid = true
 
 	_skip_whitespace()
 	if _pos >= _length:
@@ -119,11 +140,15 @@ func _parse_object(depth: int) -> bool:
 		if _pos >= _length or _text.unicode_at(_pos) != 0x3A: # ':'
 			return false
 		_pos += 1 # Skip ':'
+		_skip_whitespace()
+		var value_start := _pos
 
 		if depth >= _max_depth:
 			return false
 		if not _parse_value(depth + 1):
 			return false
+		if depth == 1 and decoded == "schema_version":
+			_schema_version_token = _text.substr(value_start, _pos - value_start)
 
 		_skip_whitespace()
 		if _pos >= _length:
@@ -314,7 +339,9 @@ func _scan_number() -> bool:
 					break
 
 	var num_str := _text.substr(start_pos, _pos - start_pos)
-	return _validate_number(num_str)
+	if not _validate_number(num_str):
+		_numbers_valid = false
+	return true
 
 
 func _validate_number(num_str: String) -> bool:
