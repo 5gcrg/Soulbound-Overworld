@@ -19,6 +19,7 @@ In accordance with `AGENTS.md` and `NFR-LIC-001`, this document registers all vi
 | *None* | *None* | *None* | *None* | *N/A* | Task SBL-W3-001 contains zero image, audio, or generated narrative assets. Combat fixture UI uses Godot primitives and native controls. |
 | *None* | *None* | *None* | *None* | *N/A* | Task SBL-W3-002 contains zero image, audio, or generated narrative assets. Code and an automated headless test only. |
 | *None* | *None* | *None* | *None* | *N/A* | Task SBL-W4-001 contains zero image or audio assets (ColorRect primitives and native Control UI only). Quest dialog & educational prompt scenario text authored per Gemini Flash non-image specification. |
+| *None* | *None* | *None* | *None* | *N/A* | Task SBL-M3-001 contains zero image, audio, or generated narrative assets. Pure GDScript system classes and automated tests only. |
 | `spec_audio_m2` | `docs/audio-spec.md` | Audio Specifications (Non-image) | Gemini Flash | Specification Ready / Pending Binary | 7 sound and music specifications (SFX dialog, feedback, combat, fanfare, BGM) authored per AGENTS.md rules. No binary generated. |
 
 ### Summary

@@ -177,3 +177,30 @@ The save suite uses disposable test roots. It verifies slot isolation, nested da
 - Codex CLI review was attempted via `codex review --uncommitted` (session `01a1bc01-5b29-7041-afa4-3c92bbd2c320`). Execution was blocked by provider credit quota (`ERROR: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/settings/usage to purchase more credits or try again at 4:15 AM.`).
 - In strict adherence to AGENTS.md Rule 5, work is logged in the queue as `REVIEW_PENDING_CODEX` to await Codex CLI quota reset at 4:15 AM.
 
+---
+
+## SBL-M3-001 — Core systems foundations (Progression, Inventory, Kurei, Dungeon)
+
+- **Milestone** M3, Weeks 6–8.
+- **Requirements** GDD-005, GDD-006, GDD-007, GDD-009–015, GDD-025–030, GDD-031–035, FR-PRO-001, FR-INV-001, FR-MAG-001, FR-DNG-001/002. Scope and evidence are recorded in the [traceability matrix](traceability-matrix.md).
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch and initial implementation** `feature/w4-5-vertical-slice`.
+- **Files** `scripts/progression/character_stats.gd`, `scripts/inventory/inventory_manager.gd`, `scripts/magic/kurei_system.gd`, `scripts/dungeon/dungeon_generator.gd`, `tests/headless/m3_systems_test.gd`, and tracked script UIDs.
+- **Asset provenance** None (pure typed GDScript system classes only).
+- **Review** REVIEW_PENDING_CODEX. Codex CLI execution blocked by usage limit until 4:15 AM. Local verification passed 100% cleanly across all 7 test suites.
+- **Open decisions** OD-002 initiative, OD-003 balance, OD-004 status timing, OD-008 extraction penalty, OD-011 dungeon branch budget.
+
+### M3 systems verification
+
+| Command | Result |
+| --- | --- |
+| `godot --headless --path . --import` | Exit 0. Re-imported cleanly, registered `CharacterStats`, `InventoryManager`, `KureiSystem`, and `DungeonGenerator`. |
+| `godot --headless --path . --fixed-fps 60 --script tests/headless/m3_systems_test.gd --quit-after 600` | Exit 0. `ALL M3 SYSTEMS TESTS PASSED SUCCESSFULLY`. Verified character leveling & ProfileStore save, inventory defeat satchel wipe with banked gear retention, 6 Kurei categories & pip/cooldown logic, and seeded dungeon determinism with BFS extraction reachability. |
+| Full 7-suite headless regression check | Exit 0. All 7 test suites (`smoke`, `transition`, `combat`, `save_model`, `vertical_slice`, `vertical_slice_loop`, `m3_systems`) pass cleanly. |
+
+### Review history
+- agy authored the 4 core M3 system modules and the comprehensive test suite `tests/headless/m3_systems_test.gd`.
+- Local verification confirmed all invariants: deterministic procedural dungeon generation, guaranteed extraction reachability, exact-once extraction transfer, defeat satchel wipe with zero banked gear loss, level/stat point scaling, and Kurei pip/cooldown management.
+- Logged as `REVIEW_PENDING_CODEX` per AGENTS.md §5 awaiting Codex quota reset at 4:15 AM.
+
+
