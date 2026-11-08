@@ -265,6 +265,45 @@ The save suite uses disposable test roots. It verifies slot isolation, nested da
 | `tests/headless/settings_accessibility_test.gd` | Exit 0. Verified master/music/sfx volume controls, reduced motion, high contrast, text scaling (0.8–1.5), sheet toggle (`O`), and `user://settings.json` persistence. |
 | Full 15-suite regression check | Exit 0. All 15 test suites pass cleanly with zero engine errors. |
 
+---
+
+## SBL-M5-001 — End-to-End Academic Playthrough QA & Educator Analytics Suite
+
+- **Milestone** M5, Week 11 QA Evidence.
+- **Requirements** GDD-001–132, M1–M4 Integration, FR-EDU-001–004. Full formal report in [`report/m5_m6_verification_and_release_report.md`](../report/m5_m6_verification_and_release_report.md).
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files** `tests/headless/{e2e_academic_playthrough_test,educator_analytics_test}.gd` and tracked UIDs.
+- **Asset provenance** None (Test harnesses and algorithmic simulators only).
+- **Review** REVIEW_PENDING_CODEX per AGENTS.md §5 awaiting Codex quota reset.
+
+### Verification
+
+| Suite | Result |
+| --- | --- |
+| `tests/headless/e2e_academic_playthrough_test.gd` | Exit 0. Verified complete student journey: Ch I $\rightarrow$ Ch II (bramble dissolve via Shift Q) $\rightarrow$ Ch III $\rightarrow$ Completion Modal $\rightarrow$ CSV export $\rightarrow$ Dungeon extraction $\rightarrow$ Profile reload. |
+| `tests/headless/educator_analytics_test.gd` | Exit 0. Verified 12-student batch simulation across 3 archetypes, first-attempt immutability stress, completion-gated unblocking, and 72-row RFC-4180 CSV generation. |
+
+---
+
+## SBL-M6-001 — Web Save Backup Export/Import & Godot Export Presets
+
+- **Milestone** M6, Week 12 Release Candidate Foundation.
+- **Requirements** GDD-098–103, AGENTS.md Engineering Invariants ("provide local web backup export/import", "single-threaded web build", "Compatibility renderer").
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files** `export_presets.cfg`, `scenes/ui/settings_sheet.{tscn,gd}`, `scenes/main/game_root.gd`, `tests/headless/web_backup_test.gd`, `docs/evaluator_walkthrough.md`, `report/academic_defense_checklist.md`, and tracked UIDs.
+- **Asset provenance** None (Godot Control UI containers and config files only).
+- **Review** REVIEW_PENDING_CODEX per AGENTS.md §5 awaiting Codex quota reset.
+
+### Verification across all 18 suites
+
+| Suite | Result |
+| --- | --- |
+| `tests/headless/web_backup_test.gd` | Exit 0. Verified profile string export, import into fresh slot, rejection of corrupted/invalid JSON, and SettingsSheet UI clipboard bridge with headless fallback. |
+| Full 18-suite regression check | Exit 0. All 18 test suites pass cleanly with zero engine errors. |
+
+
 
 
 

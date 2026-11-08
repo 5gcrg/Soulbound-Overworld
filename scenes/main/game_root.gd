@@ -511,6 +511,7 @@ func _toggle_settings_sheet() -> void:
 		return
 	_settings_sheet = sheet
 	sheet.set_settings(settings_manager)
+	sheet.set_profile_context(profile_store, "profile_01")
 	sheet.closed.connect(_close_settings_sheet)
 	target_layer.add_child(sheet)
 

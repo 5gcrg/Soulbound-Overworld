@@ -187,4 +187,35 @@ This matrix covers the M1 bootstrap and SBL-W2-001 overworld transitions under [
 - **Review**: REVIEW_PENDING_CODEX per AGENTS.md §5 awaiting Codex quota reset at 4:15 AM.
 - **Asset Scope**: Zero image generation (Godot primitives and native Control UI); educational questions authored per Gemini Flash routing.
 
+---
+
+## Task SBL-M5-001: End-to-End Academic Playthrough QA & Educator Analytics Suite
+
+| Requirement ID | Description | Milestone / Scope | Priority | Planned Scene / Script / Data Owner | Corresponding Issue / PR | Tests | Evidence Link | Implementation Status | Review Status | Last Approval Date |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **GDD-001–132** | End-to-end continuous student playthrough integration | M5 (Week 11) | P1 (planned) | `scenes/main/game_root.gd` | Task SBL-M5-001 (`feature/w4-5-vertical-slice`) | `tests/headless/e2e_academic_playthrough_test.gd` | [M5 review entry](agent-review-queue.md#sbl-m5-001--end-to-end-academic-playthrough-qa--educator-analytics-suite) | Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **FR-EDU-002** | Batch cohort first-attempt correctness immutability under stress | M5 (Week 11) | P1 (planned) | `scripts/education/assessment_controller.gd` | Task SBL-M5-001 (`feature/w4-5-vertical-slice`) | `tests/headless/educator_analytics_test.gd` | [M5 review entry](agent-review-queue.md#sbl-m5-001--end-to-end-academic-playthrough-qa--educator-analytics-suite) | Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **FR-EDU-004** | Aggregated cohort RFC-4180 CSV export validation | M5 (Week 11) | P1 (planned) | `scripts/education/assessment_controller.gd` | Task SBL-M5-001 (`feature/w4-5-vertical-slice`) | `tests/headless/educator_analytics_test.gd` | [M5 review entry](agent-review-queue.md#sbl-m5-001--end-to-end-academic-playthrough-qa--educator-analytics-suite) | Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+
+### SBL-M5-001 Scope Notes
+- **Scope**: Automated continuous E2E playthrough (Ch I $\rightarrow$ Ch II $\rightarrow$ Ch III $\rightarrow$ Modal $\rightarrow$ Dungeon $\rightarrow$ Reload) and 12-student batch cohort analytics simulator. Formal report at `report/m5_m6_verification_and_release_report.md`.
+- **Review**: REVIEW_PENDING_CODEX per AGENTS.md §5 awaiting Codex quota reset.
+- **Asset Scope**: Test harnesses and algorithmic simulators only.
+
+---
+
+## Task SBL-M6-001: Web Save Backup Export/Import & Godot Export Presets
+
+| Requirement ID | Description | Milestone / Scope | Priority | Planned Scene / Script / Data Owner | Corresponding Issue / PR | Tests | Evidence Link | Implementation Status | Review Status | Last Approval Date |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **AGENTS.md** | Web profile backup string export/import | M6 (Week 12) | P1 (planned) | `scripts/persistence/profile_store.gd`, `scenes/ui/settings_sheet.{tscn,gd}` | Task SBL-M6-001 (`feature/w4-5-vertical-slice`) | `tests/headless/web_backup_test.gd` | [M6 review entry](agent-review-queue.md#sbl-m6-001--web-save-backup-exportimport--godot-export-presets) | Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **GDD-098–102** | Profile backup corruption prevention & envelope validation | M6 (Week 12) | P1 (planned) | `scripts/persistence/profile_store.gd` | Task SBL-M6-001 (`feature/w4-5-vertical-slice`) | `tests/headless/web_backup_test.gd` | [M6 review entry](agent-review-queue.md#sbl-m6-001--web-save-backup-exportimport--godot-export-presets) | Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+| **NFR-MAINT-001** | Godot 4.7.2 export presets for Windows & Web (Compatibility, single-thread) | M6 (Week 12) | P1 (planned) | `export_presets.cfg` | Task SBL-M6-001 (`feature/w4-5-vertical-slice`) | `tests/headless/smoke_test.gd` | [M6 review entry](agent-review-queue.md#sbl-m6-001--web-save-backup-exportimport--godot-export-presets) | Implemented | REVIEW_PENDING_CODEX | Pending human acceptance |
+
+### SBL-M6-001 Scope Notes
+- **Scope**: Web backup string export and import in ProfileStore and SettingsSheet UI, export_presets.cfg configuration, Evaluator Walkthrough (`docs/evaluator_walkthrough.md`), and Academic Defense Release Checklist (`report/academic_defense_checklist.md`).
+- **Review**: REVIEW_PENDING_CODEX per AGENTS.md §5 awaiting Codex quota reset.
+- **Asset Scope**: Zero image generation (Godot primitives and native Control UI only).
+
+
 
