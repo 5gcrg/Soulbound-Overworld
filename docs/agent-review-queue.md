@@ -1983,7 +1983,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
   - Documentation: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
   - Negative control logs: `report/neg_input_rebinding_conflict.log`, `report/neg_future_settings_blocked.log`.
 - **Asset provenance** None (pure GDScript and Control scene node structure; zero image or audio generation).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1c06b-9905-7633-a299-32dac1671a06` found three P2 findings: unsafe per-action reset, malformed-entry type validation bypass, and capture-test writes to the real user settings file.
+- **Review** REVIEWED by Codex CLI session `01a1c07c-8045-7a60-bd41-1dcb9620f860`; no actionable regressions. Rebinding persistence, malformed-entry rejection, atomic reset, and user-settings isolation are cleared.
 - **Open questions** None. (Controller/touch bindings, modifier chords, custom actions, input presets, and OD-002..004 combat formulas remain separate out-of-scope boundaries).
 
 ### Changes

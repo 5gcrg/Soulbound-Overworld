@@ -144,6 +144,15 @@ entries:
 - **Findings:** per-action reset can erase an override before a conflicting candidate is validated; malformed binding entries can reach duplicate checking before type validation and trigger an invalid cast; the capture test writes to the real `user://settings.json` instead of an isolated test path.
 - **Disposition:** Stage a focused fix. Do not proceed to the learning journal or provenance manifest until the fix is reviewed.
 
+## SBL-UX-001 fix re-review approval
+
+- **Evidence:** `report/codex_rereview_ux001_fixes.log`.
+- **Session:** `01a1c07c-8045-7a60-bd41-1dcb9620f860`.
+- **Range:** `8a6f23a..2e5d8b6`.
+- **Independent targeted verification:** input rebinding, settings/accessibility, and layout suites passed.
+- **Verdict:** `APPROVED`; no actionable regressions. Codex confirmed atomic reset, malformed-entry rejection, and byte-identical user-settings isolation.
+- **Disposition:** `SBL-UX-001` is `REVIEWED`. The next approved slice is `SBL-EDU-005`.
+
 ## Batch C audit order fix (SBL-REV-009)
 
 - **Task:** `SBL-REV-009` (Fix boss layout audit initialization order).
