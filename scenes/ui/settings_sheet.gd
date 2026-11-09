@@ -80,12 +80,12 @@ func _on_master_slider_changed(val: float) -> void:
 
 func _on_music_slider_changed(val: float) -> void:
 	if settings != null:
-		settings.music_volume = clampf(val / 100.0, 0.0, 1.0)
+		settings.set_music_volume(val / 100.0)
 		music_val_label.text = "%d%%" % int(val)
 
 func _on_sfx_slider_changed(val: float) -> void:
 	if settings != null:
-		settings.sfx_volume = clampf(val / 100.0, 0.0, 1.0)
+		settings.set_sfx_volume(val / 100.0)
 		sfx_val_label.text = "%d%%" % int(val)
 
 func _on_reduced_motion_toggled(enabled: bool) -> void:
@@ -117,10 +117,16 @@ func _on_export_backup_pressed() -> void:
 	if res.get("error", ERR_UNCONFIGURED) == OK:
 		var txt: String = res.get("text", "")
 		last_exported_backup = txt
-		if DisplayServer.has_feature(DisplayServer.FEATURE_CLIPBOARD):
-			DisplayServer.clipboard_set(txt)
-		if backup_status_label != null:
-			backup_status_label.text = "Profile backup copied to clipboard! (%d chars)" % txt.length()
+		if OS.has_feature("web"):
+			var buf: PackedByteArray = txt.to_utf8_buffer()
+			JavaScriptBridge.download_buffer(buf, "soulbound_backup_%s.json" % active_profile_id, "application/json")
+			if backup_status_label != null:
+				backup_status_label.text = "Profile backup downloaded via browser! (%d chars)" % txt.length()
+		else:
+			if DisplayServer.has_feature(DisplayServer.FEATURE_CLIPBOARD):
+				DisplayServer.clipboard_set(txt)
+			if backup_status_label != null:
+				backup_status_label.text = "Profile backup copied to clipboard! (%d chars)" % txt.length()
 	else:
 		if backup_status_label != null:
 			backup_status_label.text = "Export failed with error: %s" % error_string(res.get("error", 0))

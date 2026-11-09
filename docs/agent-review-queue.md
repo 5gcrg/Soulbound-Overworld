@@ -341,3 +341,25 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | `tests/headless/combat_test.gd` | Exit 0. Verified item rejection when 0 owned, item consumption from inventory, healing 1 pip, healing cap rejection at `max_ren_pips` (3), and modal hotkey blocking. |
 | `tests/headless/ui_sheets_test.gd` | Exit 0. Verified UI equip buttons (`weapon_equip_btn`, `relic1_equip_btn`), unequip buttons, button disabling when no candidates exist, and `equipment_changed` signal emission. |
 | Full 18-suite regression check | Exit 0. All 18 test suites pass cleanly with zero engine errors. |
+
+---
+
+## SBL-FIX-002 — Dungeon Suspend/Resume Persistence, Web Browser Direct Download Bridge & Live Accessibility Audio Application
+
+- **Milestone** M3, M4 & M6 Hardening (Academic MVP Completion).
+- **Requirements** GDD-031..035, GDD-098..103, GDD-103, FR-DNG-001/002, FR-EDU-004, TC-ACC-001, AGENTS.md Invariants ("Suspend/resume an expedition does not count as extraction; validate exactly-once reward transfer", "provide local web backup export/import").
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files** `scenes/dungeon/dungeon_expedition.{tscn,gd}`, `scenes/main/game_root.gd`, `scenes/ui/academic_completion_modal.gd`, `scenes/ui/settings_sheet.gd`, `scripts/education/assessment_controller.gd`, `scripts/settings/settings_manager.gd`, `tests/headless/{dungeon_scene_test,web_backup_test}.gd`, and `docs/agent-review-queue.md`.
+- **Asset provenance** None (pure code and Godot UI primitives only).
+- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Open questions** None for this slice.
+
+### Verification across all 18 suites
+
+| Suite | Result |
+| --- | --- |
+| `tests/headless/dungeon_scene_test.gd` | Exit 0. Verified active expedition suspend at chamber 3, node serialization, restore into fresh instance, satchel preservation without bank transfer, advance to portal, and exact-once extraction without reward duplication. |
+| `tests/headless/web_backup_test.gd` | Exit 0. Verified in-memory `generate_csv_text()` RFC-4180 format, web UTF-8 buffer preparation for `JavaScriptBridge.download_buffer`, and profile backup export. |
+| `tests/headless/settings_accessibility_test.gd` | Exit 0. Verified `set_music_volume`, `set_sfx_volume`, `apply_audio_buses`, and `apply_all_settings` without recursive loops. |
+| Full 18-suite regression check | Exit 0. All 18 test suites pass cleanly with zero engine errors. |

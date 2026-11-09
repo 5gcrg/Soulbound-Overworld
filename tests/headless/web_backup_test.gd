@@ -130,6 +130,15 @@ func _run_test() -> void:
 	# Clean up temporary test profiles
 	_cleanup_dir(_test_root)
 
+	# Web CSV buffer generation test
+	var ac := AssessmentController.new()
+	ac.submit_answer("q_dec_01", 0)
+	var csv_text: String = ac.generate_csv_text()
+	_check(csv_text.begins_with("question_id,competency,difficulty,first_attempt_correct,total_attempts,completed,timestamp"), "generate_csv_text has valid RFC-4180 header")
+	_check(csv_text.contains("q_dec_01"), "generate_csv_text includes question record")
+	var web_buffer: PackedByteArray = csv_text.to_utf8_buffer()
+	_check(web_buffer.size() > 0, "Web CSV buffer successfully created for JavaScriptBridge.download_buffer")
+
 	await _test_live_restore()
 
 	print("--- Web Save Backup & Export Verification Complete. Failures: %d ---" % _failures)

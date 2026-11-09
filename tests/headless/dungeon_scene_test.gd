@@ -60,6 +60,9 @@ func _run_test() -> void:
 	# Run SBL-P1-B Atomic Extraction Regression Test
 	_test_atomic_extraction_commit_and_retry()
 
+	# Run SBL-P1-C Expedition Suspend & Resume Test
+	_test_expedition_suspend_and_resume()
+
 	if _failures > 0:
 		printerr("DUNGEON SCENE TESTS FAILED: ", _failures)
 		quit(1)
@@ -180,6 +183,58 @@ func _test_atomic_extraction_commit_and_retry() -> void:
 
 	expedition.queue_free()
 	_cleanup_dir(test_root)
+
+func _test_expedition_suspend_and_resume() -> void:
+	print("--- Running SBL-P1-C Expedition Suspend & Resume Test ---")
+	var expedition: DungeonExpedition = DungeonExpeditionScene.instantiate() as DungeonExpedition
+	root.add_child(expedition)
+
+	var ok: bool = expedition.setup(2026, 6)
+	_check(ok == true, "Suspend test setup succeeded")
+
+	# Advance 2 steps into dungeon
+	expedition._on_advance_pressed()
+	expedition._on_advance_pressed()
+	_check(expedition.current_step == 2, "Advanced to chamber 3 (step 2)")
+
+	var mid_satchel: int = expedition.inventory.satchel_items.get("ancient_relic_fragment", 0)
+	var mid_bank: int = expedition.inventory.banked_items.get("ancient_relic_fragment", 0)
+	_check(mid_satchel > 0, "Satchel holds fragments mid-run")
+
+	# Suspend expedition
+	var suspended_state: Dictionary = expedition.suspend_expedition()
+	_check(suspended_state.get("is_active", false) == true, "Suspended state marked active")
+	_check(int(suspended_state.get("current_step", -1)) == 2, "Suspended step is 2")
+	_check(expedition.is_active == false, "Expedition node marked inactive after suspend")
+
+	# Suspend does NOT count as extraction: bank is unchanged
+	_check(expedition.inventory.banked_items.get("ancient_relic_fragment", 0) == mid_bank, "Bank unchanged upon suspend (not an extraction)")
+
+	expedition.queue_free()
+	await process_frame
+
+	# Resume in new expedition instance
+	var resumed_expedition: DungeonExpedition = DungeonExpeditionScene.instantiate() as DungeonExpedition
+	root.add_child(resumed_expedition)
+
+	var resume_ok: bool = resumed_expedition.restore_expedition(suspended_state)
+	_check(resume_ok == true, "Expedition successfully restored from suspended state")
+	_check(resumed_expedition.is_active == true, "Resumed expedition is active")
+	_check(resumed_expedition.current_step == 2, "Resumed step is 2")
+	_check(resumed_expedition.inventory.satchel_items.get("ancient_relic_fragment", 0) == mid_satchel, "Resumed satchel holds exact preserved fragments")
+
+	# Continue run to extraction chamber
+	while not resumed_expedition.is_at_extraction_chamber():
+		resumed_expedition._on_advance_pressed()
+	_check(resumed_expedition.is_at_extraction_chamber() == true, "Reached extraction chamber after resume")
+
+	var final_satchel: int = resumed_expedition.inventory.satchel_items.get("ancient_relic_fragment", 0)
+	var extracted: Dictionary = resumed_expedition.extract_now()
+	_check(extracted.get("ancient_relic_fragment", 0) == final_satchel, "Extracted all fragments upon reaching portal")
+	_check(resumed_expedition.inventory.banked_items.get("ancient_relic_fragment", 0) == final_satchel, "Exact-once transfer to bank verified (no double reward)")
+	_check(resumed_expedition.inventory.satchel_items.is_empty(), "Satchel empty after extraction")
+
+	resumed_expedition.queue_free()
 
 func _cleanup_dir(path: String) -> void:
 	var global_path: String = ProjectSettings.globalize_path(path)

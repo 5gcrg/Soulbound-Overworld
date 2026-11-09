@@ -10,6 +10,7 @@ extends Control
 signal expedition_completed(extracted_items: Dictionary)
 signal expedition_failed(lost_items: Dictionary)
 signal expedition_cancelled
+signal expedition_suspended(state: Dictionary)
 signal extraction_save_failed(error: Error)
 
 const ROOM_SIZE: Vector2 = Vector2(180, 120)
@@ -40,6 +41,7 @@ var _is_extracting: bool = false
 @onready var advance_btn: Button = $UI/Panel/Margin/VBox/ActionBox/AdvanceBtn
 @onready var extract_btn: Button = $UI/Panel/Margin/VBox/ActionBox/ExtractBtn
 @onready var retreat_btn: Button = $UI/Panel/Margin/VBox/ActionBox/RetreatBtn
+@onready var suspend_btn: Button = $UI/Panel/Margin/VBox/ActionBox/SuspendBtn
 @onready var step_back_btn: Button = $UI/Panel/Margin/VBox/ActionBox/StepBackBtn
 
 func _ready() -> void:
@@ -49,6 +51,8 @@ func _ready() -> void:
 		extract_btn.pressed.connect(_on_extract_pressed)
 	if retreat_btn != null:
 		retreat_btn.pressed.connect(_on_retreat_pressed)
+	if suspend_btn != null:
+		suspend_btn.pressed.connect(_on_suspend_pressed)
 	if step_back_btn != null:
 		step_back_btn.pressed.connect(_on_step_back_pressed)
 
@@ -238,6 +242,9 @@ func refresh_ui() -> void:
 
 	step_back_btn.visible = (current_step == 0)
 	retreat_btn.visible = (current_step > 0)
+	if suspend_btn != null:
+		suspend_btn.visible = (current_step > 0)
+		suspend_btn.disabled = not is_active or _is_extracting
 
 func _on_advance_pressed() -> void:
 	if not is_active or _is_extracting:
@@ -260,6 +267,9 @@ func _on_extract_pressed() -> void:
 func _on_retreat_pressed() -> void:
 	fail_now()
 
+func _on_suspend_pressed() -> void:
+	suspend_expedition()
+
 func _on_step_back_pressed() -> void:
 	cancel_expedition()
 
@@ -268,6 +278,40 @@ func cancel_expedition() -> void:
 		return
 	is_active = false
 	expedition_cancelled.emit()
+
+func serialize_expedition() -> Dictionary:
+	return {
+		"is_active": is_active,
+		"seed": generator.current_seed,
+		"room_count": generator.rooms.size(),
+		"current_step": current_step,
+		"expedition_path": expedition_path.duplicate(),
+		"satchel_items": inventory.satchel_items.duplicate()
+	}
+
+func restore_expedition(data: Dictionary) -> bool:
+	if typeof(data) != TYPE_DICTIONARY or not data.get("is_active", false):
+		return false
+	var seed_val: int = int(data.get("seed", 1337))
+	var room_count: int = int(data.get("room_count", 6))
+	if not setup(seed_val, room_count):
+		return false
+	current_step = clampi(int(data.get("current_step", 0)), 0, maxi(0, expedition_path.size() - 1))
+	var satchel: Dictionary = data.get("satchel_items", {})
+	inventory.satchel_items = satchel.duplicate()
+	is_active = true
+	_is_extracting = false
+	if is_inside_tree():
+		refresh_ui()
+	return true
+
+func suspend_expedition() -> Dictionary:
+	if not is_active or _is_extracting:
+		return {}
+	var state: Dictionary = serialize_expedition()
+	is_active = false
+	expedition_suspended.emit(state)
+	return state
 
 func extract_now() -> Dictionary:
 	if not is_active or _is_extracting:
@@ -318,12 +362,15 @@ func fail_now() -> Dictionary:
 func _unhandled_input(event: InputEvent) -> void:
 	if _is_extracting:
 		return
+	if event.is_action_pressed("toggle_character") or event.is_action_pressed("toggle_inventory") or event.is_action_pressed("toggle_settings"):
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
 		if current_step == 0:
 			cancel_expedition()
 		else:
-			fail_now()
+			suspend_expedition()
 	elif event.is_action_pressed("ui_accept"):
 		get_viewport().set_input_as_handled()
 		if advance_btn != null and advance_btn.visible and not advance_btn.disabled:

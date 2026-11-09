@@ -151,6 +151,11 @@ custom_minimum_size = Vector2(140, 34)
 layout_mode = 2
 text = "Retreat (Lose Satchel)"
 
+[node name="SuspendBtn" type="Button" parent="UI/Panel/Margin/VBox/ActionBox"]
+custom_minimum_size = Vector2(130, 34)
+layout_mode = 2
+text = "Suspend Run"
+
 [node name="StepBackBtn" type="Button" parent="UI/Panel/Margin/VBox/ActionBox"]
 custom_minimum_size = Vector2(120, 34)
 layout_mode = 2

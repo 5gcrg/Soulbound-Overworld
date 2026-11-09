@@ -352,19 +352,9 @@ static func _extract_first_response_selected_index(rec: Dictionary) -> Dictionar
 # RFC-4180 CSV Report Export
 # ==============================================================================
 
-func export_to_csv(export_path: String = "user://reports/competency_record.csv") -> Error:
-	var base_dir: String = export_path.get_base_dir()
-	if not DirAccess.dir_exists_absolute(base_dir):
-		var make_err: Error = DirAccess.make_dir_recursive_absolute(base_dir)
-		if make_err != OK:
-			return make_err
-
-	var file := FileAccess.open(export_path, FileAccess.WRITE)
-	if file == null:
-		return FileAccess.get_open_error()
-
-	# RFC-4180 CSV Header
-	file.store_line("question_id,competency,difficulty,first_attempt_correct,total_attempts,completed,timestamp")
+func generate_csv_text() -> String:
+	var lines: Array[String] = []
+	lines.append("question_id,competency,difficulty,first_attempt_correct,total_attempts,completed,timestamp")
 
 	var keys: Array = records.keys()
 	keys.sort()
@@ -379,8 +369,22 @@ func export_to_csv(export_path: String = "user://reports/competency_record.csv")
 			"true" if rec.get("completed", false) else "false",
 			int(rec.get("timestamp", 0))
 		]
-		file.store_line(line)
+		lines.append(line)
 
+	return "\n".join(lines) + "\n"
+
+func export_to_csv(export_path: String = "user://reports/competency_record.csv") -> Error:
+	var base_dir: String = export_path.get_base_dir()
+	if not DirAccess.dir_exists_absolute(base_dir):
+		var make_err: Error = DirAccess.make_dir_recursive_absolute(base_dir)
+		if make_err != OK:
+			return make_err
+
+	var file := FileAccess.open(export_path, FileAccess.WRITE)
+	if file == null:
+		return FileAccess.get_open_error()
+
+	file.store_string(generate_csv_text())
 	file.close()
 	return OK
 

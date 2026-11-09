@@ -54,7 +54,13 @@ func _on_export_pressed() -> void:
 		var export_path: String = "user://reports/soulbound_academic_mvp_report.csv"
 		var err: Error = assessment_controller.export_to_csv(export_path)
 		if err == OK:
-			status_feedback_label.text = "Report exported to: %s" % export_path
+			if OS.has_feature("web"):
+				var csv_text: String = assessment_controller.generate_csv_text()
+				var buf: PackedByteArray = csv_text.to_utf8_buffer()
+				JavaScriptBridge.download_buffer(buf, "soulbound_academic_mvp_report.csv", "text/csv")
+				status_feedback_label.text = "Report downloaded via browser!"
+			else:
+				status_feedback_label.text = "Report exported to: %s" % export_path
 		else:
 			status_feedback_label.text = "Export failed: Error %d" % err
 

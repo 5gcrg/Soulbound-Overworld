@@ -26,6 +26,7 @@ var _chapter_dialog_pending: bool = false
 var _current_region_id: String = DEFAULT_START_REGION
 var _expedition: DungeonExpedition = null
 var _expedition_pending: bool = false
+var _suspended_expedition: Dictionary = {}
 var _character_sheet: CharacterSheet = null
 var _inventory_sheet: InventorySheet = null
 var _academic_modal: AcademicCompletionModal = null
@@ -61,6 +62,8 @@ func _ready() -> void:
 
 	if settings_manager != null:
 		settings_manager.load_settings()
+		settings_manager.settings_changed.connect(_apply_runtime_settings)
+		_apply_runtime_settings()
 
 	_init_slice_progress()
 
@@ -396,10 +399,16 @@ func _try_open_expedition(gateway_id: int) -> bool:
 	instance.expedition_completed.connect(_on_expedition_completed)
 	instance.expedition_failed.connect(_on_expedition_failed)
 	instance.expedition_cancelled.connect(_on_expedition_cancelled)
+	instance.expedition_suspended.connect(_on_expedition_suspended)
 	target_layer.add_child(_expedition)
-	instance.setup(1337, 6)
-	if status_label != null:
-		status_label.text = "Expedition active: Reach Extraction Portal"
+	if not _suspended_expedition.is_empty() and _suspended_expedition.get("is_active", false):
+		instance.restore_expedition(_suspended_expedition)
+		if status_label != null:
+			status_label.text = "Expedition resumed at chamber %d: Reach Extraction Portal" % (instance.current_step + 1)
+	else:
+		instance.setup(1337, 6)
+		if status_label != null:
+			status_label.text = "Expedition active: Reach Extraction Portal"
 	return true
 
 func _commit_extraction(candidate: InventoryManager) -> Error:
@@ -411,11 +420,13 @@ func _commit_extraction(candidate: InventoryManager) -> Error:
 	return err
 
 func _on_expedition_completed(extracted_items: Dictionary) -> void:
+	_suspended_expedition.clear()
 	if status_label != null:
 		status_label.text = "Expedition Cleared! Extracted %d item types to Bank." % extracted_items.size()
 	_close_expedition()
 
 func _on_expedition_failed(lost_items: Dictionary) -> void:
+	_suspended_expedition.clear()
 	if profile_store != null:
 		inventory_manager.save_to_store(profile_store, _profile_slot)
 	if status_label != null:
@@ -425,6 +436,12 @@ func _on_expedition_failed(lost_items: Dictionary) -> void:
 func _on_expedition_cancelled() -> void:
 	if status_label != null:
 		status_label.text = "Expedition cancelled. Returned to overworld."
+	_close_expedition()
+
+func _on_expedition_suspended(state: Dictionary) -> void:
+	_suspended_expedition = state.duplicate(true)
+	if status_label != null:
+		status_label.text = "Expedition suspended. Satchel preserved."
 	_close_expedition()
 
 func _close_expedition() -> void:
@@ -587,6 +604,16 @@ func _close_settings_sheet() -> void:
 
 	if _character_sheet == null and _inventory_sheet == null and _battle == null and _dialog == null and _expedition == null and _academic_modal == null and _chapter_dialog == null:
 		_restore_combat_movement()
+
+func _apply_runtime_settings() -> void:
+	if settings_manager == null:
+		return
+	settings_manager.apply_all_settings()
+	if world_container != null:
+		if settings_manager.high_contrast:
+			world_container.modulate = Color(1.15, 1.15, 1.15, 1.0)
+		else:
+			world_container.modulate = Color(1.0, 1.0, 1.0, 1.0)
 
 func _reload_imported_profile() -> void:
 	_init_slice_progress(profile_store, _profile_slot)

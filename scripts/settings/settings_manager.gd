@@ -29,10 +29,32 @@ func set_text_scale(scale: float) -> void:
 
 func set_master_volume(vol: float) -> void:
 	master_volume = clampf(vol, 0.0, 1.0)
-	var bus_idx: int = AudioServer.get_bus_index("Master")
-	if bus_idx >= 0:
-		AudioServer.set_bus_volume_db(bus_idx, linear_to_db(master_volume) if master_volume > 0.001 else -80.0)
+	apply_audio_buses()
 	settings_changed.emit()
+
+func set_music_volume(vol: float) -> void:
+	music_volume = clampf(vol, 0.0, 1.0)
+	apply_audio_buses()
+	settings_changed.emit()
+
+func set_sfx_volume(vol: float) -> void:
+	sfx_volume = clampf(vol, 0.0, 1.0)
+	apply_audio_buses()
+	settings_changed.emit()
+
+func apply_audio_buses() -> void:
+	var m_bus: int = AudioServer.get_bus_index("Master")
+	if m_bus >= 0:
+		AudioServer.set_bus_volume_db(m_bus, linear_to_db(master_volume) if master_volume > 0.001 else -80.0)
+	var music_bus: int = AudioServer.get_bus_index("Music")
+	if music_bus >= 0:
+		AudioServer.set_bus_volume_db(music_bus, linear_to_db(music_volume) if music_volume > 0.001 else -80.0)
+	var sfx_bus: int = AudioServer.get_bus_index("SFX")
+	if sfx_bus >= 0:
+		AudioServer.set_bus_volume_db(sfx_bus, linear_to_db(sfx_volume) if sfx_volume > 0.001 else -80.0)
+
+func apply_all_settings() -> void:
+	apply_audio_buses()
 
 func serialize() -> Dictionary:
 	return {
@@ -72,4 +94,7 @@ func load_settings(path: String = SETTINGS_FILE_PATH) -> Error:
 	var parsed: Variant = JSON.parse_string(text)
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return ERR_INVALID_DATA
-	return deserialize(parsed as Dictionary)
+	var err: Error = deserialize(parsed as Dictionary)
+	if err == OK:
+		apply_audio_buses()
+	return err
