@@ -2,6 +2,7 @@ class_name BattleFixture
 extends Control
 
 signal continued
+signal action_performed(action_type: StringName)
 
 enum Phase {
 	PLAYER,
@@ -133,6 +134,8 @@ func request_action(action: StringName) -> bool:
 		elif skill_id == &"torrent_surge":
 			ren_pips = mini(max_ren_pips, ren_pips + 1)
 
+		action_performed.emit(&"spell")
+
 		if enemy_pips <= 0:
 			enemy_pips = 0
 			phase = Phase.VICTORY
@@ -147,12 +150,17 @@ func request_action(action: StringName) -> bool:
 		if not consume_healing_item():
 			return false
 		ren_pips = mini(max_ren_pips, ren_pips + 1)
+		action_performed.emit(&"item")
+
+	if action == &"defend":
+		action_performed.emit(&"defend")
 
 	last_player_action = action
 	phase = Phase.ENEMY
 	kurei_menu.visible = false
 
 	if action == &"attack":
+		action_performed.emit(&"attack")
 		enemy_pips -= 1
 		if enemy_pips <= 0:
 			enemy_pips = 0

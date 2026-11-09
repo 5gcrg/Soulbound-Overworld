@@ -10,6 +10,7 @@ signal dimension_shift_requested()
 signal grant_items_requested()
 signal complete_activities_requested()
 signal max_stats_requested()
+signal title_screen_requested()
 
 @onready var panel: PanelContainer = $DebugPanel
 @onready var toggle_btn: Button = $ToggleBtn
@@ -103,6 +104,13 @@ func _connect_buttons() -> void:
 	var btn_stats: Button = panel.get_node_or_null("Margin/VBox/CheatsGrid/BtnStats") as Button
 	if btn_stats != null:
 		btn_stats.pressed.connect(func(): max_stats_requested.emit())
+
+	var btn_title: Button = panel.get_node_or_null("Margin/VBox/CheatsGrid/BtnTitle") as Button
+	if btn_title != null:
+		btn_title.pressed.connect(func():
+			toggle_panel()
+			title_screen_requested.emit()
+		)
 
 	var btn_close: Button = panel.get_node_or_null("Margin/VBox/BtnClose") as Button
 	if btn_close != null:

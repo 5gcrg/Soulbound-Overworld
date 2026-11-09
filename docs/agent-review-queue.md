@@ -385,3 +385,23 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | `tests/headless/status_engine_test.gd` | Exit 0. Verified Poison/Burn DoT, Regeneration HoT, Shield absorption, Defense Up/Down modifiers, Stun action blocking, Silence skill blocking, and round-trip serialization. |
 | `tests/headless/evaluator_debug_bar_test.gd` | Exit 0. Verified F1 toggleable evaluator tools, direct region warps (Dawnreach, Whispering Grove, Forgotten Shrine, Ashen Peaks), instant item granting, level 10 max stats, instant activity completions, and direct modal triggering. |
 | Full 20-suite regression check | Exit 0. All 20 test suites pass cleanly with zero engine errors. |
+
+---
+
+## SBL-FIX-004 — Title Screen & Profile Selector, Procedural Audio Feedback Engine & Presentation Guide
+
+- **Milestone** M6 & Final Academic Defense Polish.
+- **Requirements** GDD-098..103, TC-ACC-001, GDD-116, AGENTS.md Invariants ("Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer", "Music/SFX and other non-image assets: Gemini Flash. If no capable audio-output mode exists, only prepare a spec/source and mark the binary asset pending; don't substitute another generator silently").
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files** `scenes/ui/title_screen.{tscn,gd}`, `scripts/audio/audio_manager.gd`, `scenes/main/game_root.{tscn,gd}`, `scenes/combat/battle_fixture.gd`, `scenes/ui/evaluator_debug_bar.{tscn,gd}`, `tests/headless/title_screen_audio_test.gd`, `docs/defense_presentation_guide.md`, and `docs/agent-review-queue.md`.
+- **Asset provenance** None (pure code, UI nodes, procedural AudioStreamWAV synthesis with zero external binary dependencies).
+- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Open questions** None for this slice.
+
+### Verification across all 21 suites
+
+| Suite | Result |
+| --- | --- |
+| `tests/headless/title_screen_audio_test.gd` | Exit 0. Verified procedural AudioStreamWAV synthesis for 9 sound cues (strike, defend, heal, spell_cast, shift, portal, correct, wrong, button), TitleScreen profile slot selection, defense quick-start demo trigger, and evaluator return button. |
+| Full 21-suite regression check | Exit 0. All 21 test suites pass cleanly with zero engine errors. |

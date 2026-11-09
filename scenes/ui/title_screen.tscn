@@ -1,0 +1,135 @@
+[gd_scene load_steps=2 format=3 uid="uid://c5q09title001"]
+
+[ext_resource type="Script" path="res://scenes/ui/title_screen.gd" id="1_title"]
+
+[node name="TitleScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_title")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.07, 0.08, 0.13, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MainVBox" type="VBoxContainer" parent="CenterContainer"]
+custom_minimum_size = Vector2(440, 0)
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="CenterContainer/MainVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.82, 0.35, 1)
+theme_override_font_sizes/font_size = 36
+text = "SOULBOUND"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="CenterContainer/MainVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.68, 0.85, 0.96, 1)
+theme_override_font_sizes/font_size = 12
+text = "A 2D Turn-Based Roguelite RPG & Educational Assessment System"
+horizontal_alignment = 1
+
+[node name="VersionTag" type="Label" parent="CenterContainer/MainVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.65, 0.75, 0.8)
+theme_override_font_sizes/font_size = 10
+text = "Academic Defense Edition — Single-Threaded Web & Windows Portable"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="CenterContainer/MainVBox"]
+layout_mode = 2
+
+[node name="MenuButtons" type="VBoxContainer" parent="CenterContainer/MainVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ContinueBtn" type="Button" parent="CenterContainer/MainVBox/MenuButtons"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Continue Journey (profile_01)"
+
+[node name="NewGameBtn" type="Button" parent="CenterContainer/MainVBox/MenuButtons"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Start New Journey"
+
+[node name="SelectProfileBtn" type="Button" parent="CenterContainer/MainVBox/MenuButtons"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Select Profile Slot (1, 2, 3)"
+
+[node name="SettingsBtn" type="Button" parent="CenterContainer/MainVBox/MenuButtons"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Settings & Accessibility"
+
+[node name="BackupBtn" type="Button" parent="CenterContainer/MainVBox/MenuButtons"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Web Save Backup / Import"
+
+[node name="DefenseBtn" type="Button" parent="CenterContainer/MainVBox/MenuButtons"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.9, 0.45, 1)
+theme_override_font_sizes/font_size = 12
+text = "[🎓 Academic Defense Quick-Start]"
+
+[node name="ProfileSelector" type="VBoxContainer" parent="CenterContainer/MainVBox"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Header" type="Label" parent="CenterContainer/MainVBox/ProfileSelector"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.85, 0.5, 1)
+theme_override_font_sizes/font_size = 13
+text = "Select Profile Slot:"
+horizontal_alignment = 1
+
+[node name="Slot1Btn" type="Button" parent="CenterContainer/MainVBox/ProfileSelector"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Profile 1: [Empty Slot]"
+
+[node name="Slot2Btn" type="Button" parent="CenterContainer/MainVBox/ProfileSelector"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Profile 2: [Empty Slot]"
+
+[node name="Slot3Btn" type="Button" parent="CenterContainer/MainVBox/ProfileSelector"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Profile 3: [Empty Slot]"
+
+[node name="BackBtn" type="Button" parent="CenterContainer/MainVBox/ProfileSelector"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "<- Back to Title Menu"

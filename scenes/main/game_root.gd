@@ -12,6 +12,7 @@ const INVENTORY_SHEET_SCENE: PackedScene = preload("res://scenes/ui/inventory_sh
 const ACADEMIC_COMPLETION_SCENE: PackedScene = preload("res://scenes/ui/academic_completion_modal.tscn")
 const SETTINGS_SHEET_SCENE: PackedScene = preload("res://scenes/ui/settings_sheet.tscn")
 const EVALUATOR_DEBUG_BAR_SCENE: PackedScene = preload("res://scenes/ui/evaluator_debug_bar.tscn")
+const TITLE_SCREEN_SCENE: PackedScene = preload("res://scenes/ui/title_screen.tscn")
 
 const EXPECTED_ENCOUNTER_ID: StringName = &"combat_alpha_fixture"
 const EXPECTED_NPC_ID: StringName = &"quest_guide_alpha"
@@ -33,6 +34,8 @@ var _inventory_sheet: InventorySheet = null
 var _academic_modal: AcademicCompletionModal = null
 var _settings_sheet: SettingsSheet = null
 var _debug_bar: EvaluatorDebugBar = null
+var _title_screen: TitleScreen = null
+var audio_manager: AudioManager = null
 var _previous_input_frozen: bool = false
 var _pending_return_to_alpha: bool = false
 var _chapter_baseline: String = "{}"
@@ -57,11 +60,16 @@ var settings_manager: SettingsManager = SettingsManager.new()
 @onready var _dialog_layer: CanvasLayer = $DialogLayer
 @onready var _expedition_layer: CanvasLayer = $ExpeditionLayer
 @onready var _sheet_layer: CanvasLayer = $SheetLayer
+@onready var _title_layer: CanvasLayer = $TitleLayer
 @onready var _debug_layer: CanvasLayer = $DebugLayer
 
 func _ready() -> void:
 	if status_label != null:
 		status_label.text = ""
+
+	audio_manager = AudioManager.new()
+	audio_manager.name = "AudioManager"
+	add_child(audio_manager)
 
 	if settings_manager != null:
 		settings_manager.load_settings()
@@ -70,6 +78,9 @@ func _ready() -> void:
 
 	_init_slice_progress()
 	_init_debug_bar()
+
+	if DisplayServer.get_name() != "headless":
+		open_title_screen()
 
 	if world_router != null and world_container != null and player != null:
 		world_router.setup(world_container, player)
@@ -119,6 +130,8 @@ func _on_region_transition_completed(region_id: String, spawn_id: String) -> voi
 	_current_region_id = region_id
 	_bind_region_fixtures()
 	_sync_chapter_gates()
+	if audio_manager != null:
+		audio_manager.play_cue("portal")
 	if status_label != null:
 		status_label.text = "Region: %s (Spawn: %s)" % [region_id, spawn_id]
 
@@ -140,17 +153,25 @@ func _unhandled_input(event: InputEvent) -> void:
 			var err: Error = dimension_manager.request_shift(player, space)
 			if err == OK:
 				dimension_manager.apply_dimension_to_region(world_router.active_region)
+				if audio_manager != null:
+					audio_manager.play_cue("shift")
 				if status_label != null:
 					var dim_name: String = "Spirit Dimension" if dimension_manager.current_dimension == DimensionManager.Dimension.SPIRIT else "Physical Dimension"
 					status_label.text = "Shifted to %s" % dim_name
 	elif event.is_action_pressed("toggle_character"):
 		if not has_blocking_modal():
+			if audio_manager != null:
+				audio_manager.play_cue("button")
 			_toggle_character_sheet()
 	elif event.is_action_pressed("toggle_inventory"):
 		if not has_blocking_modal():
+			if audio_manager != null:
+				audio_manager.play_cue("button")
 			_toggle_inventory_sheet()
 	elif event.is_action_pressed("toggle_settings"):
 		if not has_blocking_modal():
+			if audio_manager != null:
+				audio_manager.play_cue("button")
 			_toggle_settings_sheet()
 
 func has_blocking_modal() -> bool:
@@ -159,6 +180,7 @@ func has_blocking_modal() -> bool:
 		or (_expedition != null and is_instance_valid(_expedition)) \
 		or (_academic_modal != null and is_instance_valid(_academic_modal)) \
 		or (_chapter_dialog != null and is_instance_valid(_chapter_dialog)) \
+		or (_title_screen != null and is_instance_valid(_title_screen)) \
 		or _chapter_dialog_pending
 
 # ==============================================================================
@@ -217,6 +239,7 @@ func _try_open_combat(encounter_id: int) -> bool:
 	if instance == null:
 		return false
 	instance.inventory = inventory_manager
+	instance.action_performed.connect(_on_combat_action_performed)
 	_battle = instance
 	player.freeze_movement()
 	if not _battle.is_connected("continued", _close_combat):
@@ -244,6 +267,19 @@ func _close_combat() -> void:
 			if status_label != null:
 				status_label.text = "Victory! Return to Spirit Guide to turn in quest"
 			_update_objective()
+
+func _on_combat_action_performed(act: StringName) -> void:
+	if audio_manager == null:
+		return
+	match act:
+		&"attack":
+			audio_manager.play_cue("strike")
+		&"defend":
+			audio_manager.play_cue("defend")
+		&"item":
+			audio_manager.play_cue("heal")
+		&"spell":
+			audio_manager.play_cue("spell_cast")
 
 # ==============================================================================
 # Quest Guide NPC Binding & Handling
@@ -799,6 +835,8 @@ func _on_chapter_answer(index: int, question_id: String) -> void:
 		dialog.show_save_error(error)
 		return
 	assessment_controller.records = candidate.records
+	if audio_manager != null:
+		audio_manager.play_cue("correct" if result.get("correct", false) else "wrong")
 	dialog.set_feedback(result)
 
 func _on_chapter_feedback(chapter: int) -> void:
@@ -878,6 +916,7 @@ func _init_debug_bar() -> void:
 	_debug_bar.grant_items_requested.connect(_on_debug_grant_items)
 	_debug_bar.complete_activities_requested.connect(_on_debug_complete_activities)
 	_debug_bar.max_stats_requested.connect(_on_debug_max_stats)
+	_debug_bar.title_screen_requested.connect(open_title_screen)
 	_sync_debug_bar()
 
 func _sync_debug_bar() -> void:
@@ -910,6 +949,7 @@ func _on_debug_combat() -> void:
 	if instance == null:
 		return
 	instance.inventory = inventory_manager
+	instance.action_performed.connect(_on_combat_action_performed)
 	_battle = instance
 	if player != null:
 		player.freeze_movement()
@@ -1019,4 +1059,49 @@ func _on_debug_max_stats() -> void:
 		_sync_debug_bar()
 	if status_label != null:
 		status_label.text = "[Evaluator] Maximized Ren stats (Lvl 10, HP %d, Attributes 25)." % character_stats.get_max_hp()
-		status_label.text = "[Evaluator] Maximized Ren stats (Lvl 10, HP 250/250, Pips 3/3)."
+
+# ==============================================================================
+# Title Screen Management
+# ==============================================================================
+
+func open_title_screen() -> void:
+	if _title_screen != null and is_instance_valid(_title_screen):
+		return
+	if _title_layer == null:
+		return
+	var title_inst: TitleScreen = TITLE_SCREEN_SCENE.instantiate() as TitleScreen
+	if title_inst == null:
+		return
+	_title_screen = title_inst
+	_title_layer.add_child(_title_screen)
+	_title_screen.setup_profiles(profile_store, _profile_slot)
+	_title_screen.game_started.connect(_on_title_game_started)
+	_title_screen.settings_requested.connect(_toggle_settings_sheet)
+	_title_screen.backup_requested.connect(_on_title_backup_requested)
+	_title_screen.defense_demo_requested.connect(_on_title_defense_demo)
+	if player != null:
+		player.freeze_movement()
+
+func _close_title_screen() -> void:
+	if _title_screen != null and is_instance_valid(_title_screen):
+		_title_screen.queue_free()
+		_title_screen = null
+	if not has_blocking_modal():
+		_restore_combat_movement()
+
+func _on_title_game_started(slot_id: String) -> void:
+	_init_slice_progress(profile_store, slot_id)
+	_close_title_screen()
+	if audio_manager != null:
+		audio_manager.play_cue("portal")
+
+func _on_title_backup_requested() -> void:
+	_toggle_settings_sheet()
+
+func _on_title_defense_demo() -> void:
+	_on_debug_complete_activities()
+	_on_debug_grant_items()
+	_on_debug_max_stats()
+	_close_title_screen()
+	if audio_manager != null:
+		audio_manager.play_cue("correct")

@@ -1,0 +1,107 @@
+class_name TitleScreen
+extends Control
+
+signal game_started(slot_id: String)
+signal settings_requested()
+signal backup_requested()
+signal defense_demo_requested()
+
+@onready var main_menu: VBoxContainer = $CenterContainer/MainVBox/MenuButtons
+@onready var profile_menu: VBoxContainer = $CenterContainer/MainVBox/ProfileSelector
+@onready var continue_btn: Button = $CenterContainer/MainVBox/MenuButtons/ContinueBtn
+@onready var new_game_btn: Button = $CenterContainer/MainVBox/MenuButtons/NewGameBtn
+@onready var select_profile_btn: Button = $CenterContainer/MainVBox/MenuButtons/SelectProfileBtn
+@onready var settings_btn: Button = $CenterContainer/MainVBox/MenuButtons/SettingsBtn
+@onready var backup_btn: Button = $CenterContainer/MainVBox/MenuButtons/BackupBtn
+@onready var defense_btn: Button = $CenterContainer/MainVBox/MenuButtons/DefenseBtn
+
+@onready var slot1_btn: Button = $CenterContainer/MainVBox/ProfileSelector/Slot1Btn
+@onready var slot2_btn: Button = $CenterContainer/MainVBox/ProfileSelector/Slot2Btn
+@onready var slot3_btn: Button = $CenterContainer/MainVBox/ProfileSelector/Slot3Btn
+@onready var back_from_profiles_btn: Button = $CenterContainer/MainVBox/ProfileSelector/BackBtn
+
+var profile_store: ProfileStore = null
+var current_slot: String = "profile_01"
+
+func _ready() -> void:
+	profile_menu.visible = false
+	main_menu.visible = true
+
+	continue_btn.pressed.connect(_on_continue_pressed)
+	new_game_btn.pressed.connect(_on_new_game_pressed)
+	select_profile_btn.pressed.connect(_on_select_profile_pressed)
+	settings_btn.pressed.connect(func(): settings_requested.emit())
+	backup_btn.pressed.connect(func(): backup_requested.emit())
+	defense_btn.pressed.connect(func(): defense_demo_requested.emit())
+
+	slot1_btn.pressed.connect(func(): _select_slot("profile_01"))
+	slot2_btn.pressed.connect(func(): _select_slot("profile_02"))
+	slot3_btn.pressed.connect(func(): _select_slot("profile_03"))
+	back_from_profiles_btn.pressed.connect(_on_back_from_profiles)
+
+	_refresh_profile_labels()
+
+func setup_profiles(store: ProfileStore, default_slot: String = "profile_01") -> void:
+	profile_store = store
+	current_slot = default_slot
+	_refresh_profile_labels()
+
+func _refresh_profile_labels() -> void:
+	if profile_store == null:
+		return
+
+	var s1 := _get_profile_summary("profile_01")
+	var s2 := _get_profile_summary("profile_02")
+	var s3 := _get_profile_summary("profile_03")
+
+	if slot1_btn != null:
+		slot1_btn.text = "Profile 1: " + s1
+	if slot2_btn != null:
+		slot2_btn.text = "Profile 2: " + s2
+	if slot3_btn != null:
+		slot3_btn.text = "Profile 3: " + s3
+
+	if continue_btn != null:
+		var has_save: bool = _has_profile(current_slot)
+		continue_btn.text = "Continue Journey (" + current_slot + ")" if has_save else "Start Journey (" + current_slot + ")"
+
+func _has_profile(slot: String) -> bool:
+	if profile_store == null:
+		return false
+	var loaded: Dictionary = profile_store.load_profile(slot)
+	return loaded.get("error", ERR_DOES_NOT_EXIST) == OK and not loaded.get("profile", {}).is_empty()
+
+func _get_profile_summary(slot: String) -> String:
+	if not _has_profile(slot):
+		return "[Empty Slot]"
+	var loaded: Dictionary = profile_store.load_profile(slot)
+	if loaded.get("error", OK) != OK:
+		return "[Corrupted]"
+	var p: Dictionary = loaded.get("profile", {})
+	var lvl: int = int(p.get("character", {}).get("level", 1))
+	var ch: int = int(p.get("world", {}).get("chapter_progress", {}).get("current_chapter", 1))
+	var comp: bool = bool(p.get("world", {}).get("chapter_progress", {}).get("is_academic_complete", false))
+	var status: String = "Academic MVP Complete" if comp else "Chapter %d" % ch
+	return "Level %d — %s" % [lvl, status]
+
+func _on_continue_pressed() -> void:
+	game_started.emit(current_slot)
+
+func _on_new_game_pressed() -> void:
+	game_started.emit(current_slot)
+
+func _on_select_profile_pressed() -> void:
+	_refresh_profile_labels()
+	main_menu.visible = false
+	profile_menu.visible = true
+
+func _on_back_from_profiles() -> void:
+	profile_menu.visible = false
+	main_menu.visible = true
+
+func _select_slot(slot_id: String) -> void:
+	current_slot = slot_id
+	profile_menu.visible = false
+	main_menu.visible = true
+	_refresh_profile_labels()
+	game_started.emit(slot_id)

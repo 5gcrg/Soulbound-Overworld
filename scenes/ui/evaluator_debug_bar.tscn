@@ -179,6 +179,12 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
 text = "Max Level 10 & HP"
 
+[node name="BtnTitle" type="Button" parent="DebugPanel/Margin/VBox/CheatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "Title Screen"
+
 [node name="BtnClose" type="Button" parent="DebugPanel/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
