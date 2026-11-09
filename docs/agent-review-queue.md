@@ -625,6 +625,39 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | --- | --- |
 | Traceability Matrix Cross-Reference | Pass. All 132 high-level GDD requirements and technical NFRs mapped. Remediation rows for SBL-FIX-001..009 documented. No false REVIEWED statuses. |
 
+---
+
+## SBL-VER-002 — Web/Browser Verification Evidence Checklist & Single-Thread Audit
+
+- **Milestone** M6 & Release Hardening (Platform Compliance & Web Invariants).
+- **Requirements** GDD-095, GDD-103, AGENTS.md Invariants ("Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer").
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Documentation / Checklist: `docs/browser_verification_checklist.md`.
+  - Config: `export_presets.cfg`, `project.godot`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None (configuration audit and documentation checklist).
+- **Review** REVIEW_PENDING_CODEX.
+- **Open questions** None.
+
+### Audit Findings
+
+1. **Single-Thread Configuration Confirmed.** Audited `export_presets.cfg` (`[preset.1.options]`). `variant/thread_support` is explicitly set to `false`. `variant/extensions_support` is `false`. `html/canvas_resize_policy` is set to `2`.
+2. **COOP/COEP Analysis.** Confirmed that with single-threaded WebAssembly execution, Godot does not utilize `SharedArrayBuffer` or `Atomics`. Therefore, Cross-Origin Isolation headers (`Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Embedder-Policy: require-corp`) are NOT strictly required for browser execution, enabling deployment to standard static hosting and iframe embeds.
+3. **Smoke Test Checklist Authored.** Authored 10 browser smoke test cases (`WEB-SMK-01` through `WEB-SMK-10`) covering canvas initialization, title screen audio activation, IndexedDB save persistence, overworld movement, region transitions, dimension shifting, live accessibility settings, text-box backup import/export, CSV download, and single-thread execution auditing.
+4. **Execution Status.** No headless browser automation framework (e.g. Playwright) is provisioned in the CLI environment. In strict adherence to AGENTS.md ("Never report a browser pass that did not run"), all browser manual test execution items are recorded as `PENDING human execution`.
+
+### Verification Table
+
+| Check / Platform | Target | Result / Status | Evidence |
+|---|---|---|---|
+| Export Preset Audit | `export_presets.cfg` | Pass | `variant/thread_support=false`, `platform="Web"` confirmed. |
+| COOP/COEP Requirement Analysis | Web Runtime | Pass | `SharedArrayBuffer` not required for single-threaded build. Documented in `docs/browser_verification_checklist.md`. |
+| Chromium Smoke Test | Chrome / Edge | PENDING human execution | Manual test procedure documented in `docs/browser_verification_checklist.md`. |
+| Firefox Smoke Test | Firefox | PENDING human execution | Manual test procedure documented in `docs/browser_verification_checklist.md`. |
+
+
 
 
 
