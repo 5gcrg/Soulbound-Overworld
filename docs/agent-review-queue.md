@@ -1251,4 +1251,44 @@ The `SliceProgress: Invalid data` warning seen when mounting a packed build came
 | Headless verification: `godot --headless --script res://verify_mcp_scene.gd` | Exit 0 | Scene tree parsed and verified: `root` (Node2D, children=1) -> `Player` (CharacterBody2D, children=1) -> `Collider` (CollisionShape2D, children=0). |
 | Working tree cleanliness | Clean | `tools/mcp-proof/mcp_generated_scene.tscn` untouched; zero unwanted diffs in worktree. |
 
+---
+
+## SBL-BLD-003 — Prove Export Failure Path Restores Working Tree Byte-Identically
+
+- **Milestone** Build Integrity & Infrastructure Governance.
+- **Requirements** GDD-041, GDD-113, GDD-116, AGENTS.md Engineering Invariants ("Keep the 3-chapter academic MVP separate from the 5-chapter 2-ending full release", "Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer").
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Git configuration: `.gitignore`.
+  - Build automation & tests: `scripts/build/test_export_failure_restoration.ps1`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None (PowerShell build automation, git ignore configuration, and failure regression tests).
+- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5; Codex CLI will review after batch completion.
+- **Open questions** `OD-017`: Default shipping release tier remains deferred to human release authority sign-off; checked-in `project.godot` maintains `release_tier="full_release"`.
+
+### Changes
+
+1. **Working Tree Restoration on Forced Export Failure**:
+   - Tested and verified the `try ... finally` error restoration mechanism in `scripts/build/export_release.ps1`.
+   - On an induced export failure (after `project.godot` was modified to target a different release tier and `build_tier.txt` was written), verified that the `finally` block executes:
+     - `project.godot` is restored byte-for-byte to its pre-export snapshot bytes (verified with SHA256 and sequence equality).
+     - Any root `build_tier.txt` marker is deleted, leaving no residue at the project root.
+2. **Git Ignore Hardening (`.gitignore`)**:
+   - Added `/build_tier.txt` to `.gitignore` under `# Local export / build artifacts`.
+   - Prevents any interrupted or aborted local run from inadvertently staging or committing a temporary tier marker to the repository.
+3. **Preserved Checked-In Shipping Default**:
+   - Verified `project.godot` maintains `release_tier="full_release"` as the checked-in default, keeping `OD-017` open for human release authority.
+4. **Automated Failure Recovery Test Suite (`scripts/build/test_export_failure_restoration.ps1`)**:
+   - Created reproducible PowerShell test harness that captures pre-test hashes, triggers a forced export failure, asserts non-zero exit code, and validates byte-identity and marker absence.
+
+### Verification Table
+
+| Test Scope / Invocation | Result | Evidence |
+|---|---|---|
+| Failure recovery test: `scripts/build/test_export_failure_restoration.ps1` | Exit 0 | Export process exited with code 1; `project.godot` verified byte-identical (`bytesIdentical: True`, SHA256 `5C65BBCD...` matched); `build_tier.txt` absent from root (`True`). |
+| Default project setting audit | PASSED | Checked-in `project.godot` specifies `release_tier="full_release"` under section `[soulbound]`. |
+| Gitignore audit | PASSED | `/build_tier.txt` added to `.gitignore`. |
+
+
 
