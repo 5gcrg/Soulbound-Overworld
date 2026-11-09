@@ -332,8 +332,6 @@ func _validate_envelope(data: Dictionary, expected_profile_id: String) -> Error:
 		return ERR_INVALID_DATA
 	if (ver is int and ver != CURRENT_SCHEMA_VERSION) or (ver is float and ver != 1.0):
 		return ERR_FILE_UNRECOGNIZED
-	if data.size() != REQUIRED_ENVELOPE_KEYS.size():
-		return ERR_INVALID_DATA
 	for k in REQUIRED_ENVELOPE_KEYS:
 		if not data.has(k):
 			return ERR_INVALID_DATA
@@ -343,6 +341,10 @@ func _validate_envelope(data: Dictionary, expected_profile_id: String) -> Error:
 		var sec: Variant = data[sec_name]
 		if typeof(sec) != TYPE_DICTIONARY or not _validate_json_native_value(sec, 0):
 			return ERR_INVALID_DATA
+	for key: String in data.keys():
+		if not REQUIRED_ENVELOPE_KEYS.has(key):
+			if not _validate_json_native_value(data[key], 0):
+				return ERR_INVALID_DATA
 	return OK
 
 func _validate_json_native_value(value: Variant, depth: int) -> bool:

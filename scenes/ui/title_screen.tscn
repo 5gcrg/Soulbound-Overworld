@@ -57,6 +57,26 @@ horizontal_alignment = 1
 [node name="HSeparator" type="HSeparator" parent="CenterContainer/MainVBox"]
 layout_mode = 2
 
+[node name="RecoveryBox" type="VBoxContainer" parent="CenterContainer/MainVBox"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="RecoveryLabel" type="Label" parent="CenterContainer/MainVBox/RecoveryBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.75, 0.3, 1)
+theme_override_font_sizes/font_size = 11
+text = "⚠ Profile was recovered from an earlier revision after corruption in the latest file."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="RecoveryExportBtn" type="Button" parent="CenterContainer/MainVBox/RecoveryBox"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.9, 0.5, 1)
+theme_override_font_sizes/font_size = 11
+text = "Export Backup Before Overwrite"
+
 [node name="MenuButtons" type="VBoxContainer" parent="CenterContainer/MainVBox"]
 layout_mode = 2
 theme_override_constants/separation = 8

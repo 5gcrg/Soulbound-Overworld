@@ -8,6 +8,9 @@ signal defense_demo_requested()
 
 @onready var main_menu: VBoxContainer = $CenterContainer/MainVBox/MenuButtons
 @onready var profile_menu: VBoxContainer = $CenterContainer/MainVBox/ProfileSelector
+@onready var recovery_box: VBoxContainer = $CenterContainer/MainVBox/RecoveryBox
+@onready var recovery_label: Label = $CenterContainer/MainVBox/RecoveryBox/RecoveryLabel
+@onready var recovery_export_btn: Button = $CenterContainer/MainVBox/RecoveryBox/RecoveryExportBtn
 @onready var continue_btn: Button = $CenterContainer/MainVBox/MenuButtons/ContinueBtn
 @onready var new_game_btn: Button = $CenterContainer/MainVBox/MenuButtons/NewGameBtn
 @onready var select_profile_btn: Button = $CenterContainer/MainVBox/MenuButtons/SelectProfileBtn
@@ -33,6 +36,8 @@ func _ready() -> void:
 	settings_btn.pressed.connect(func(): settings_requested.emit())
 	backup_btn.pressed.connect(func(): backup_requested.emit())
 	defense_btn.pressed.connect(func(): defense_demo_requested.emit())
+	if recovery_export_btn != null:
+		recovery_export_btn.pressed.connect(_on_recovery_export_pressed)
 
 	slot1_btn.pressed.connect(func(): _select_slot("profile_01"))
 	slot2_btn.pressed.connect(func(): _select_slot("profile_02"))
@@ -61,6 +66,16 @@ func _refresh_profile_labels() -> void:
 	if slot3_btn != null:
 		slot3_btn.text = "Profile 3: " + s3
 
+	var is_current_recovered: bool = false
+	var cur_loaded: Dictionary = profile_store.load_profile(current_slot)
+	if cur_loaded.get("error") == OK:
+		is_current_recovered = bool(cur_loaded.get("recovered", false))
+
+	if recovery_box != null:
+		recovery_box.visible = is_current_recovered
+		if is_current_recovered and recovery_label != null:
+			recovery_label.text = "⚠ Profile slot '%s' was recovered from an earlier revision after corruption in the latest file. Export a backup before overwrite." % current_slot
+
 	if continue_btn != null:
 		var has_save: bool = _has_profile(current_slot)
 		continue_btn.text = "Continue Journey (" + current_slot + ")" if has_save else "Start Journey (" + current_slot + ")"
@@ -82,13 +97,19 @@ func _get_profile_summary(slot: String) -> String:
 	var ch: int = int(p.get("world", {}).get("chapter_progress", {}).get("current_chapter", 1))
 	var comp: bool = bool(p.get("world", {}).get("chapter_progress", {}).get("is_academic_complete", false))
 	var status: String = "Academic MVP Complete" if comp else "Chapter %d" % ch
-	return "Level %d — %s" % [lvl, status]
+	var summary: String = "Level %d — %s" % [lvl, status]
+	if bool(loaded.get("recovered", false)):
+		summary += " [RECOVERED]"
+	return summary
 
 func _on_continue_pressed() -> void:
 	game_started.emit(current_slot)
 
 func _on_new_game_pressed() -> void:
 	game_started.emit(current_slot)
+
+func _on_recovery_export_pressed() -> void:
+	backup_requested.emit()
 
 func _on_select_profile_pressed() -> void:
 	_refresh_profile_labels()

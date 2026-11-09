@@ -851,6 +851,44 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | `tests/headless/settings_accessibility_test.gd` | Exit 0 | 100% regression pass on live audio, contrast, text scaling, and clipboard-free backup text transfer. |
 | `tests/headless/ui_sheets_test.gd` | Exit 0 | 100% regression pass on hotkey toggles, mutual exclusivity, attribute allocation, and gear equip/unequip. |
 
+---
+
+## SBL-FIX-012 — Save Compatibility, Extension Preservation & Recovery UX
+
+- **Milestone** Persistence Robustness & Fault Tolerance.
+- **Requirements** GDD-073–078 (Save invariants, 3 slots, revision rotation), GDD-125 (schema stability), FR-SAV-001 (schema versioning & validation), AGENTS.md Engineering Invariants.
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Persistence store: `scripts/persistence/profile_store.gd`.
+  - Title UI: `scenes/ui/title_screen.{tscn,gd}`.
+  - Tests: `tests/headless/save_compatibility_recovery_test.gd`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None (pure GDScript and Godot UI primitives; zero generated art).
+- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Open questions** None.
+
+### Changes
+
+1. **Permissive Extension Envelope with Invariant Guarantees.** Updated `ProfileStore._validate_envelope()` to eliminate rigid dictionary size gating (`data.size() != REQUIRED_ENVELOPE_KEYS.size()`). All required schema keys (`schema_version`, `profile_id`, `character`, `inventory`, `world`, `education`) and strict JSON data types are enforced, while top-level and section-level extension keys (e.g., mod/evaluator metadata) are preserved across multiple save/load cycles.
+2. **Strict Version Decoupling.** Preserved exact decimal token string validation in `_is_exact_schema_one()` to ensure IEEE-754 approximations (e.g. `1.00000000000000001`) are strictly rejected with `ERR_FILE_UNRECOGNIZED`.
+3. **Legacy Section Compatibility.** Verified that legacy profiles created prior to the introduction of `world.active_expedition` load cleanly and validate without crashing or false corruption rejections.
+4. **Corrupt Revision Disk Preservation.** Confirmed that when corruption strikes the most recent revision file, `ProfileStore.load_profile()` falls back to the latest valid revision, flags the envelope with `recovered: true`, and strictly leaves the physical files on disk untouched until a genuine subsequent save rotates revisions.
+5. **TitleScreen Recovery UX & Pre-Overwrite Export.** Added `RecoveryBox`, `RecoveryLabel`, and `RecoveryExportBtn` to `TitleScreen`. When a selected slot was recovered from a backup revision, the slot selector displays `[RECOVERED]` and the main menu presents a clear warning and explicit "Export Backup Before Overwrite" action wired to `backup_requested`.
+
+### Verification Table
+
+| Test Suite / Scope | Result | Evidence |
+|---|---|---|
+| `tests/headless/save_compatibility_recovery_test.gd` (Legacy profile load) | Exit 0 | Legacy profile lacking `active_expedition` passes `GameplayProfileValidator` and `ProfileStore.load_profile()`. |
+| `tests/headless/save_compatibility_recovery_test.gd` (Extension preservation) | Exit 0 | Top-level and section-level extension keys survive multiple save and load cycles with modified gameplay stats. |
+| `tests/headless/save_compatibility_recovery_test.gd` (Corrupt recovery fallback) | Exit 0 | Slot with corrupt latest revision falls back to revision 1, sets `recovered == true`, and keeps both revision files on disk. |
+| `tests/headless/save_compatibility_recovery_test.gd` (TitleScreen UX surfacing) | Exit 0 | TitleScreen reveals `RecoveryBox`, slot 3 button shows `[RECOVERED]`, and `recovery_export_btn` fires `backup_requested`. |
+| `tests/headless/save_compatibility_recovery_test.gd` (Schema version exactness) | Exit 0 | Exact `1.0` passes; float rounding approximation `1.00000000000000001` rejected with `ERR_FILE_UNRECOGNIZED`. |
+| `tests/headless/save_model_test.gd` | Exit 0 | 100% regression pass on 3-slot rotation, revision sequencing, and timestamped backups. |
+| `tests/headless/title_screen_audio_test.gd` | Exit 0 | 100% regression pass on TitleScreen startup and audio wiring. |
+
+
 
 
 
