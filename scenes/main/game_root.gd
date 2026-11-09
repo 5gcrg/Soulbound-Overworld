@@ -21,6 +21,9 @@ var _battle: Control = null
 var _battle_pending: bool = false
 var _dialog: Control = null
 var _dialog_pending: bool = false
+var _chapter_dialog: Control = null
+var _chapter_dialog_pending: bool = false
+var _current_region_id: String = DEFAULT_START_REGION
 var _expedition: DungeonExpedition = null
 var _expedition_pending: bool = false
 var _character_sheet: CharacterSheet = null
@@ -28,9 +31,10 @@ var _inventory_sheet: InventorySheet = null
 var _academic_modal: AcademicCompletionModal = null
 var _settings_sheet: SettingsSheet = null
 var _previous_input_frozen: bool = false
+var _pending_return_to_alpha: bool = false
+var _profile_slot: String = "profile_01"
 
 var profile_store: ProfileStore = null
-var _profile_slot: String = "profile_01"
 var slice_progress: SliceProgress = null
 var dimension_manager: DimensionManager = DimensionManager.new()
 var inventory_manager: InventoryManager = InventoryManager.new()
@@ -67,7 +71,9 @@ func _ready() -> void:
 		# Boot into starting test region
 		var booted: bool = world_router.initialize_starting_region(DEFAULT_START_REGION, DEFAULT_START_SPAWN)
 		if booted:
+			_current_region_id = DEFAULT_START_REGION
 			_bind_region_fixtures()
+			_sync_chapter_gates()
 			if status_label != null:
 				status_label.text = EXPECTED_BOOTSTRAP_STAGE
 		else:
@@ -81,7 +87,7 @@ func _init_slice_progress(store: ProfileStore = null, slot: String = "profile_01
 		profile_store = ProfileStore.new()
 	if slice_progress == null:
 		slice_progress = SliceProgress.new()
-	var err: Error = slice_progress.configure(profile_store, slot)
+	var err: Error = slice_progress.configure(profile_store, _profile_slot)
 	if err != OK:
 		push_warning("Failed to configure SliceProgress: %s" % error_string(err))
 
@@ -89,15 +95,19 @@ func _init_slice_progress(store: ProfileStore = null, slot: String = "profile_01
 	inventory_manager = InventoryManager.new()
 	chapter_manager = ChapterManager.new()
 	assessment_controller = AssessmentController.new()
-	character_stats.load_from_store(profile_store, slot)
-	inventory_manager.load_from_store(profile_store, slot)
-	chapter_manager.load_from_store(profile_store, slot)
-	assessment_controller.load_from_store(profile_store, slot)
+	character_stats.load_from_store(profile_store, _profile_slot)
+	inventory_manager.load_from_store(profile_store, _profile_slot)
+	chapter_manager.load_from_store(profile_store, _profile_slot)
+	assessment_controller.load_from_store(profile_store, _profile_slot)
 
+	_validate_and_clamp_progress()
+	_sync_chapter_gates()
 	_update_objective()
 
 func _on_region_transition_completed(region_id: String, spawn_id: String) -> void:
+	_current_region_id = region_id
 	_bind_region_fixtures()
+	_sync_chapter_gates()
 	if status_label != null:
 		status_label.text = "Region: %s (Spawn: %s)" % [region_id, spawn_id]
 
@@ -110,6 +120,7 @@ func _bind_region_fixtures() -> void:
 	_bind_quest_npc()
 	_bind_expedition_gateway()
 	_bind_academic_portal()
+	_bind_story_fixtures()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("shift_dimension"):
@@ -365,10 +376,10 @@ func _try_open_expedition(gateway_id: int) -> bool:
 	_expedition = instance
 	player.freeze_movement()
 	instance.inventory = inventory_manager
+	instance.commit_extraction = _commit_extraction
 	instance.expedition_completed.connect(_on_expedition_completed)
 	instance.expedition_failed.connect(_on_expedition_failed)
 	instance.expedition_cancelled.connect(_on_expedition_cancelled)
-	instance.commit_extraction = _commit_extraction
 	target_layer.add_child(_expedition)
 	instance.setup(1337, 6)
 	if status_label != null:
@@ -376,9 +387,12 @@ func _try_open_expedition(gateway_id: int) -> bool:
 	return true
 
 func _commit_extraction(candidate: InventoryManager) -> Error:
-	if profile_store == null:
+	if profile_store == null or candidate == null:
 		return ERR_UNCONFIGURED
-	return candidate.save_to_store(profile_store, _profile_slot)
+	var err: Error = candidate.save_to_store(profile_store, _profile_slot)
+	if err == OK:
+		inventory_manager.load_from_store(profile_store, _profile_slot)
+	return err
 
 func _on_expedition_completed(extracted_items: Dictionary) -> void:
 	if status_label != null:
@@ -387,7 +401,7 @@ func _on_expedition_completed(extracted_items: Dictionary) -> void:
 
 func _on_expedition_failed(lost_items: Dictionary) -> void:
 	if profile_store != null:
-		inventory_manager.save_to_store(profile_store, "profile_01")
+		inventory_manager.save_to_store(profile_store, _profile_slot)
 	if status_label != null:
 		status_label.text = "Expedition Defeat! Satchel lost (%d items); bank secured." % lost_items.size()
 	_close_expedition()
@@ -445,9 +459,9 @@ func _close_character_sheet() -> void:
 		_character_sheet = null
 
 	if profile_store != null:
-		character_stats.save_to_store(profile_store, "profile_01")
+		character_stats.save_to_store(profile_store, _profile_slot)
 
-	if _inventory_sheet == null and _settings_sheet == null and _battle == null and _dialog == null and _expedition == null and _academic_modal == null:
+	if _inventory_sheet == null and _settings_sheet == null and _battle == null and _dialog == null and _expedition == null and _academic_modal == null and _chapter_dialog == null:
 		_restore_combat_movement()
 
 func _toggle_inventory_sheet() -> void:
@@ -486,9 +500,9 @@ func _close_inventory_sheet() -> void:
 		_inventory_sheet = null
 
 	if profile_store != null:
-		inventory_manager.save_to_store(profile_store, "profile_01")
+		inventory_manager.save_to_store(profile_store, _profile_slot)
 
-	if _character_sheet == null and _settings_sheet == null and _battle == null and _dialog == null and _expedition == null and _academic_modal == null:
+	if _character_sheet == null and _settings_sheet == null and _battle == null and _dialog == null and _expedition == null and _academic_modal == null and _chapter_dialog == null:
 		_restore_combat_movement()
 
 func _toggle_settings_sheet() -> void:
@@ -524,6 +538,8 @@ func _toggle_settings_sheet() -> void:
 
 func _close_settings_sheet() -> void:
 	if _settings_sheet != null and is_instance_valid(_settings_sheet):
+		if _settings_sheet.backup_imported.is_connected(_reload_imported_profile):
+			_settings_sheet.backup_imported.disconnect(_reload_imported_profile)
 		_settings_sheet.closed.disconnect(_close_settings_sheet)
 		_settings_sheet.queue_free()
 		_settings_sheet = null
@@ -531,11 +547,25 @@ func _close_settings_sheet() -> void:
 	if settings_manager != null:
 		settings_manager.save_settings()
 
-	if _character_sheet == null and _inventory_sheet == null and _battle == null and _dialog == null and _expedition == null and _academic_modal == null:
+	if _pending_return_to_alpha:
+		_pending_return_to_alpha = false
+		_defer_return_to_alpha.call_deferred()
+
+	if _character_sheet == null and _inventory_sheet == null and _battle == null and _dialog == null and _expedition == null and _academic_modal == null and _chapter_dialog == null:
 		_restore_combat_movement()
 
 func _reload_imported_profile() -> void:
 	_init_slice_progress(profile_store, _profile_slot)
+	_pending_return_to_alpha = _is_current_location_locked()
+
+func _defer_return_to_alpha() -> void:
+	if not _is_current_location_locked() or world_router.active_region == null:
+		return
+	for child in world_router.active_region.portals_container.get_children():
+		var portal := child as RegionPortal
+		if portal != null:
+			world_router.request_transition(portal, DEFAULT_START_REGION, DEFAULT_START_SPAWN)
+			return
 
 # ==============================================================================
 # Academic Completion Portal (Chapter III Sanctum)
@@ -551,38 +581,38 @@ func _bind_academic_portal() -> void:
 	if not portal.body_entered.is_connected(callback):
 		portal.body_entered.connect(callback)
 
-func _on_academic_portal_entered(body: Node2D, _portal_id: int) -> void:
-	if body != player or player == null:
+func _on_academic_portal_entered(body: Node2D, portal_id: int) -> void:
+	if body != player or player.input_frozen or _academic_modal != null or world_router.is_transition_in_flight:
 		return
-	if _academic_modal != null and is_instance_valid(_academic_modal):
+	var portal := instance_from_id(portal_id) as Area2D
+	if world_router.active_region_id != chapter_manager.get_chapter_region(ChapterManager.CHAPTER_3) or portal == null or portal.is_queued_for_deletion() or portal != world_router.active_region.get_node_or_null("AcademicPortal"):
 		return
-	if _expedition != null or _dialog != null or _battle != null:
+	if not chapter_manager.is_academic_complete and not _can_complete_academic():
+		status_label.text = "Complete the required chapter practice before entering."
 		return
-	_open_academic_modal()
+	player.freeze_movement()
+	_open_academic_modal.call_deferred()
 
 func _open_academic_modal() -> void:
-	if player != null:
-		player.freeze_movement()
-	var target_layer: CanvasLayer = _sheet_layer if _sheet_layer != null else _dialog_layer
-	if target_layer == null:
+	if _academic_modal != null:
 		return
-
-	chapter_manager.current_chapter = ChapterManager.ACADEMIC_COMPLETE
-	chapter_manager.is_academic_complete = true
-	if profile_store != null:
-		chapter_manager.save_to_store(profile_store, "profile_01")
-		assessment_controller.save_to_store(profile_store, "profile_01")
-
-	var modal: AcademicCompletionModal = ACADEMIC_COMPLETION_SCENE.instantiate() as AcademicCompletionModal
-	if modal == null:
-		return
+	if not chapter_manager.is_academic_complete:
+		var candidate := ChapterManager.new()
+		candidate.deserialize(chapter_manager.serialize())
+		if not _can_complete_academic() or not candidate.try_advance_chapter(assessment_controller):
+			_restore_combat_movement()
+			return
+		var error := _commit_chapter(candidate)
+		if error != OK:
+			status_label.text = "Could not save completion. Re-enter the portal to retry."
+			_restore_combat_movement()
+			return
+	var modal := ACADEMIC_COMPLETION_SCENE.instantiate() as AcademicCompletionModal
 	_academic_modal = modal
 	modal.configure(chapter_manager, assessment_controller, character_stats, inventory_manager)
 	modal.closed.connect(_close_academic_modal)
-	target_layer.add_child(modal)
-
-	if status_label != null:
-		status_label.text = "Soulbound Academic MVP Cleared! Congratulations!"
+	_sheet_layer.add_child(modal)
+	status_label.text = "Soulbound Academic MVP Cleared! Congratulations!"
 	_update_objective()
 
 func _close_academic_modal() -> void:
@@ -626,3 +656,130 @@ func _update_objective() -> void:
 						objective_label.text = "Vertical slice trial complete. Profile safely archived."
 			else:
 				objective_label.text = "Vertical slice trial complete. Profile safely archived."
+
+const CHAPTER_NPCS: Array[String] = ["ElderKael", "ScoutLyra", "AwakeningAltar"]
+const SHRINE_FEEDBACK: String = "chapter_3_feedback"
+
+func _validate_and_clamp_progress() -> void:
+	var supported: int = ChapterManager.CHAPTER_1
+	while supported <= ChapterManager.CHAPTER_3 and assessment_controller.is_chapter_activity_completed(supported):
+		supported += 1
+	chapter_manager.current_chapter = clampi(chapter_manager.current_chapter, ChapterManager.CHAPTER_1, supported)
+	chapter_manager.is_academic_complete = chapter_manager.current_chapter == ChapterManager.ACADEMIC_COMPLETE
+	chapter_manager.unlocked_chapters.clear()
+	for chapter in range(ChapterManager.CHAPTER_1, mini(chapter_manager.current_chapter, ChapterManager.CHAPTER_3) + 1):
+		chapter_manager.unlocked_chapters.append(chapter)
+	if supported <= ChapterManager.CHAPTER_3:
+		chapter_manager.chapter_flags.erase(SHRINE_FEEDBACK)
+
+func _sync_chapter_gates() -> void:
+	for chapter in range(ChapterManager.CHAPTER_1, ChapterManager.CHAPTER_3 + 1):
+		world_router.set_region_available(chapter_manager.get_chapter_region(chapter), chapter_manager.is_chapter_unlocked(chapter))
+
+func _is_current_location_locked() -> bool:
+	return not world_router.active_region_id.is_empty() and not world_router.is_region_available(world_router.active_region_id)
+
+func _bind_story_fixtures() -> void:
+	for chapter in range(ChapterManager.CHAPTER_1, ChapterManager.CHAPTER_3 + 1):
+		if world_router.active_region_id != chapter_manager.get_chapter_region(chapter):
+			continue
+		var npc := world_router.active_region.get_node_or_null(CHAPTER_NPCS[chapter - 1]) as Area2D
+		if npc != null:
+			var callback := _on_chapter_npc_entered.bind(chapter, npc.get_instance_id())
+			if not npc.body_entered.is_connected(callback):
+				npc.body_entered.connect(callback)
+
+func _on_chapter_npc_entered(body: Node2D, chapter: int, npc_id: int) -> void:
+	if body != player or player.input_frozen or _chapter_dialog_pending or _chapter_dialog != null or world_router.is_transition_in_flight:
+		return
+	if chapter_manager.current_chapter != chapter:
+		return
+	_chapter_dialog_pending = true
+	player.freeze_movement()
+	_open_chapter_dialog.call_deferred(chapter, npc_id)
+
+func _open_chapter_dialog(chapter: int, npc_id: int) -> void:
+	_chapter_dialog_pending = false
+	var npc := instance_from_id(npc_id) as Area2D
+	if npc == null or npc.is_queued_for_deletion() or not world_router.active_region.is_ancestor_of(npc) or chapter_manager.current_chapter != chapter:
+		_restore_combat_movement()
+		return
+	var question_id := QuestionBank.get_required_question_id_for_chapter(chapter)
+	var dialog := ChapterActivityDialog.new()
+	dialog.name = "ChapterActivityDialog"
+	dialog.configure(QuestionBank.get_question(question_id), assessment_controller.records.get(question_id, {}))
+	dialog.answer_selected.connect(_on_chapter_answer.bind(question_id))
+	dialog.feedback_acknowledged.connect(_on_chapter_feedback.bind(chapter))
+	dialog.closed.connect(_close_chapter_dialog)
+	_chapter_dialog = dialog
+	_dialog_layer.add_child(dialog)
+
+func _on_chapter_answer(index: int, question_id: String) -> void:
+	var dialog := _chapter_dialog as ChapterActivityDialog
+	var candidate := AssessmentController.new()
+	var error := candidate.deserialize(assessment_controller.serialize())
+	if error != OK:
+		dialog.show_save_error(error)
+		return
+	var result := candidate.submit_answer(question_id, index)
+	error = result["error"]
+	if error == OK:
+		error = candidate.save_to_store(profile_store, _profile_slot)
+	if error != OK:
+		dialog.show_save_error(error)
+		return
+	assessment_controller.records = candidate.records
+	dialog.set_feedback(result)
+
+func _on_chapter_feedback(chapter: int) -> void:
+	if chapter != chapter_manager.current_chapter or not assessment_controller.is_chapter_activity_completed(chapter):
+		return
+	var candidate := ChapterManager.new()
+	candidate.deserialize(chapter_manager.serialize())
+	if chapter == ChapterManager.CHAPTER_3:
+		candidate.set_chapter_flag(SHRINE_FEEDBACK, true)
+	elif not candidate.try_advance_chapter(assessment_controller):
+		return
+	var error := _commit_chapter(candidate)
+	if error != OK:
+		(_chapter_dialog as ChapterActivityDialog).show_save_error(error)
+		return
+	_close_chapter_dialog()
+
+func _commit_chapter(candidate: ChapterManager) -> Error:
+	var loaded := profile_store.load_profile(_profile_slot)
+	if loaded["error"] != OK:
+		return loaded["error"]
+	var profile: Dictionary = loaded["profile"]
+	profile["world"]["chapter_progress"] = candidate.serialize()
+	var persisted := AssessmentController.new()
+	var evidence_error := persisted.deserialize(profile["education"])
+	if evidence_error != OK:
+		return evidence_error
+	var required_until := candidate.current_chapter - 1
+	if candidate.get_chapter_flag(SHRINE_FEEDBACK, false) == true:
+		required_until = ChapterManager.CHAPTER_3
+	for chapter in range(ChapterManager.CHAPTER_1, required_until + 1):
+		if not persisted.is_chapter_activity_completed(chapter):
+			return ERR_BUSY
+	var error := profile_store.save_profile(_profile_slot, profile)
+	if error != OK:
+		return error
+	chapter_manager.deserialize(candidate.serialize())
+	_sync_chapter_gates()
+	_update_objective()
+	return OK
+
+func _close_chapter_dialog() -> void:
+	_chapter_dialog.hide()
+	_chapter_dialog.queue_free()
+	_chapter_dialog = null
+	_restore_combat_movement()
+
+func _can_complete_academic() -> bool:
+	if chapter_manager.current_chapter != ChapterManager.CHAPTER_3 or chapter_manager.get_chapter_flag(SHRINE_FEEDBACK, false) != true:
+		return false
+	for chapter in range(ChapterManager.CHAPTER_1, ChapterManager.CHAPTER_3 + 1):
+		if not assessment_controller.is_chapter_activity_completed(chapter):
+			return false
+	return true

@@ -94,6 +94,9 @@ static func _validate_character(character: Dictionary) -> Error:
 	if character.is_empty():
 		return OK
 
+	if not character.has("level") or not character.has("xp"):
+		return ERR_INVALID_DATA
+
 	# Runtime numeric fields within safe integer range (no arbitrary balancing caps)
 	if character.has("level"):
 		if not _is_bounded_int(character["level"], 1, MAX_SAFE_INT):
@@ -149,6 +152,13 @@ static func _validate_inventory(inventory: Dictionary) -> Error:
 					return ERR_INVALID_DATA
 				if not _is_bounded_int(items[item_id], 1, MAX_SAFE_INT):
 					return ERR_INVALID_DATA
+
+	var banked: Dictionary = inventory.get("banked", {}) as Dictionary
+	var satchel: Dictionary = inventory.get("satchel", {}) as Dictionary
+	for id in banked.keys():
+		if satchel.has(id):
+			if int(banked[id]) > MAX_SAFE_INT - int(satchel[id]):
+				return ERR_INVALID_DATA
 
 	# Known equipment slots' value types must be String
 	if inventory.has("equipment"):

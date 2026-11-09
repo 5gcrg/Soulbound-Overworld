@@ -158,12 +158,15 @@ func _cleanup_dir(path: String) -> void:
 func _test_live_restore() -> void:
 	var fixture_root := "user://test_gr_backup_%d_%d" % [OS.get_process_id(), Time.get_ticks_usec()]
 	var store := ProfileStore.new(fixture_root)
-	var baseline := store.new_profile("profile_01")
-	_check(store.save_profile("profile_01", baseline) == OK, "seed baseline")
-	var original: String = store.export_backup("profile_01")["text"]
+	_check(store.save_profile("profile_01", store.new_profile("profile_01")) == OK, "seed independent slot")
+	var slot_one_text: String = store.export_backup("profile_01")["text"]
+	var baseline := store.new_profile("profile_02")
+	_check(store.save_profile("profile_02", baseline) == OK, "seed baseline")
+	var original: String = store.export_backup("profile_02")["text"]
 	var game = preload("res://scenes/main/game_root.tscn").instantiate()
 	game.profile_store = store
 	root.add_child(game)
+	game._init_slice_progress(store, "profile_02")
 	game._toggle_settings_sheet()
 	var sheet: SettingsSheet = game._settings_sheet
 	var malformed := baseline.duplicate(true)
@@ -171,7 +174,7 @@ func _test_live_restore() -> void:
 	sheet.last_exported_backup = JSON.stringify(malformed)
 	sheet.import_backup_btn.pressed.emit()
 	_check(sheet.backup_status_label.text.contains("Import failed"), "invalid nested record rejected")
-	_check(store.export_backup("profile_01")["text"] == original, "rejected import preserves active revision")
+	_check(store.export_backup("profile_02")["text"] == original, "rejected import preserves active revision")
 	var good := baseline.duplicate(true)
 	var inventory := InventoryManager.new()
 	inventory.add_banked_item("iron_sword", 1)
@@ -181,7 +184,10 @@ func _test_live_restore() -> void:
 	_check(game.inventory_manager.banked_items.get("iron_sword", 0) == 1, "successful import activates restored inventory")
 	game._close_settings_sheet()
 	_check(game.slice_progress.accept_quest() == OK, "quest checkpoint after restore succeeds")
-	_check(store.load_profile("profile_01")["profile"]["inventory"].get("banked", {}).get("iron_sword", 0) == 1, "quest save preserves restored gear")
+	_check(store.load_profile("profile_02")["profile"]["inventory"].get("banked", {}).get("iron_sword", 0) == 1, "quest save preserves restored gear")
+	game._toggle_inventory_sheet()
+	game._close_inventory_sheet()
+	_check(store.export_backup("profile_01")["text"] == slot_one_text, "slot 2 gameplay writes leave slot 1 unchanged")
 	game.queue_free()
 	await process_frame
 	_cleanup_dir(fixture_root)
