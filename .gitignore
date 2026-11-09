@@ -23,4 +23,5 @@ Desktop.ini
 # Transient agent run logs (keep committed reports in report/*.md)
 report/*.log
 report/*.log.err
+report/*.err
 report/*.prompt.txt

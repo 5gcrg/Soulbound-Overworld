@@ -35,6 +35,29 @@ func toggle_panel() -> void:
 	_is_open = not _is_open
 	panel.visible = _is_open
 	toggle_btn.text = "[- Evaluator Tools]" if _is_open else "[⚙ Evaluator Tools (F1)]"
+	if _is_open:
+		sync_release_tier()
+
+func sync_release_tier() -> void:
+	if panel == null:
+		return
+	var is_full := ReleaseTier.is_full_release()
+	var btn_citadel: Button = panel.get_node_or_null("Margin/VBox/RegionGrid/BtnCitadel") as Button
+	if btn_citadel != null:
+		btn_citadel.disabled = not is_full
+		btn_citadel.tooltip_text = "" if is_full else "Locked in Academic MVP tier"
+	var btn_boss: Button = panel.get_node_or_null("Margin/VBox/ActionsGrid/BtnBoss") as Button
+	if btn_boss != null:
+		btn_boss.disabled = not is_full
+		btn_boss.tooltip_text = "" if is_full else "Locked in Academic MVP tier"
+	var btn_ending_a: Button = panel.get_node_or_null("Margin/VBox/CheatsGrid/BtnEndingA") as Button
+	if btn_ending_a != null:
+		btn_ending_a.disabled = not is_full
+		btn_ending_a.tooltip_text = "" if is_full else "Locked in Academic MVP tier"
+	var btn_ending_b: Button = panel.get_node_or_null("Margin/VBox/CheatsGrid/BtnEndingB") as Button
+	if btn_ending_b != null:
+		btn_ending_b.disabled = not is_full
+		btn_ending_b.tooltip_text = "" if is_full else "Locked in Academic MVP tier"
 
 func update_status(info: Dictionary) -> void:
 	if status_summary == null:
@@ -81,7 +104,13 @@ func _connect_buttons() -> void:
 
 	var btn_citadel: Button = panel.get_node_or_null("Margin/VBox/RegionGrid/BtnCitadel") as Button
 	if btn_citadel != null:
-		btn_citadel.pressed.connect(func(): region_warp_requested.emit("void_citadel"))
+		if not ReleaseTier.is_full_release():
+			btn_citadel.disabled = true
+			btn_citadel.tooltip_text = "Locked in Academic MVP tier"
+		btn_citadel.pressed.connect(func():
+			if ReleaseTier.is_full_release():
+				region_warp_requested.emit("void_citadel")
+		)
 
 	var btn_combat: Button = panel.get_node_or_null("Margin/VBox/ActionsGrid/BtnCombat") as Button
 	if btn_combat != null:
@@ -89,9 +118,13 @@ func _connect_buttons() -> void:
 
 	var btn_boss: Button = panel.get_node_or_null("Margin/VBox/ActionsGrid/BtnBoss") as Button
 	if btn_boss != null:
+		if not ReleaseTier.is_full_release():
+			btn_boss.disabled = true
+			btn_boss.tooltip_text = "Locked in Academic MVP tier"
 		btn_boss.pressed.connect(func():
-			toggle_panel()
-			boss_combat_requested.emit()
+			if ReleaseTier.is_full_release():
+				toggle_panel()
+				boss_combat_requested.emit()
 		)
 
 	var btn_dungeon: Button = panel.get_node_or_null("Margin/VBox/ActionsGrid/BtnDungeon") as Button
@@ -124,16 +157,24 @@ func _connect_buttons() -> void:
 
 	var btn_ending_a: Button = panel.get_node_or_null("Margin/VBox/CheatsGrid/BtnEndingA") as Button
 	if btn_ending_a != null:
+		if not ReleaseTier.is_full_release():
+			btn_ending_a.disabled = true
+			btn_ending_a.tooltip_text = "Locked in Academic MVP tier"
 		btn_ending_a.pressed.connect(func():
-			toggle_panel()
-			ending_requested.emit("transcendence")
+			if ReleaseTier.is_full_release():
+				toggle_panel()
+				ending_requested.emit("transcendence")
 		)
 
 	var btn_ending_b: Button = panel.get_node_or_null("Margin/VBox/CheatsGrid/BtnEndingB") as Button
 	if btn_ending_b != null:
+		if not ReleaseTier.is_full_release():
+			btn_ending_b.disabled = true
+			btn_ending_b.tooltip_text = "Locked in Academic MVP tier"
 		btn_ending_b.pressed.connect(func():
-			toggle_panel()
-			ending_requested.emit("restoration")
+			if ReleaseTier.is_full_release():
+				toggle_panel()
+				ending_requested.emit("restoration")
 		)
 
 	var btn_title: Button = panel.get_node_or_null("Margin/VBox/CheatsGrid/BtnTitle") as Button

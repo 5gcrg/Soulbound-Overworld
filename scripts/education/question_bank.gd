@@ -146,6 +146,8 @@ const QUESTIONS: Dictionary = {
 }
 
 static func get_question(id: String) -> Dictionary:
+	if id == "q_meta_01" and not ReleaseTier.is_full_release():
+		return {}
 	if QUESTIONS.has(id):
 		return (QUESTIONS[id] as Dictionary).duplicate(true)
 	return {}
@@ -153,20 +155,28 @@ static func get_question(id: String) -> Dictionary:
 static func get_questions_by_competency(comp: String) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for q_id: String in QUESTIONS.keys():
+		if q_id == "q_meta_01" and not ReleaseTier.is_full_release():
+			continue
 		var q: Dictionary = QUESTIONS[q_id]
 		if String(q.get("competency", "")) == comp:
 			result.append(q.duplicate(true))
 	return result
 
 static func get_questions_by_chapter(chapter_num: int) -> Array[Dictionary]:
+	if chapter_num >= 5 and not ReleaseTier.is_full_release():
+		return []
 	var result: Array[Dictionary] = []
 	for q_id: String in QUESTIONS.keys():
+		if q_id == "q_meta_01" and not ReleaseTier.is_full_release():
+			continue
 		var q: Dictionary = QUESTIONS[q_id]
 		if int(q.get("chapter", 0)) == chapter_num:
 			result.append(q.duplicate(true))
 	return result
 
 static func get_required_question_id_for_chapter(chapter_num: int) -> String:
+	if chapter_num >= 5 and not ReleaseTier.is_full_release():
+		return ""
 	match chapter_num:
 		1: return "q_dec_01"
 		2: return "q_res_01"
@@ -178,5 +188,7 @@ static func get_required_question_id_for_chapter(chapter_num: int) -> String:
 static func get_all_question_ids() -> Array[String]:
 	var ids: Array[String] = []
 	for k: String in QUESTIONS.keys():
+		if k == "q_meta_01" and not ReleaseTier.is_full_release():
+			continue
 		ids.append(k)
 	return ids

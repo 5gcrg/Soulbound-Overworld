@@ -322,6 +322,8 @@ func _on_combat_action_performed(act: StringName) -> void:
 # ==============================================================================
 
 func _bind_boss_encounter() -> void:
+	if not ReleaseTier.is_full_release():
+		return
 	if world_router == null or world_router.active_region == null or not is_instance_valid(world_router.active_region):
 		return
 	var trigger: Area2D = world_router.active_region.get_node_or_null("CitadelBossTrigger") as Area2D
@@ -339,6 +341,8 @@ func _on_boss_trigger_entered(body: Node2D, _trigger_id: int) -> void:
 	open_boss_encounter()
 
 func open_boss_encounter() -> void:
+	if not ReleaseTier.is_full_release():
+		return
 	if _boss_encounter != null and is_instance_valid(_boss_encounter):
 		return
 	if has_blocking_modal():
@@ -1004,6 +1008,8 @@ func _close_academic_modal() -> void:
 # ==============================================================================
 
 func _bind_ending_altars() -> void:
+	if not ReleaseTier.is_full_release():
+		return
 	if world_router == null or world_router.active_region == null or not is_instance_valid(world_router.active_region):
 		return
 	var altar_a := world_router.active_region.get_node_or_null("EndingAltarTranscendence") as Area2D
@@ -1018,6 +1024,8 @@ func _bind_ending_altars() -> void:
 			altar_b.body_entered.connect(cb_b)
 
 func _on_ending_altar_entered(body: Node2D, ending_type: String) -> void:
+	if not ReleaseTier.is_full_release():
+		return
 	if body != player or player == null or player.input_frozen:
 		return
 	if has_blocking_modal():
@@ -1025,6 +1033,8 @@ func _on_ending_altar_entered(body: Node2D, ending_type: String) -> void:
 	open_ending_modal(ending_type)
 
 func open_ending_modal(ending_type: String) -> void:
+	if not ReleaseTier.is_full_release():
+		return
 	if _ending_modal != null and is_instance_valid(_ending_modal):
 		return
 	if has_blocking_modal():
@@ -1135,6 +1145,36 @@ func _validate_and_clamp_progress() -> void:
 func _sync_chapter_gates() -> void:
 	for chapter in range(ChapterManager.CHAPTER_1, ChapterManager.CHAPTER_3 + 1):
 		world_router.set_region_available(chapter_manager.get_chapter_region(chapter), chapter_manager.is_chapter_unlocked(chapter))
+	world_router.set_region_available("void_citadel", ReleaseTier.is_full_release())
+	_sync_release_tier_for_region(world_router.active_region_id)
+
+func _sync_release_tier_for_region(region_id: String) -> void:
+	if world_router == null or world_router.active_region == null or not is_instance_valid(world_router.active_region):
+		return
+	if ReleaseTier.is_academic_mvp():
+		if region_id == "ashen_peaks":
+			var citadel_portal: Node = world_router.active_region.get_node_or_null("Portals/PortalToCitadel")
+			if citadel_portal != null:
+				citadel_portal.visible = false
+				if citadel_portal is Area2D:
+					(citadel_portal as Area2D).monitoring = false
+					(citadel_portal as Area2D).monitorable = false
+				for child in citadel_portal.get_children():
+					if child is CollisionShape2D:
+						(child as CollisionShape2D).set_deferred("disabled", true)
+		elif region_id == "void_citadel":
+			var altar_a: Node = world_router.active_region.get_node_or_null("EndingAltarTranscendence")
+			if altar_a != null:
+				altar_a.visible = false
+				if altar_a is Area2D:
+					(altar_a as Area2D).monitoring = false
+					(altar_a as Area2D).monitorable = false
+			var altar_b: Node = world_router.active_region.get_node_or_null("EndingAltarRestoration")
+			if altar_b != null:
+				altar_b.visible = false
+				if altar_b is Area2D:
+					(altar_b as Area2D).monitoring = false
+					(altar_b as Area2D).monitorable = false
 
 func _is_current_location_locked() -> bool:
 	return not world_router.active_region_id.is_empty() and not world_router.is_region_available(world_router.active_region_id)

@@ -41,6 +41,8 @@ func set_region_available(region_id: String, available: bool) -> void:
 	available_regions[region_id] = available
 
 func is_region_available(region_id: String) -> bool:
+	if region_id == "void_citadel" and not ReleaseTier.is_full_release():
+		return false
 	return bool(available_regions.get(region_id, false))
 
 func initialize_starting_region(region_id: String, spawn_id: String = "default") -> bool:
@@ -114,6 +116,10 @@ func request_transition(portal_emitter: RegionPortal, target_region_id: String, 
 
 	# Guard: coalesce self-transition request (destination equals active region)
 	if target_region_id == active_region_id:
+		return
+
+	# Guard: destination locked by release tier
+	if target_region_id == "void_citadel" and not ReleaseTier.is_full_release():
 		return
 
 	# Guard: require emitter belongs directly or indirectly to currently active region
@@ -217,6 +223,8 @@ func debug_warp(target_region_id: String, target_spawn_id: String = "default") -
 	if world_container == null or player == null:
 		return false
 	if not REGION_REGISTRY.has(target_region_id):
+		return false
+	if not is_region_available(target_region_id):
 		return false
 	var scene_path: String = REGION_REGISTRY[target_region_id]
 	var packed: PackedScene = load(scene_path) as PackedScene
