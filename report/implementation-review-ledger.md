@@ -115,6 +115,16 @@ entries:
 - **Findings:** (1) expanded boss notices in a non-wrapping HBox clip functional controls at 960×540; (2) imported `equipped_skills: []` passes validation/deserialization, leaving fallback-visible spells unusable because requests reject unequipped skills.
 - **Disposition:** Batch C remains unreviewed. `OD-003/004` boss-effect mapping remains separately blocked and unchanged.
 
+## Batch C fix re-review
+
+- **Evidence:** `report/codex_rereview_batchC_fixes.log`.
+- **Session:** `01a1c04c-cc02-7c12-8171-7c27cadfcb1e`.
+- **Range:** `1f5e6da..HEAD`.
+- **Independent targeted verification:** Kurei tree, normal combat, boss combat, and layout suites were run; Codex reproduced a null-node crash in the added boss-layout audit path.
+- **Verdict:** `CHANGES_REQUESTED`; one P2 test-order defect.
+- **Finding:** `tests/headless/layout_audit_test.gd` accesses `b.kurei_btn` before `root_control.add_child(inst)`, so the `@onready` node is null and the claimed boss viewport coverage is not actually executed.
+- **Disposition:** Stage a focused test-order fix, then re-run the layout and full suites and obtain Codex re-review. `OD-003/004` remains unchanged.
+
 ## Rule
 
 Every future implementation, review, finding, negative control, and disposition
