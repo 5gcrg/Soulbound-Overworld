@@ -450,7 +450,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Tests: `tests/headless/{dimension_test,dungeon_scene_test,settings_accessibility_test}.gd`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure code, Godot UI primitives; no image, audio, or text asset generation in this slice).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
+- **Review** REVIEWED by Codex CLI. Original review session `01a1be9a-5583-7252-b082-ebd436372c80`; the three P2 findings were cleared by re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`. Human release acceptance remains pending.
 - **Open questions** None for this slice. The dimension player mask assumes layer 1 = physical obstacles and layer 2 = spirit obstacles; region scenes must keep authored collision layers on those two bits.
 
 ### Changes
@@ -483,7 +483,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Tests: `tests/headless/vertical_slice_loop_test.gd`, `tests/headless/chapter_progression_test.gd`, `tests/headless/dungeon_scene_test.gd`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure GDScript headless regression assertions only).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
+- **Review** REVIEWED by Codex CLI. Original review session `01a1be9a-5583-7252-b082-ebd436372c80`; the three P2 findings were cleared by re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`. Human release acceptance remains pending.
 - **Open questions** None.
 
 ### Probe to Test Mapping & Evidence
@@ -518,7 +518,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Tests: `tests/headless/dungeon_scene_test.gd`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure code and UI controls only).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
+- **Review** REVIEWED by Codex CLI. Original review session `01a1be9a-5583-7252-b082-ebd436372c80`; the three P2 findings were cleared by re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`. Human release acceptance remains pending.
 - **Open questions** None.
 
 ### Changes
@@ -547,7 +547,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Tests: `tests/headless/evaluator_debug_bar_test.gd`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure code and UI input management only).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
+- **Review** REVIEWED by Codex CLI. Original review session `01a1be9a-5583-7252-b082-ebd436372c80`; the three P2 findings were cleared by re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`. Human release acceptance remains pending.
 - **Open questions** None.
 
 ### Changes
@@ -575,7 +575,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Tests: `tests/headless/settings_accessibility_test.gd`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure code and UI accessibility styling).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
+- **Review** REVIEWED by Codex CLI. Original review session `01a1be9a-5583-7252-b082-ebd436372c80`; the three P2 findings were cleared by re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`. Human release acceptance remains pending.
 - **Open questions** None.
 
 ### Changes
@@ -610,7 +610,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Documentation: `docs/traceability-matrix.md`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (documentation reconciliation only).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
+- **Review** REVIEWED by Codex CLI. Original review session `01a1be9a-5583-7252-b082-ebd436372c80`; the three P2 findings were cleared by re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`. Human release acceptance remains pending.
 - **Open questions** None.
 
 ### Changes
@@ -639,7 +639,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Config: `export_presets.cfg`, `project.godot`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (configuration audit and documentation checklist).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
+- **Review** REVIEWED by Codex CLI. Original review session `01a1be9a-5583-7252-b082-ebd436372c80`; the three P2 findings were cleared by re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`. Human release acceptance remains pending.
 - **Open questions** None.
 
 ### Audit Findings
@@ -670,7 +670,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Documentation / Audit: `docs/godot-mcp-evaluation.md`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None.
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
+- **Review** REVIEWED by Codex CLI. Original review session `01a1be9a-5583-7252-b082-ebd436372c80`; the three P2 findings were cleared by re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`. Human release acceptance remains pending.
 - **Open questions** None. Integration marked PENDING per AGENTS.md instructions.
 
 ### Investigation Summary
@@ -698,7 +698,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Documentation / Ledger: `docs/open-decisions-ledger.md`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None.
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
+- **Review** REVIEWED by Codex CLI. Original review session `01a1be9a-5583-7252-b082-ebd436372c80`; the three P2 findings were cleared by re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`. Human release acceptance remains pending.
 - **Open questions** None. All 16 open decisions mapped to their resolution owner / gate.
 
 ### Ledger Summary
@@ -727,7 +727,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Documentation / Specs: `docs/audio-spec.md`, `docs/educational_copy_review.md`, `docs/asset-register.md`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** Non-image assets routed to Gemini Flash. Zero image assets (Codex-exclusive, blocked). Zero binary audio dependencies (procedural in-engine fallback active).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
+- **Review** REVIEWED by Codex CLI. Original review session `01a1be9a-5583-7252-b082-ebd436372c80`; the three P2 findings were cleared by re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`. Human release acceptance remains pending.
 - **Open questions** None. Binary audio pending Gemini Flash audio modality. Formal educational certification gated under `OD-012`.
 
 ### Asset Queue Summary
@@ -761,7 +761,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Tests: `tests/headless/release_tier_test.gd`, `tests/headless/ending_chapter5_test.gd`.
   - Decisions: `docs/open-decisions-ledger.md` (`OD-017`), `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure code and configuration only; zero generated images or external audio).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
+- **Review** REVIEWED by Codex CLI. Original review session `01a1be9a-5583-7252-b082-ebd436372c80`; the three P2 findings were cleared by re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`. Human release acceptance remains pending.
 - **Open questions** Recorded `OD-017`: Choice of shipping default release tier (`academic_mvp` vs. `full_release`) for public release builds is deferred to human release authority sign-off; checked-in project setting defaults to `full_release` to maintain unbroken evaluator and developer workflows.
 
 ### Changes
@@ -793,7 +793,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Documentation: `docs/testing.md`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (PowerShell build script and documentation).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
+- **Review** REVIEWED by Codex CLI. Original review session `01a1be9a-5583-7252-b082-ebd436372c80`; the three P2 findings were cleared by re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`. Human release acceptance remains pending.
 - **Open questions** None.
 
 ### Changes
@@ -830,7 +830,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Tests: `tests/headless/layout_audit_test.gd`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure GDScript and Godot UI primitives; zero generated art).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
+- **Review** REVIEWED by Codex CLI. Original review session `01a1be9a-5583-7252-b082-ebd436372c80`; the three P2 findings were cleared by re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`. Human release acceptance remains pending.
 - **Open questions** None.
 
 ### Changes
@@ -866,7 +866,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Tests: `tests/headless/save_compatibility_recovery_test.gd`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure GDScript and Godot UI primitives; zero generated art).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
+- **Review** REVIEWED by Codex CLI. Original review session `01a1be9a-5583-7252-b082-ebd436372c80`; the three P2 findings were cleared by re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`. Human release acceptance remains pending.
 - **Open questions** None.
 
 ### Changes
@@ -902,7 +902,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Export script: `scripts/build/export_release.ps1`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (PowerShell validation and build scripts).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
+- **Review** REVIEWED by Codex CLI. Original review session `01a1be9a-5583-7252-b082-ebd436372c80`; the three P2 findings were cleared by re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`. Human release acceptance remains pending.
 - **Open questions** None.
 
 ### Changes
@@ -948,7 +948,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Documentation: `docs/godot-mcp-evaluation.md`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (tooling evaluation, documentation, and disposable scratch scripts).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
+- **Review** REVIEWED by Codex CLI. Original review session `01a1be9a-5583-7252-b082-ebd436372c80`; the three P2 findings were cleared by re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`. Human release acceptance remains pending.
 - **Open questions** None.
 
 ### Changes
@@ -990,7 +990,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Ledger update: `docs/open-decisions-ledger.md`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (system design briefs and documentation).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
+- **Review** REVIEWED by Codex CLI. Original review session `01a1be9a-5583-7252-b082-ebd436372c80`; the three P2 findings were cleared by re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`. Human release acceptance remains pending.
 - **Open questions** OD-002 (Initiative paradigm), OD-003 (Elemental affinity & SP model), OD-004 (Status stacking & boss tenacity).
 
 ### Changes
@@ -1032,7 +1032,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Tests: `tests/headless/build_tier_test.gd`, `tests/headless/verify_exported_tier.gd`, tracked UIDs.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (PowerShell build automation, typed GDScript test harnesses, and configuration).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
+- **Review** REVIEWED by Codex CLI. Original review session `01a1be9a-5583-7252-b082-ebd436372c80`; the three P2 findings were cleared by re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`. Human release acceptance remains pending.
 - **Open questions** `OD-017`: Choice of shipping default release tier (`academic_mvp` vs. `full_release`) for public distribution remains deferred to human release authority sign-off; checked-in `project.godot` maintains `release_tier="full_release"`.
 
 ### Changes
@@ -1072,7 +1072,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Documentation: `tools/mcp-proof/README.md`, `docs/godot-mcp-evaluation.md`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (tooling verification harness, documentation, and external test artifacts; zero generated images or runtime assets).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
+- **Review** REVIEWED by Codex CLI. Original review session `01a1be9a-5583-7252-b082-ebd436372c80`; the three P2 findings were cleared by re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`. Human release acceptance remains pending.
 - **Open questions** None. Production toolchain remains isolated to native GDScript and headless CLI.
 
 ### Changes
@@ -1107,7 +1107,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 - **Snapshot** `feature/w4-5-vertical-slice`, `e25491d..5e81a04`, 26 commits (SBL-FIX-006 through SBL-MCP-003).
 - **Review** CHANGES_REQUESTED. Codex CLI `0.167.0`, model `gpt-6.1-sol`, session `01a1be9a-5583-7252-b082-ebd436372c80`, exit 0, 9 November 2026.
 - **Verdict** No P0 or P1 findings. Three P2 findings. The reviewer did not fault the save invariants, the release-tier gates, or the no-invented-numerics rule.
-- **Status rule** Every entry in this range is `CHANGES_REQUESTED` until the three fixes below land and are re-reviewed. Nothing in the range may be represented as `REVIEWED` yet.
+- **Status rule** The three findings were fixed and cleared by re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`, so the entries in this range are `REVIEWED`. `SBL-BLD-003`, added by the fix batch, still has one open P2 and is `CHANGES_REQUESTED`.
 
 ### Findings
 
@@ -1148,7 +1148,7 @@ The `SliceProgress: Invalid data` warning seen when mounting a packed build came
   - Tests: `tests/headless/layout_audit_test.gd`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (Godot scene properties and test code; zero art assets).
-- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5; Codex CLI will review after batch completion.
+- **Review** REVIEWED by Codex CLI session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0` (re-review of `b2ddee1..b2b45a4`); no actionable defects. Human release acceptance remains pending.
 - **Open questions** None.
 
 ### Changes
@@ -1186,7 +1186,7 @@ The `SliceProgress: Invalid data` warning seen when mounting a packed build came
   - Tests: `tests/headless/verify_exported_tier.gd`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (PowerShell validation automation and GDScript test harness; zero art assets).
-- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5; Codex CLI will review after batch completion.
+- **Review** REVIEWED by Codex CLI session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0` (re-review of `b2ddee1..b2b45a4`); no actionable defects. Human release acceptance remains pending.
 - **Open questions** None.
 
 ### Changes
@@ -1225,7 +1225,7 @@ The `SliceProgress: Invalid data` warning seen when mounting a packed build came
   - Documentation: `docs/godot-mcp-evaluation.md`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (tooling verification harness, documentation, and external test artifacts; zero art or runtime assets).
-- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5; Codex CLI will review after batch completion.
+- **Review** REVIEWED by Codex CLI session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0` (re-review of `b2ddee1..b2b45a4`); no actionable defects. Human release acceptance remains pending.
 - **Open questions** None. Production toolchain remains isolated to native GDScript and headless CLI.
 
 ### Changes
@@ -1264,7 +1264,7 @@ The `SliceProgress: Invalid data` warning seen when mounting a packed build came
   - Build automation & tests: `scripts/build/test_export_failure_restoration.ps1`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (PowerShell build automation, git ignore configuration, and failure regression tests).
-- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5; Codex CLI will review after batch completion.
+- **Review** CHANGES_REQUESTED. Re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0` found one P2: `test_export_failure_restoration.ps1` does not reliably fail after `project.godot` and `build_tier.txt` are mutated, so it can pass without exercising the restoration block.
 - **Open questions** `OD-017`: Default shipping release tier remains deferred to human release authority sign-off; checked-in `project.godot` maintains `release_tier="full_release"`.
 
 ### Changes
@@ -1291,4 +1291,23 @@ The `SliceProgress: Invalid data` warning seen when mounting a packed build came
 | Gitignore audit | PASSED | `/build_tier.txt` added to `.gitignore`. |
 
 
+---
 
+## Codex CLI re-review of the batch 4 fixes
+
+- **Snapshot** `feature/w4-5-vertical-slice`, `b2ddee1..b2b45a4` (five fix commits).
+- **Review** CHANGES_REQUESTED. Codex CLI `0.167.0`, model `gpt-6.1-sol`, session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`, exit 0, 9 November 2026.
+- **Resolved** The three P2 findings from session `01a1be9a-5583-7252-b082-ebd436372c80` are fixed: keyboard focus-following, archive-contained PCK validation, and MCP error-result rejection. The reviewer found no actionable defects in those changes.
+- **Open** One new P2 in `scripts/build/test_export_failure_restoration.ps1:34-37`. A nonexistent Godot path either falls back to an installed Godot (running a real export) or throws before `project.godot` and `build_tier.txt` are mutated, so the test can pass without exercising the restoration `finally` block. The test must inject the failure after configuration mutation, using a controlled executable that exits non-zero for the export invocation, and assert that mutation was observed before the failure.
+
+### Independent verification performed with the re-review
+
+| Check | Result |
+| --- | --- |
+| `scripts/build/run_headless_tests.ps1` | 29/29 suites PASS, exit 0. |
+| `scripts/build/run_headless_tests.ps1 -Export` | Exit 0; artifacts rebuilt; `project.godot` restored byte-identically. |
+| `scripts/build/validate_release.ps1 -Tier all` | Exit 0; each archive's own PCK extracted and gated (`AcademicMVP-Web`, `FullRelease-Web`, `FullRelease-Windows`). |
+| Swapped-marker negative control | Exit 1 with 6 errors: marker mismatch plus live gate failure on the extracted PCK. |
+| `scripts/build/test_export_failure_restoration.ps1` | Exit 0 in the current form, but the failure point is uncontrolled, which is the open finding. |
+| MCP harness re-run | Exit 0; tracked reference scene untouched; `git status` clean. |
+| MCP harness with a bad Godot path | Exit 1; the harness fails instead of printing a false PASS. |
