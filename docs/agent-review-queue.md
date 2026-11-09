@@ -779,6 +779,39 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | `tests/headless/release_tier_test.gd` | Exit 0 | Verified default `full_release` tier, router rejection of `void_citadel`, `ashen_peaks` portal hiding/disabling, `open_ending_modal()` no-op, `q_meta_01` query exclusion, debug bar button disabling, and full restoration on tier restore. |
 | `tests/headless/ending_chapter5_test.gd` | Exit 0 | Verified full tier retains 100% operational functionality for Ashen Peaks portal, Void Citadel entry, both endings, epilogue modal, and capstone question. |
 
+---
+
+## SBL-BLD-001 — Canonical Headless Test Runner
+
+- **Milestone** Test & CI Automation Infrastructure.
+- **Requirements** GDD-093, GDD-109, GDD-124, AGENTS.md § Engineering invariants & § Definition of done.
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Runner script: `scripts/build/run_headless_tests.ps1`.
+  - Documentation: `docs/testing.md`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None (PowerShell build script and documentation).
+- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Open questions** None.
+
+### Changes
+
+1. **Automated Test Harness Script.** Authored `scripts/build/run_headless_tests.ps1` to execute an initial project `--import`, enumerate all 25 test suites under `tests/headless/*.gd`, execute each suite with synchronous process management (`Start-Process -NoNewWindow -Wait -PassThru`), redirect stdout and stderr to `report/<suite_name>.log` and `report/<suite_name>.err`, and display an automated PASS/FAIL summary table.
+2. **Elimination of Blank-Exit-Code Trap.** Avoided the Windows GUI subsystem detached-process trap by utilizing `Godot_v4.7.2-stable_win64_console.exe` with structured process redirection and explicit exit code validation.
+3. **Flexible CLI Switches.** Added `-Suite <name>` to filter execution to a single suite or substring, `-Export` to automatically chain `scripts/build/export_release.ps1` on green runs, and `-SkipImport` for rapid test iterations.
+4. **Failing Suite Proof.** Verified that a deliberately broken suite causes `run_headless_tests.ps1` to exit with non-zero exit code (exit 1), and clean runs exit with code 0.
+5. **Testing Documentation.** Documented commands, engine subsystem differences, and full suite inventory in `docs/testing.md`.
+
+### Verification Table
+
+| Invocation / Condition | Expected Exit | Observed Exit | Evidence |
+|---|---|---|---|
+| Single suite: `run_headless_tests.ps1 -Suite release_tier_test` | Exit 0 | Exit 0 | Clean single suite execution; table reports PASS in 1.02s. |
+| Injected failure: `temporary_broken_test.gd` (quit(1)) | Exit 1 | Exit 1 | Non-zero exit code propagation verified; runner terminates with exit code 1. |
+| Full 25-suite suite execution: `run_headless_tests.ps1` | Exit 0 | Exit 0 | All 25 suites passed cleanly with 0 failures in 27.5s. |
+
+
 
 
 
