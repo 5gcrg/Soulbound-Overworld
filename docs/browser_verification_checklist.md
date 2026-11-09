@@ -52,6 +52,8 @@ In Godot 4.x:
 | **WEB-SMK-08** | Backup Export/Import via Text Box | In Settings, click "Export Backup". Copy generated base64 string. Modify state, then paste string into "Import Backup" text field. | String is exported and imported cleanly via browser text input without requiring native desktop file dialogues. |
 | **WEB-SMK-09** | CSV Download Stream | Navigate to Assessment / Educator View and click "Export CSV". | Browser triggers file download of `assessment_metrics.csv` via JavaScript blob URL or data URI fallback without popup blocker rejection. |
 | **WEB-SMK-10** | Single-Thread Execution Audit | Open browser DevTools (F12) -> Performance / Sources tab. Profile engine frame loop. | Zero Web Workers are spawned for the engine frame cycle. All logic, rendering, and audio execute on the main thread without `SharedArrayBuffer`. |
+| **WEB-SMK-11** | Learning Journal Screen & HUD Access | Click "Learning Journal" button on exploration HUD. Observe journal on SheetLayer. | Journal opens cleanly; freezes player movement; consumes menu hotkeys (`C`, `I`, `O`) and Escape; displays sorted transient rows, immutable first-attempt correctness, legacy records as "Not recorded", OD-012 notice, and timestamp labeled as "Last recorded activity". Closing restores movement and prior focus. |
+| **WEB-SMK-12** | Printable HTML & CSV Web Download Streams | In Learning Journal or Academic Completion Modal, click "Export CSV" and "Export Printable HTML". | Injectable buffer preparation dispatches exact UTF-8 bytes for allowlisted filenames (`learning_report.csv`, `learning_report.html`, `soulbound_academic_mvp_report.csv`, `soulbound_academic_mvp_report.html`) with MIME types (`text/csv`, `text/html`). Browser triggers download without popup blocker blocking. |
 
 ---
 
@@ -61,9 +63,9 @@ Per AGENTS.md, results cannot be represented as passed without actual execution 
 
 | Environment | Platform | Test Cases | Execution Status | Notes / Evidence |
 |---|---|---|---|---|
-| **Google Chrome / Chromium** (Latest Stable) | Windows 10/11 | WEB-SMK-01 through WEB-SMK-10 | **PENDING human execution** | Manual verification required using exported package `dist/Soulbound-Web.zip` or `builds/web/index.html`. |
-| **Mozilla Firefox** (Latest Stable) | Windows 10/11 | WEB-SMK-01 through WEB-SMK-10 | **PENDING human execution** | Manual verification required using exported package `dist/Soulbound-Web.zip` or `builds/web/index.html`. |
-| **Microsoft Edge** (Chromium) | Windows 10/11 | WEB-SMK-01 through WEB-SMK-10 | **PENDING human execution** | Manual verification required using exported package `dist/Soulbound-Web.zip` or `builds/web/index.html`. |
+| **Google Chrome / Chromium** (Latest Stable) | Windows 10/11 | WEB-SMK-01 through WEB-SMK-12 | **PENDING human execution** | Manual verification required using exported package `dist/Soulbound-Web.zip` or `builds/web/index.html`. |
+| **Mozilla Firefox** (Latest Stable) | Windows 10/11 | WEB-SMK-01 through WEB-SMK-12 | **PENDING human execution** | Manual verification required using exported package `dist/Soulbound-Web.zip` or `builds/web/index.html`. |
+| **Microsoft Edge** (Chromium) | Windows 10/11 | WEB-SMK-01 through WEB-SMK-12 | **PENDING human execution** | Manual verification required using exported package `dist/Soulbound-Web.zip` or `builds/web/index.html`. |
 
 ---
 

@@ -131,7 +131,14 @@ func _run_tests() -> void:
 			tree.unlock_skill(&"celestial_prism")
 			tree.unlock_skill(&"glacial_aegis")
 			b.kurei_tree = tree
-			return b
+			return b,
+		"LearningJournal": func() -> Control:
+			var j: LearningJournal = load("res://scenes/ui/learning_journal.tscn").instantiate() as LearningJournal
+			var ac := AssessmentController.new()
+			ac.submit_answer("q_crit_01", 0)
+			ac.submit_answer("q_dec_01", 1)
+			j.configure(ac, "profile_01")
+			return j
 	}
 
 	# 1. Audit at text_scale 1.0

@@ -70,6 +70,13 @@ theme_override_font_sizes/font_size = 12
 text = "Approach the Spirit Guide (northeast) to begin trial."
 autowrap_mode = 3
 
+[node name="JournalBtn" type="Button" parent="UIOverlay"]
+offset_left = 20.0
+offset_top = 85.0
+offset_right = 160.0
+offset_bottom = 117.0
+text = "Learning Journal"
+
 [node name="BattleLayer" type="CanvasLayer" parent="."]
 layer = 2
 

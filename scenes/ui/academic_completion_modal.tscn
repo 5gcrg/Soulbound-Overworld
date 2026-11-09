@@ -98,16 +98,22 @@ layout_mode = 2
 
 [node name="Buttons" type="HBoxContainer" parent="Panel/Margin/VBox"]
 layout_mode = 2
-theme_override_constants/separation = 16
+theme_override_constants/separation = 12
 
 [node name="ExportBtn" type="Button" parent="Panel/Margin/VBox/Buttons"]
 custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Export Academic CSV Report"
+text = "Export Academic CSV"
+
+[node name="ExportHtmlBtn" type="Button" parent="Panel/Margin/VBox/Buttons"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Export Printable HTML"
 
 [node name="CloseBtn" type="Button" parent="Panel/Margin/VBox/Buttons"]
 custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Continue Free Exploration"
+text = "Continue Exploration"

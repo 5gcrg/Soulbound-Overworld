@@ -2087,3 +2087,79 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 | Negative control: user settings file isolation | Exit 0 | Proved SHA256 before and after suite is byte-identical (`report/neg_user_settings_isolation.log`). |
 | Full headless runner (`run_headless_tests.ps1`) | Exit 0 (31/31 passed) | All 31 project headless suites pass cleanly with 0 Godot script/engine errors across all game systems. |
 | Full release exporter (`export_release.ps1 -Tier all`) | Exit 0 | Built and validated `Soulbound-AcademicMVP-Web.zip`, `Soulbound-Web.zip`, and `Soulbound-Windows-Portable.zip`; PCK gates passed; working tree verified byte-identical. |
+
+---
+
+## SBL-EDU-005 — Persistent Learning Journal & Educational Reporting Engine
+
+- **Milestone** M2 / M3 / M4 / M6 Educational Reporting Hardening.
+- **Requirements** GDD-071 (persistent activity/attempt records), GDD-072 (learning journal, CSV, and printable report export), GDD-091 (learning-journal screen), GDD-112 (educational report export), FR-EDU-002 (immutable first-attempt tracking), FR-EDU-004 (local CSV and printable report export), TC-EDU-002 (first-attempt score and retry records), TC-EDU-004 (CSV and printable report correctness), supporting NFR-SEC-001 (data validation & formula injection defense) and NFR-ACC-001 (readable UI, 960x540 reachability, 1.5x scalable interface).
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - New UI scenes & reporting classes: `scenes/ui/learning_journal.{tscn,gd}`, `scripts/education/learning_report.gd`.
+  - New headless test suite: `tests/headless/learning_journal_test.gd`.
+  - Modified domain & integration: `scripts/education/assessment_controller.gd`, `scenes/main/game_root.{tscn,gd}`, `scenes/ui/academic_completion_modal.{tscn,gd}`.
+  - Modified audits & documentation: `tests/headless/layout_audit_test.gd`, `docs/browser_verification_checklist.md`, `docs/traceability-matrix.md`, `docs/testing.md`, `docs/agent-review-queue.md`.
+  - Negative control logs: `report/neg_journal_mutate_first_attempt.log`, `report/neg_journal_omit_html_escaping.log`, `report/neg_journal_stale_controller.log`, `report/neg_journal_claim_browser_delivery.log`.
+- **Asset provenance** None (pure GDScript, Control UI scene nodes, and test automation; zero image generation, zero audio generation).
+- **Review** REVIEW_PENDING_CODEX.
+- **Open questions** `OD-012` remains open pending human educator review. Mandatory notice is prominently displayed in both journal and reports: `"Practice records. Educator review pending — OD-012. These records do not establish learning improvement."` Browser download/print execution remains PENDING human evaluation per AGENTS.md.
+
+### Changes
+
+1. **Shared Row Model & Reporting Engine (`scripts/education/learning_report.gd`)**:
+   - `LearningReport.get_rows(records: Dictionary) -> Array[Dictionary]`: produces transient, deep-copied rows sorted alphabetically by question ID with columns `question_id,competency,difficulty,first_attempt_correct,total_attempts,completed,timestamp`. The underlying `records` dictionary is never mutated.
+   - Preserves first-attempt correctness: retries never alter first-attempt correctness.
+   - Legacy record compatibility: legacy records lacking `first_response` data remain unchanged in memory and on disk, displaying `"Not recorded"` without inferring missing answers.
+   - Formula neutralization: values beginning with `=`, `+`, `-`, `@`, `\t`, or `\r` are prepended with `'` in transport CSV output, preventing spreadsheet formula injection.
+   - Standalone UTF-8 HTML report: includes print CSS, zero `<script>` tags, zero external resources/links, zero remote requests, zero inline handlers, zero auto-print, and entity-escapes all dynamic values. Includes active profile slot, row count, completion count, first-attempt count, empty state, and the mandatory OD-012 notice.
+   - Fixed allowlisted filenames under `user://reports/`: `learning_report.csv`, `learning_report.html`, `competency_record.csv`, `soulbound_academic_mvp_report.csv`, `soulbound_academic_mvp_report.html`. Any path traversal (`..`) or unallowlisted path is rejected.
+   - Injectable web delivery: `prepare_web_download()` dispatches exact UTF-8 byte buffers and MIME types to an injectable test bridge or `JavaScriptBridge.download_buffer` without claiming browser execution.
+
+2. **AssessmentController Report Delegation (`scripts/education/assessment_controller.gd`)**:
+   - Retains all existing `education.records`, `submit_answer()`, first-response merging, completion gating, and serialization logic unchanged.
+   - Delegated `generate_csv_text()` and `export_to_csv()` to `LearningReport`, ensuring Journal, CSV, and HTML consume the identical row model and formula neutralization rules.
+   - Added `get_report_rows()`, `generate_html_report()`, and `export_to_html()`.
+
+3. **Learning Journal UI Screen (`scenes/ui/learning_journal.{tscn,gd}`)**:
+   - Created `LearningJournal` scene on `SheetLayer`.
+   - Layout strictly conforms to 960x540 viewport at both 1.0x and 1.5x accessibility text scales (`ScrollContainer` absorbs table expansion).
+   - Displays OD-012 notice, profile slot, summary metrics, empty state message when records are empty, and sorted table rows.
+   - Focus management: circular keyboard focus traversal across `ExportCsvBtn`, `ExportHtmlBtn`, and `CloseBtn`.
+   - Input consumption: consumes menu hotkeys (`toggle_character`, `toggle_inventory`, `toggle_settings`) and closes on `ui_cancel` (Escape).
+   - Provides desktop allowlisted exports and injectable web download buffer preparation.
+
+4. **Exploration HUD & GameRoot Integration (`scenes/main/game_root.{tscn,gd}`)**:
+   - Added button-only `JournalBtn` to exploration HUD (`UIOverlay`). No keyboard action was added.
+   - Managed single-instance lifecycle on `SheetLayer`: freezes player movement, saves/restores previous focus and movement lock on close.
+   - Modal exclusivity: opening journal closes any active character/inventory/settings sheet to prevent stacking; opening another sheet closes journal; blocking modals prevent journal opening.
+   - Dynamic profile refresh: `_init_slice_progress()` and `_reload_imported_profile()` re-configure live `_learning_journal` with the new controller and slot, guaranteeing stale controller references are never retained.
+
+5. **Academic Completion Modal Printable HTML Export (`scenes/ui/academic_completion_modal.{tscn,gd}`)**:
+   - Added direct `ExportHtmlBtn` ("Export Printable HTML") alongside CSV export without opening or stacking the journal.
+   - Uses `LearningReport` allowlisted file export on desktop and injectable web buffer preparation on web without claiming browser execution.
+
+6. **Headless Test Suite & Negative Controls (`tests/headless/learning_journal_test.gd`)**:
+   - 8 comprehensive parts covering row model, legacy compatibility, sorting, counts, timestamps, OD-012 notice, CSV formula neutralization, HTML security/print CSS, HUD button & SheetLayer lifecycle, profile switching, and desktop/web delivery.
+   - 4 disposable negative controls:
+     1. Mutate first-attempt data during rendering (`report/neg_journal_mutate_first_attempt.log`).
+     2. Omit HTML escaping (`report/neg_journal_omit_html_escaping.log`).
+     3. Retain stale controller after profile switch (`report/neg_journal_stale_controller.log`).
+     4. Claim browser delivery (`report/neg_journal_claim_browser_delivery.log`).
+
+### Verification Table
+
+| Test Scope / Invocation | Result | Evidence |
+|---|---|---|
+| `run_headless_tests.ps1 -Suite learning_journal_test` | Exit 0 | Verified 8 parts: row model, legacy compatibility ("Not recorded"), sorting, counts, timestamps ("Last recorded activity"), OD-012 notice, CSV formula neutralization, HTML security & print CSS, HUD button-only SheetLayer lifecycle & focus restoration, profile switching & backup refresh, and desktop/web delivery (`report/learning_journal_test.log`). |
+| `run_headless_tests.ps1 -Suite layout_audit_test` | Exit 0 | Audited LearningJournal and all 6 modals at 960x540 viewport: Phase 1 (1.0x rect `[P: (100, 45), S: (760, 450)]` fits, no clipped content) and Phase 2 (1.5x rect `[P: (76.5, 45), S: (807, 450)]` fits inside 960x540, follow_focus reached below-the-fold controls) (`report/layout_audit_test.log`). |
+| `run_headless_tests.ps1 -Suite education_report_test` | Exit 0 | Verified question bank, immutable first-attempt tracking, completion gating, and RFC-4180 CSV export (`report/education_report_test.log`). |
+| `run_headless_tests.ps1 -Suite web_backup_test` | Exit 0 | Verified profile JSON backup export/import, invalid JSON rejection, and web CSV download buffer preparation (`report/web_backup_test.log`). |
+| `run_headless_tests.ps1 -Suite settings_accessibility_test` | Exit 0 | Verified settings persistence, audio buses, 29-element circular focus traversal, and real user settings isolation (`report/settings_accessibility_test.log`). |
+| Negative control 1: mutate first-attempt data during rendering | Exit 0 | Proved mutation detection catches altered first-attempt data (`report/neg_journal_mutate_first_attempt.log`). |
+| Negative control 2: omit HTML escaping | Exit 0 | Proved unescaped dynamic input caught by security assertion (`report/neg_journal_omit_html_escaping.log`). |
+| Negative control 3: stale controller after profile switch | Exit 0 | Proved retaining old controller when switching to Profile B detected as stale reference (`report/neg_journal_stale_controller.log`). |
+| Negative control 4: claim browser delivery | Exit 0 | Proved claiming browser execution in non-browser environment is flagged (`report/neg_journal_claim_browser_delivery.log`). |
+| Full headless runner (`run_headless_tests.ps1`) | Exit 0 (32/32 passed) | All 32 project headless suites pass cleanly with 0 Godot script/engine errors across all game systems. |
+| Full release exporter (`run_headless_tests.ps1 -Export -SkipImport`) | Exit 0 | Built and validated `Soulbound-AcademicMVP-Web.zip` (10.8 MB), `Soulbound-Web.zip` (10.8 MB), and `Soulbound-Windows-Portable.zip` (86.7 MB); PCK gates passed; working tree verified byte-identical. |

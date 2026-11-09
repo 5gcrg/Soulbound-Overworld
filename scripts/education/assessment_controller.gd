@@ -349,46 +349,23 @@ static func _extract_first_response_selected_index(rec: Dictionary) -> Dictionar
 	return {"present": false, "value": null}
 
 # ==============================================================================
-# RFC-4180 CSV Report Export
+# RFC-4180 CSV & Educational Report Export (Delegated to LearningReport)
 # ==============================================================================
 
+func get_report_rows() -> Array[Dictionary]:
+	return LearningReport.get_rows(records)
+
 func generate_csv_text() -> String:
-	var lines: Array[String] = []
-	lines.append("question_id,competency,difficulty,first_attempt_correct,total_attempts,completed,timestamp")
+	return LearningReport.generate_csv(records)
 
-	var keys: Array = records.keys()
-	keys.sort()
-	for q_id: String in keys:
-		var rec: Dictionary = records[q_id]
-		var line: String = "%s,%s,%s,%s,%d,%s,%d" % [
-			_escape_csv(String(rec.get("question_id", ""))),
-			_escape_csv(String(rec.get("competency", ""))),
-			_escape_csv(String(rec.get("difficulty", ""))),
-			"true" if rec.get("first_attempt_correct", false) else "false",
-			int(rec.get("total_attempts", 0)),
-			"true" if rec.get("completed", false) else "false",
-			int(rec.get("timestamp", 0))
-		]
-		lines.append(line)
-
-	return "\n".join(lines) + "\n"
+func generate_html_report(profile_slot: String = "profile_01") -> String:
+	return LearningReport.generate_html(records, profile_slot)
 
 func export_to_csv(export_path: String = "user://reports/competency_record.csv") -> Error:
-	var base_dir: String = export_path.get_base_dir()
-	if not DirAccess.dir_exists_absolute(base_dir):
-		var make_err: Error = DirAccess.make_dir_recursive_absolute(base_dir)
-		if make_err != OK:
-			return make_err
+	return LearningReport.export_csv_file(records, export_path)
 
-	var file := FileAccess.open(export_path, FileAccess.WRITE)
-	if file == null:
-		return FileAccess.get_open_error()
-
-	file.store_string(generate_csv_text())
-	file.close()
-	return OK
+func export_to_html(profile_slot: String = "profile_01", export_path: String = "user://reports/learning_report.html") -> Error:
+	return LearningReport.export_html_file(records, profile_slot, export_path)
 
 func _escape_csv(value: String) -> String:
-	if value.contains(",") or value.contains("\"") or value.contains("\n") or value.contains("\r"):
-		return "\"" + value.replace("\"", "\"\"") + "\""
-	return value
+	return LearningReport.escape_csv(value)

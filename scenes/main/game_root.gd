@@ -15,6 +15,7 @@ const EVALUATOR_DEBUG_BAR_SCENE: PackedScene = preload("res://scenes/ui/evaluato
 const TITLE_SCREEN_SCENE: PackedScene = preload("res://scenes/ui/title_screen.tscn")
 const ENDING_MODAL_SCENE: PackedScene = preload("res://scenes/ui/ending_modal.tscn")
 const BOSS_ENCOUNTER_SCENE: PackedScene = preload("res://scenes/combat/boss_encounter.tscn")
+const LEARNING_JOURNAL_SCENE: PackedScene = preload("res://scenes/ui/learning_journal.tscn")
 
 const EXPECTED_ENCOUNTER_ID: StringName = &"combat_alpha_fixture"
 const EXPECTED_NPC_ID: StringName = &"quest_guide_alpha"
@@ -39,6 +40,8 @@ var _ending_modal: EndingModal = null
 var _boss_encounter: BossEncounter = null
 var _settings_sheet: SettingsSheet = null
 var _title_settings_sheet: SettingsSheet = null
+var _learning_journal: LearningJournal = null
+var _journal_prior_focus: Control = null
 var _debug_bar: EvaluatorDebugBar = null
 var _title_screen: TitleScreen = null
 var audio_manager: AudioManager = null
@@ -65,6 +68,7 @@ var kurei_tree: KureiTree = KureiTree.new()
 @onready var status_label: Label = $UIOverlay/VBoxContainer/StatusLabel
 @onready var title_label: Label = $UIOverlay/VBoxContainer/TitleLabel
 @onready var objective_label: Label = $UIOverlay/ObjectivePanel/Margin/VBox/ObjectiveLabel
+@onready var journal_btn: Button = $UIOverlay/JournalBtn
 @onready var _battle_layer: CanvasLayer = $BattleLayer
 @onready var _dialog_layer: CanvasLayer = $DialogLayer
 @onready var _expedition_layer: CanvasLayer = $ExpeditionLayer
@@ -91,6 +95,9 @@ func _ready() -> void:
 
 	_init_slice_progress()
 	_init_debug_bar()
+
+	if journal_btn != null:
+		journal_btn.pressed.connect(_open_learning_journal)
 
 	if DisplayServer.get_name() != "headless":
 		open_title_screen()
@@ -151,6 +158,9 @@ func _init_slice_progress(store: ProfileStore = null, slot: String = "profile_01
 
 	_validate_and_clamp_progress()
 	_sync_chapter_gates()
+
+	if _learning_journal != null and is_instance_valid(_learning_journal):
+		_learning_journal.configure(assessment_controller, _profile_slot)
 	_update_objective()
 
 	_chapter_baseline = JSON.stringify(prof_dict.get("world", {}).get("chapter_progress", {}))
@@ -843,6 +853,8 @@ func _toggle_character_sheet() -> void:
 		_close_character_sheet()
 		return
 
+	if _learning_journal != null and is_instance_valid(_learning_journal):
+		_close_learning_journal()
 	if _inventory_sheet != null and is_instance_valid(_inventory_sheet):
 		_close_inventory_sheet()
 	if _settings_sheet != null and is_instance_valid(_settings_sheet):
@@ -875,7 +887,7 @@ func _close_character_sheet() -> void:
 		character_stats.save_to_store(profile_store, _profile_slot)
 		kurei_tree.save_to_store(profile_store, _profile_slot)
 
-	if _inventory_sheet == null and _settings_sheet == null and _battle == null and _boss_encounter == null and _dialog == null and _expedition == null and _academic_modal == null and _ending_modal == null and _chapter_dialog == null:
+	if _inventory_sheet == null and _settings_sheet == null and _learning_journal == null and _battle == null and _boss_encounter == null and _dialog == null and _expedition == null and _academic_modal == null and _ending_modal == null and _chapter_dialog == null:
 		_restore_combat_movement()
 
 func _toggle_inventory_sheet() -> void:
@@ -890,6 +902,8 @@ func _toggle_inventory_sheet() -> void:
 		_close_inventory_sheet()
 		return
 
+	if _learning_journal != null and is_instance_valid(_learning_journal):
+		_close_learning_journal()
 	if _character_sheet != null and is_instance_valid(_character_sheet):
 		_close_character_sheet()
 	if _settings_sheet != null and is_instance_valid(_settings_sheet):
@@ -923,7 +937,7 @@ func _close_inventory_sheet() -> void:
 	if profile_store != null:
 		inventory_manager.save_to_store(profile_store, _profile_slot)
 
-	if _character_sheet == null and _settings_sheet == null and _battle == null and _boss_encounter == null and _dialog == null and _expedition == null and _academic_modal == null and _ending_modal == null and _chapter_dialog == null:
+	if _character_sheet == null and _settings_sheet == null and _learning_journal == null and _battle == null and _boss_encounter == null and _dialog == null and _expedition == null and _academic_modal == null and _ending_modal == null and _chapter_dialog == null:
 		_restore_combat_movement()
 
 func _on_equipment_changed(_slot: StringName, _item_id: String) -> void:
@@ -942,6 +956,8 @@ func _toggle_settings_sheet() -> void:
 		_close_settings_sheet()
 		return
 
+	if _learning_journal != null and is_instance_valid(_learning_journal):
+		_close_learning_journal()
 	if _character_sheet != null and is_instance_valid(_character_sheet):
 		_close_character_sheet()
 	if _inventory_sheet != null and is_instance_valid(_inventory_sheet):
@@ -979,7 +995,52 @@ func _close_settings_sheet() -> void:
 	if _pending_return_to_alpha:
 		_defer_return_to_alpha.call_deferred()
 
-	if _character_sheet == null and _inventory_sheet == null and _battle == null and _boss_encounter == null and _dialog == null and _expedition == null and _academic_modal == null and _ending_modal == null and _chapter_dialog == null:
+	if _character_sheet == null and _inventory_sheet == null and _learning_journal == null and _battle == null and _boss_encounter == null and _dialog == null and _expedition == null and _academic_modal == null and _ending_modal == null and _chapter_dialog == null:
+		_restore_combat_movement()
+
+func _open_learning_journal() -> void:
+	if has_blocking_modal():
+		return
+	if _learning_journal != null and is_instance_valid(_learning_journal):
+		_close_learning_journal()
+		return
+
+	if _character_sheet != null and is_instance_valid(_character_sheet):
+		_close_character_sheet()
+	if _inventory_sheet != null and is_instance_valid(_inventory_sheet):
+		_close_inventory_sheet()
+	if _settings_sheet != null and is_instance_valid(_settings_sheet):
+		_close_settings_sheet()
+
+	var target_layer: CanvasLayer = _sheet_layer if _sheet_layer != null else _dialog_layer
+	if target_layer == null:
+		return
+
+	_journal_prior_focus = get_viewport().gui_get_focus_owner() if get_viewport() != null else null
+	_previous_input_frozen = player.input_frozen if player != null else false
+	if player != null:
+		player.freeze_movement()
+
+	var journal: LearningJournal = LEARNING_JOURNAL_SCENE.instantiate() as LearningJournal
+	if journal == null:
+		return
+	_learning_journal = journal
+	journal.configure(assessment_controller, _profile_slot)
+	journal.closed.connect(_close_learning_journal)
+	target_layer.add_child(journal)
+
+func _close_learning_journal() -> void:
+	if _learning_journal != null and is_instance_valid(_learning_journal):
+		if _learning_journal.closed.is_connected(_close_learning_journal):
+			_learning_journal.closed.disconnect(_close_learning_journal)
+		_learning_journal.queue_free()
+		_learning_journal = null
+
+	if _journal_prior_focus != null and is_instance_valid(_journal_prior_focus):
+		_journal_prior_focus.grab_focus()
+		_journal_prior_focus = null
+
+	if _character_sheet == null and _inventory_sheet == null and _settings_sheet == null and _battle == null and _boss_encounter == null and _dialog == null and _expedition == null and _academic_modal == null and _ending_modal == null and _chapter_dialog == null:
 		_restore_combat_movement()
 
 const _BASE_FONT_META: StringName = &"_base_font_size"

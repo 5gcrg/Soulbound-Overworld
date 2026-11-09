@@ -17,7 +17,10 @@ var inventory_manager: InventoryManager = null
 @onready var status_feedback_label: Label = _find_node(["Panel/Margin/VBox/Scroll/SummaryBox/StatusFeedbackLabel", "Panel/Margin/VBox/StatusFeedbackLabel"]) as Label
 
 @onready var export_btn: Button = $Panel/Margin/VBox/Buttons/ExportBtn
+@onready var export_html_btn: Button = $Panel/Margin/VBox/Buttons/ExportHtmlBtn
 @onready var close_btn: Button = $Panel/Margin/VBox/Buttons/CloseBtn
+
+var injectable_download_bridge: Callable = Callable()
 
 func _find_node(paths: Array) -> Node:
 	for p in paths:
@@ -27,6 +30,8 @@ func _find_node(paths: Array) -> Node:
 
 func _ready() -> void:
 	export_btn.pressed.connect(_on_export_pressed)
+	if export_html_btn != null:
+		export_html_btn.pressed.connect(_on_export_html_pressed)
 	close_btn.pressed.connect(_on_close_pressed)
 	refresh()
 
@@ -59,15 +64,33 @@ func _on_export_pressed() -> void:
 	if assessment_controller == null:
 		return
 	var export_path: String = "user://reports/soulbound_academic_mvp_report.csv"
-	if OS.has_feature("web"):
-		# Browser download is the primary path; the IndexedDB copy is only a convenience.
-		var csv_text: String = assessment_controller.generate_csv_text()
-		var buf: PackedByteArray = csv_text.to_utf8_buffer()
-		JavaScriptBridge.download_buffer(buf, "soulbound_academic_mvp_report.csv", "text/csv")
-		assessment_controller.export_to_csv(export_path)
-		status_feedback_label.text = "Report downloaded via browser!"
+	if OS.has_feature("web") or injectable_download_bridge.is_valid():
+		var csv_text: String = LearningReport.generate_csv(assessment_controller.records)
+		var res: Dictionary = LearningReport.prepare_web_download(csv_text, "soulbound_academic_mvp_report.csv", "text/csv", injectable_download_bridge)
+		if res["error"] == OK:
+			status_feedback_label.text = "Prepared web download buffer: soulbound_academic_mvp_report.csv"
+		else:
+			status_feedback_label.text = "Web export failed: Error %d" % res["error"]
 		return
-	var err: Error = assessment_controller.export_to_csv(export_path)
+	var err: Error = LearningReport.export_csv_file(assessment_controller.records, export_path)
+	if err == OK:
+		status_feedback_label.text = "Report exported to: %s" % export_path
+	else:
+		status_feedback_label.text = "Export failed: Error %d" % err
+
+func _on_export_html_pressed() -> void:
+	if assessment_controller == null:
+		return
+	var export_path: String = "user://reports/soulbound_academic_mvp_report.html"
+	if OS.has_feature("web") or injectable_download_bridge.is_valid():
+		var html_text: String = LearningReport.generate_html(assessment_controller.records, "profile_01")
+		var res: Dictionary = LearningReport.prepare_web_download(html_text, "soulbound_academic_mvp_report.html", "text/html", injectable_download_bridge)
+		if res["error"] == OK:
+			status_feedback_label.text = "Prepared web download buffer: soulbound_academic_mvp_report.html"
+		else:
+			status_feedback_label.text = "Web export failed: Error %d" % res["error"]
+		return
+	var err: Error = LearningReport.export_html_file(assessment_controller.records, "profile_01", export_path)
 	if err == OK:
 		status_feedback_label.text = "Report exported to: %s" % export_path
 	else:
