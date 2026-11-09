@@ -14,18 +14,31 @@ const TIER_ACADEMIC_MVP: String = "academic_mvp"
 const TIER_FULL_RELEASE: String = "full_release"
 
 const SETTING_PATH: String = "soulbound/release_tier"
+const MARKER_PATH: String = "res://build_tier.txt"
 
 static var _runtime_tier_override: String = ""
+
+static func parse_tier(val: String) -> String:
+	var trimmed: String = val.strip_edges().to_lower()
+	if trimmed == TIER_ACADEMIC_MVP:
+		return TIER_ACADEMIC_MVP
+	elif trimmed == TIER_FULL_RELEASE:
+		return TIER_FULL_RELEASE
+	return TIER_FULL_RELEASE
 
 static func get_tier() -> String:
 	if not _runtime_tier_override.is_empty():
 		return _runtime_tier_override
+	if FileAccess.file_exists(MARKER_PATH):
+		var f: FileAccess = FileAccess.open(MARKER_PATH, FileAccess.READ)
+		if f != null:
+			var marker_val: String = f.get_as_text().strip_edges()
+			f.close()
+			if marker_val == TIER_ACADEMIC_MVP or marker_val == TIER_FULL_RELEASE:
+				return marker_val
 	if ProjectSettings.has_setting(SETTING_PATH):
 		var val: String = String(ProjectSettings.get_setting(SETTING_PATH)).strip_edges()
-		if val == TIER_ACADEMIC_MVP:
-			return TIER_ACADEMIC_MVP
-		elif val == TIER_FULL_RELEASE:
-			return TIER_FULL_RELEASE
+		return parse_tier(val)
 	return TIER_FULL_RELEASE
 
 static func is_full_release() -> bool:

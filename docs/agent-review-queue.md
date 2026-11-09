@@ -1018,6 +1018,45 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | Scope completeness | PASSED | Detailed dedicated briefs authored for `OD-002`, `OD-003`, and `OD-004` with Options, Changes, Unblocks, and Risks. |
 | Ledger linkage | PASSED | `docs/open-decisions-ledger.md` synchronized and cross-referenced. |
 
+---
+
+## SBL-BLD-002 — Build-Time Release Tier Injection & Artifact Verification
+
+- **Milestone** Build Integrity, Artifact Governance & Platform Compatibility.
+- **Requirements** GDD-041, GDD-113, GDD-116, AGENTS.md Engineering Invariants ("Keep the 3-chapter academic MVP separate from the 5-chapter 2-ending full release", "Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer").
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Build automation: `scripts/build/export_release.ps1`, `scripts/build/validate_release.ps1`, `scripts/build/run_headless_tests.ps1`.
+  - Architecture: `scripts/story/release_tier.gd`, `export_presets.cfg`.
+  - Tests: `tests/headless/build_tier_test.gd`, `tests/headless/verify_exported_tier.gd`, tracked UIDs.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None (PowerShell build automation, typed GDScript test harnesses, and configuration).
+- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Open questions** `OD-017`: Choice of shipping default release tier (`academic_mvp` vs. `full_release`) for public distribution remains deferred to human release authority sign-off; checked-in `project.godot` maintains `release_tier="full_release"`.
+
+### Changes
+
+1. **Build-Time Tier Parameter in Exporter (`scripts/build/export_release.ps1`).** Added `-Tier academic_mvp|full_release|both|all` parameter defaulting to `full_release` to preserve developer/evaluator workflows.
+2. **Strict Working-Tree Byte-Identity Invariant.** The export pipeline applies the requested release tier (`academic_mvp` or `full_release`) to the exported artifact and temporary `.pck` packaging, but wraps the entire operation in a `try ... finally` block that restores `project.godot` byte-for-byte from pre-export snapshot bytes, deletes temporary root markers, and validates SHA256 byte-identity upon exit. Working tree remains 100% clean.
+3. **Artifact Marker Injection (`build_tier.txt`).** Each distribution archive now packages a `build_tier.txt` marker at the root containing the exact target tier (`academic_mvp` or `full_release`).
+4. **Standalone Academic MVP Artifact Packaging.** The export pipeline produces `dist/Soulbound-AcademicMVP-Web.zip` (tier `academic_mvp`) alongside `dist/Soulbound-Web.zip` and `dist/Soulbound-Windows-Portable.zip` (tier `full_release`).
+5. **Release Artifact Validator Hardening (`scripts/build/validate_release.ps1`).** Extended validator to assert the presence and exact content of `build_tier.txt` inside distribution archives, with tier mismatch causing immediate exit code 1 failure.
+6. **End-to-End Headless Gate Verification (`tests/headless/verify_exported_tier.gd`).** Created headless verification script that mounts exported `.pck` packages via `--main-pack` and asserts:
+   - On `academic_mvp` `.pck`: `void_citadel` is unavailable in router, transitions are refused, `PortalToCitadel` in Ashen Peaks is hidden and unmonitored, `open_ending_modal` strictly no-ops, and Capstone question `q_meta_01` is gated.
+   - On `full_release` `.pck`: `void_citadel` is available, `open_ending_modal` instantiates modal, and `q_meta_01` is accessible.
+7. **GDScript Marker & Config Parsing Suite (`tests/headless/build_tier_test.gd`).** Added test suite verifying `ReleaseTier.parse_tier()`, marker file parsing, override precedence, and clean reversion to project settings.
+
+### Verification Table
+
+| Test Scope / Invocation | Result | Evidence |
+|---|---|---|
+| Unit suite: `run_headless_tests.ps1 -Suite build_tier_test` | Exit 0 | 17/17 assertions passed: string normalization, marker file parsing, override precedence, and clean reversion verified. |
+| Regression suite: `run_headless_tests.ps1 -Suite release_tier_test` | Exit 0 | All existing tier separation assertions passed without weakening. |
+| Exporter MVP: `export_release.ps1 -Tier academic_mvp` | Exit 0 | Produced `dist/Soulbound-AcademicMVP-Web.zip` (10.64 MB), validated `build_tier.txt`, verified headless `.pck` gate, restored `project.godot` byte-identically. |
+| Exporter Full: `export_release.ps1 -Tier full_release` | Exit 0 | Produced `dist/Soulbound-Web.zip` (10.64 MB) and `dist/Soulbound-Windows-Portable.zip` (86.52 MB), validated markers, verified headless `.pck` gate, restored `project.godot` byte-identically. |
+| Validator negative control: injected tier mismatch | Exit 1 | Caught mismatch: `build_tier.txt marker 'full_release' does not match expected tier 'academic_mvp'`. |
+
 
 
 

@@ -5,6 +5,7 @@
 param (
     [string]$GodotPath = "C:\Users\ALCOHOL\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe",
     [string]$Suite = "",
+    [string]$Tier = "both",
     [switch]$Export = $false,
     [switch]$SkipImport = $false
 )
@@ -135,7 +136,7 @@ if ($anyFailed) {
 if ($Export) {
     Write-Host "`n[3/3] Chaining automated release export (-Export)..." -ForegroundColor Cyan
     $exportScript = Join-Path $PSScriptRoot "export_release.ps1"
-    & powershell -NoProfile -ExecutionPolicy Bypass -File $exportScript
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $exportScript -Tier $Tier -GodotPath $GodotPath
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Release export failed with exit code $LASTEXITCODE!" -ForegroundColor Red
         exit $LASTEXITCODE

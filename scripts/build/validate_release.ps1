@@ -1,11 +1,14 @@
 # Soulbound Release Artifact Validator (PowerShell)
-# SBL-VER-003: Asserts entry points, single-threaded web configuration, compatibility renderer,
-# clean non-debug artifact contents, and plausible binary/pck sizes.
+# SBL-VER-003 / SBL-BLD-002: Asserts entry points, single-threaded web configuration, compatibility renderer,
+# clean non-debug artifact contents, plausible binary/pck sizes, release tier marker verification,
+# and end-to-end headless gate assertion.
 
 param (
     [string]$DistDir = "dist",
     [string]$PresetsPath = "export_presets.cfg",
     [string]$ProjectGodotPath = "project.godot",
+    [string]$Tier = "auto",
+    [string]$GodotPath = "C:\Users\ALCOHOL\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe",
     [long]$MinPckSizeBytes = 300000,    # ~300 KB lower bound
     [long]$MaxPckSizeBytes = 50000000,  # ~50 MB upper bound
     [long]$MinWasmSizeBytes = 10000000, # ~10 MB lower bound
@@ -21,14 +24,25 @@ $ResolvedDist = if ([System.IO.Path]::IsPathRooted($DistDir)) { $DistDir } else 
 $ResolvedPresets = if ([System.IO.Path]::IsPathRooted($PresetsPath)) { $PresetsPath } else { Join-Path $ProjectRoot $PresetsPath }
 $ResolvedGodotConfig = if ([System.IO.Path]::IsPathRooted($ProjectGodotPath)) { $ProjectGodotPath } else { Join-Path $ProjectRoot $ProjectGodotPath }
 
+if (-not (Test-Path $GodotPath)) {
+    $fallbackGui = "C:\Users\ALCOHOL\Downloads\Godot_v4.7.2-stable_win64.exe\godot.exe"
+    if (Test-Path $fallbackGui) {
+        $GodotPath = $fallbackGui
+    } else {
+        $cmd = Get-Command "godot" -ErrorAction SilentlyContinue
+        if ($cmd) { $GodotPath = $cmd.Source }
+    }
+}
+
 Write-Host "=========================================" -ForegroundColor Cyan
 Write-Host "  Soulbound Release Artifact Validator   " -ForegroundColor Cyan
 Write-Host "=========================================" -ForegroundColor Cyan
+Write-Host "Target Tier: $Tier" -ForegroundColor Gray
 
 $Failures = @()
 
 # 1. Preset & Configuration Validation
-Write-Host "`n[1/4] Validating Export Presets & Renderer Settings..." -ForegroundColor Yellow
+Write-Host "`n[1/5] Validating Export Presets & Renderer Settings..." -ForegroundColor Yellow
 
 if (-not (Test-Path $ResolvedPresets)) {
     $Failures += "Missing export presets file at: $ResolvedPresets"
@@ -62,6 +76,7 @@ function Validate-ZipArchive {
     param (
         [string]$ZipPath,
         [string]$PlatformName,
+        [string]$ExpectedTier,
         [string[]]$RequiredEntries,
         [hashtable]$SizeConstraints
     )
@@ -86,6 +101,26 @@ function Validate-ZipArchive {
                 $errors += "[$PlatformName] Missing required entry point: '$req'"
             } else {
                 Write-Host "  PASS: [$PlatformName] Contains required entry point '$req' ($($entryMap[$req]) bytes)." -ForegroundColor Green
+            }
+        }
+
+        # Check build_tier.txt marker
+        $tierEntry = $zip.GetEntry("build_tier.txt")
+        if ($null -eq $tierEntry) {
+            $errors += "[$PlatformName] Missing 'build_tier.txt' marker inside $ZipPath"
+        } else {
+            $stream = $tierEntry.Open()
+            $reader = New-Object System.IO.StreamReader($stream)
+            $actualMarker = $reader.ReadToEnd().Trim()
+            $reader.Dispose()
+            $stream.Dispose()
+
+            if (-not [string]::IsNullOrWhiteSpace($ExpectedTier)) {
+                if ($actualMarker -ne $ExpectedTier) {
+                    $errors += "[$PlatformName] build_tier.txt marker '$actualMarker' does not match expected tier '$ExpectedTier'."
+                } else {
+                    Write-Host "  PASS: [$PlatformName] build_tier.txt marker matches expected tier '$ExpectedTier'." -ForegroundColor Green
+                }
             }
         }
 
@@ -131,30 +166,112 @@ function Validate-ZipArchive {
     return $errors
 }
 
-# 2. Validate Web Package
-Write-Host "`n[2/4] Validating Web distribution package..." -ForegroundColor Yellow
-$WebZipPath = Join-Path $ResolvedDist "Soulbound-Web.zip"
-$WebRequired = @("index.html", "index.wasm", "index.pck")
-$WebConstraints = @{
-    "index.pck"  = @{ Min = $MinPckSizeBytes; Max = $MaxPckSizeBytes }
-    "index.wasm" = @{ Min = $MinWasmSizeBytes; Max = $null }
-}
-$webErrors = Validate-ZipArchive -ZipPath $WebZipPath -PlatformName "Web" -RequiredEntries $WebRequired -SizeConstraints $WebConstraints
-$Failures += $webErrors
+# Determine which packages to validate
+$checkAcademicMvp = ($Tier -in @("academic_mvp", "both", "all"))
+$checkFullRelease = ($Tier -in @("full_release", "both", "all"))
 
-# 3. Validate Windows Package
-Write-Host "`n[3/4] Validating Windows distribution package..." -ForegroundColor Yellow
-$WinZipPath = Join-Path $ResolvedDist "Soulbound-Windows-Portable.zip"
-$WinRequired = @("Soulbound.exe", "Soulbound.pck")
-$WinConstraints = @{
-    "Soulbound.pck" = @{ Min = $MinPckSizeBytes; Max = $MaxPckSizeBytes }
-    "Soulbound.exe" = @{ Min = $MinExeSizeBytes; Max = $null }
+if ($Tier -eq "auto") {
+    $checkAcademicMvp = Test-Path (Join-Path $ResolvedDist "Soulbound-AcademicMVP-Web.zip")
+    $checkFullRelease = (Test-Path (Join-Path $ResolvedDist "Soulbound-Web.zip")) -or (Test-Path (Join-Path $ResolvedDist "Soulbound-Windows-Portable.zip"))
+    if (-not $checkAcademicMvp -and -not $checkFullRelease) {
+        $Failures += "No release archives found in $ResolvedDist to validate in auto mode."
+    }
 }
-$winErrors = Validate-ZipArchive -ZipPath $WinZipPath -PlatformName "Windows" -RequiredEntries $WinRequired -SizeConstraints $WinConstraints
-$Failures += $winErrors
 
-# 4. Summary and Result
-Write-Host "`n[4/4] Release Validation Summary..." -ForegroundColor Yellow
+# 2. Validate Academic MVP Package (if applicable)
+Write-Host "`n[2/5] Validating Academic MVP distribution package..." -ForegroundColor Yellow
+if ($checkAcademicMvp) {
+    $MvpWebZipPath = Join-Path $ResolvedDist "Soulbound-AcademicMVP-Web.zip"
+    $MvpWebRequired = @("index.html", "index.wasm", "index.pck", "build_tier.txt")
+    $MvpWebConstraints = @{
+        "index.pck"  = @{ Min = $MinPckSizeBytes; Max = $MaxPckSizeBytes }
+        "index.wasm" = @{ Min = $MinWasmSizeBytes; Max = $null }
+    }
+    $mvpErrors = Validate-ZipArchive -ZipPath $MvpWebZipPath -PlatformName "AcademicMVP-Web" -ExpectedTier "academic_mvp" -RequiredEntries $MvpWebRequired -SizeConstraints $MvpWebConstraints
+    $Failures += $mvpErrors
+} else {
+    Write-Host "  Skipped (not requested for tier '$Tier')." -ForegroundColor Gray
+}
+
+# 3. Validate Full Release Packages (if applicable)
+Write-Host "`n[3/5] Validating Full Release distribution packages..." -ForegroundColor Yellow
+if ($checkFullRelease) {
+    # Full Web
+    $WebZipPath = Join-Path $ResolvedDist "Soulbound-Web.zip"
+    $WebRequired = @("index.html", "index.wasm", "index.pck", "build_tier.txt")
+    $WebConstraints = @{
+        "index.pck"  = @{ Min = $MinPckSizeBytes; Max = $MaxPckSizeBytes }
+        "index.wasm" = @{ Min = $MinWasmSizeBytes; Max = $null }
+    }
+    $webErrors = Validate-ZipArchive -ZipPath $WebZipPath -PlatformName "FullRelease-Web" -ExpectedTier "full_release" -RequiredEntries $WebRequired -SizeConstraints $WebConstraints
+    $Failures += $webErrors
+
+    # Full Windows
+    $WinZipPath = Join-Path $ResolvedDist "Soulbound-Windows-Portable.zip"
+    $WinRequired = @("Soulbound.exe", "Soulbound.pck", "build_tier.txt")
+    $WinConstraints = @{
+        "Soulbound.pck" = @{ Min = $MinPckSizeBytes; Max = $MaxPckSizeBytes }
+        "Soulbound.exe" = @{ Min = $MinExeSizeBytes; Max = $null }
+    }
+    $winErrors = Validate-ZipArchive -ZipPath $WinZipPath -PlatformName "FullRelease-Windows" -ExpectedTier "full_release" -RequiredEntries $WinRequired -SizeConstraints $WinConstraints
+    $Failures += $winErrors
+} else {
+    Write-Host "  Skipped (not requested for tier '$Tier')." -ForegroundColor Gray
+}
+
+# 4. End-to-End Headless Gate Verification via Mounted PCK
+Write-Host "`n[4/5] Running End-to-End Headless Gate Verification on Artifact PCKs..." -ForegroundColor Yellow
+$verifyScript = "res://tests/headless/verify_exported_tier.gd"
+
+if (Test-Path $GodotPath) {
+    # Helper to test pck extracted or built
+    function Test-PckGate {
+        param (
+            [string]$PckPath,
+            [string]$TierName
+        )
+        if (-not (Test-Path $PckPath)) {
+            return "PCK file not found for verification: $PckPath"
+        }
+        $logPath = Join-Path $ProjectRoot "report\verify_pck_${TierName}.log"
+        $errPath = Join-Path $ProjectRoot "report\verify_pck_${TierName}.err"
+        
+        $proc = Start-Process -FilePath $GodotPath `
+            -ArgumentList @(
+                "--headless",
+                "--main-pack", $PckPath,
+                "--script", $verifyScript,
+                "--quit-after", "600",
+                "--", $TierName
+            ) `
+            -NoNewWindow -Wait -PassThru `
+            -RedirectStandardOutput $logPath -RedirectStandardError $errPath
+
+        if ($proc.ExitCode -ne 0) {
+            $errText = Get-Content $errPath -Raw -ErrorAction SilentlyContinue
+            return "Headless gate verification failed for '$TierName' on $PckPath (Exit $($proc.ExitCode)): $errText"
+        }
+        Write-Host "  PASS: [$TierName] Headless gate verification succeeded on $PckPath." -ForegroundColor Green
+        return $null
+    }
+
+    if ($checkAcademicMvp) {
+        $mvpPck = Join-Path $ProjectRoot "builds\web-academic_mvp\index.pck"
+        $gateErr = Test-PckGate -PckPath $mvpPck -TierName "academic_mvp"
+        if ($gateErr) { $Failures += $gateErr }
+    }
+
+    if ($checkFullRelease) {
+        $fullPck = Join-Path $ProjectRoot "builds\web\index.pck"
+        $gateErr = Test-PckGate -PckPath $fullPck -TierName "full_release"
+        if ($gateErr) { $Failures += $gateErr }
+    }
+} else {
+    Write-Host "  Godot binary not found at '$GodotPath'; skipping live headless PCK gate execution." -ForegroundColor Yellow
+}
+
+# 5. Summary and Result
+Write-Host "`n[5/5] Release Validation Summary..." -ForegroundColor Yellow
 if ($Failures.Count -gt 0) {
     Write-Host "`nVALIDATION FAILED with $($Failures.Count) error(s):" -ForegroundColor Red
     foreach ($err in $Failures) {
