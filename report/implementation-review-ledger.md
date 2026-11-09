@@ -134,6 +134,16 @@ entries:
 - **Verdict:** `APPROVED`; no actionable regressions. Godot 4.7.2 layout audit passed at both text scales.
 - **Disposition:** Batch C (`SBL-REV-005/006` plus fixes `SBL-REV-007..009`) is `REVIEWED`. The only remaining combat boundary is the explicitly blocked OD-003/004 boss-effect mapping.
 
+## SBL-UX-001 review
+
+- **Evidence:** `report/codex_review_ux001.log`.
+- **Session:** `01a1c06b-9905-7633-a299-32dac1671a06`.
+- **Range:** `b4c12cc..4b19977`.
+- **Independent targeted verification:** input rebinding, settings/accessibility, and layout suites passed.
+- **Verdict:** `CHANGES_REQUESTED`; three P2 findings.
+- **Findings:** per-action reset can erase an override before a conflicting candidate is validated; malformed binding entries can reach duplicate checking before type validation and trigger an invalid cast; the capture test writes to the real `user://settings.json` instead of an isolated test path.
+- **Disposition:** Stage a focused fix. Do not proceed to the learning journal or provenance manifest until the fix is reviewed.
+
 ## Batch C audit order fix (SBL-REV-009)
 
 - **Task:** `SBL-REV-009` (Fix boss layout audit initialization order).
