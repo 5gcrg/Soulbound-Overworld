@@ -42,8 +42,58 @@ func _ready() -> void:
 	relic2_unequip_btn.pressed.connect(_on_unequip.bind(InventoryManager.SLOT_RELIC_2))
 	close_btn.pressed.connect(_on_close_pressed)
 
+	setup_focus()
+
 	if inventory != null:
 		refresh()
+
+func get_focusable_controls() -> Array[Control]:
+	var list: Array[Control] = [
+		weapon_equip_btn,
+		weapon_unequip_btn,
+		armor_equip_btn,
+		armor_unequip_btn,
+		relic1_equip_btn,
+		relic1_unequip_btn,
+		relic2_equip_btn,
+		relic2_unequip_btn,
+		close_btn
+	]
+	var res: Array[Control] = []
+	for c in list:
+		if c != null and is_instance_valid(c):
+			res.append(c)
+	return res
+
+func setup_focus() -> void:
+	var controls := get_focusable_controls()
+	for i in range(controls.size()):
+		var c := controls[i]
+		c.focus_mode = Control.FOCUS_ALL
+		var next_ctrl := controls[(i + 1) % controls.size()]
+		var prev_ctrl := controls[(i - 1 + controls.size()) % controls.size()]
+		c.focus_next = next_ctrl.get_path()
+		c.focus_previous = prev_ctrl.get_path()
+		_apply_visible_focus(c)
+	# Grab focus on first enabled button or close button
+	for c in controls:
+		if not c.disabled:
+			c.grab_focus()
+			break
+
+static func _apply_visible_focus(control: Control) -> void:
+	var focus_box := StyleBoxFlat.new()
+	focus_box.draw_center = false
+	focus_box.border_width_left = 2
+	focus_box.border_width_top = 2
+	focus_box.border_width_right = 2
+	focus_box.border_width_bottom = 2
+	focus_box.border_color = Color(1.0, 0.85, 0.1, 1.0)
+	focus_box.corner_radius_top_left = 4
+	focus_box.corner_radius_top_right = 4
+	focus_box.corner_radius_bottom_left = 4
+	focus_box.corner_radius_bottom_right = 4
+	control.add_theme_stylebox_override("focus", focus_box)
 
 func set_inventory(new_inventory: InventoryManager) -> void:
 	inventory = new_inventory

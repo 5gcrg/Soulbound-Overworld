@@ -561,6 +561,43 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | --- | --- |
 | `tests/headless/evaluator_debug_bar_test.gd` | Exit 0. Verified input consumption for character/inventory/settings/ui_cancel actions and zero sheet layer children leakage across all 4 terminal/modal states under direct action injection and debug bar trigger attempts. |
 
+---
+
+## SBL-FIX-009 — Complete Accessibility Application, Keyboard Reachability & High-Contrast Overrides
+
+- **Milestone** M4 & Release Hardening (Accessibility Compliance).
+- **Requirements** GDD-103, TC-ACC-001, AGENTS.md Invariants ("Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer").
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Scene/Scripts: `scenes/ui/settings_sheet.gd`, `scenes/ui/inventory_sheet.gd`, `scenes/ui/character_sheet.gd`, `scenes/vertical_slice/chapter_activity_dialog.gd`, `scenes/main/game_root.gd`.
+  - Tests: `tests/headless/settings_accessibility_test.gd`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None (pure code and UI accessibility styling).
+- **Review** REVIEW_PENDING_CODEX.
+- **Open questions** None.
+
+### Changes
+
+1. **Keyboard Reachability & Focus Order.** Added `get_focusable_controls()` and `setup_focus()` across `SettingsSheet`, `InventorySheet`, `CharacterSheet`, and `ChapterActivityDialog`. Configured `focus_mode = FOCUS_ALL`, circular `focus_next` / `focus_previous` chains, and initial control focus grabbing upon modal entry, ensuring 100% of interactive controls are navigable without a mouse.
+2. **Visible Focus Outlines.** Applied high-visibility gold focus highlight styleboxes (`StyleBoxFlat` border width 2, `#ffe01a`) on all focusable controls upon receiving focus.
+3. **Extended High-Contrast Typography.** `GameRoot._apply_high_contrast()` captures authored label font color and shadow metadata (`_BASE_FONT_COLOR_META`, `_BASE_SHADOW_COLOR_META`, shadow offsets). When High Contrast is enabled, it overrides labels with crisp pure white text (`Color(1, 1, 1, 1)`) and high-contrast black drop shadow (`Color(0, 0, 0, 1)`, offset 1, 1). Toggling High Contrast off cleanly restores authored colors and removes shadow overrides.
+4. **Reduced Motion Audit.** Confirmed and documented that zero sprite animations, `AnimationPlayer` nodes, or tweens exist in this Compatibility 2D project, strictly adhering to reduced motion requirements by architectural design.
+
+### Verification Table
+
+| Suite | Result |
+| --- | --- |
+| `tests/headless/settings_accessibility_test.gd` | Exit 0. Verified live text scale application & restore, high contrast modulate, label pure white font color & black shadow overrides with exact authored value restoration, circular keyboard focus traversal across Settings, Inventory, Character, and Chapter Dialog, and reduced motion persistence. |
+
+### Manual Visual Checklist
+
+- [ ] **Visible Focus**: Tabbing through Settings, Inventory, Character Sheet, and Chapter Activity Dialog displays a distinct gold 2px outline around the active control.
+- [ ] **Mouse-Free Navigation**: Tab, Shift-Tab, and Arrow keys cycle through all sliders, checkboxes, buttons, and text fields in circular order without escaping.
+- [ ] **High Contrast Text**: In High Contrast mode, all UI labels render with pure white text and crisp black drop shadows for legible contrast against any background.
+- [ ] **Authored Value Restorability**: Disabling High Contrast restores original label tints without residual overrides.
+
+
 
 
 

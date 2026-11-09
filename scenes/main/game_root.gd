@@ -829,6 +829,13 @@ func _close_settings_sheet() -> void:
 
 const _BASE_FONT_META: StringName = &"_base_font_size"
 const _BASE_FONT_OVERRIDE_META: StringName = &"_base_font_had_override"
+const _BASE_FONT_COLOR_META: StringName = &"_base_font_color"
+const _BASE_FONT_COLOR_OVERRIDE_META: StringName = &"_base_font_color_had_override"
+const _BASE_SHADOW_COLOR_META: StringName = &"_base_shadow_color"
+const _BASE_SHADOW_COLOR_OVERRIDE_META: StringName = &"_base_shadow_color_had_override"
+const _BASE_SHADOW_OX_META: StringName = &"_base_shadow_ox"
+const _BASE_SHADOW_OY_META: StringName = &"_base_shadow_oy"
+const _BASE_SHADOW_OFFSET_OVERRIDE_META: StringName = &"_base_shadow_offset_had_override"
 
 func _apply_runtime_settings() -> void:
 	if settings_manager == null:
@@ -841,11 +848,51 @@ func _apply_runtime_settings() -> void:
 ## Applies text scale and high-contrast presentation to the live UI (not just stored flags).
 func _apply_accessibility_tree(node: Node) -> void:
 	if node is Control:
-		_apply_text_scale(node as Control)
-		if node.get_parent() is CanvasLayer or node.get_parent() == self:
-			(node as Control).modulate = Color(1.2, 1.2, 1.2, 1.0) if settings_manager.high_contrast else Color.WHITE
+		var ctrl: Control = node as Control
+		_apply_text_scale(ctrl)
+		_apply_high_contrast(ctrl)
+		if ctrl.get_parent() is CanvasLayer or ctrl.get_parent() == self:
+			ctrl.modulate = Color(1.2, 1.2, 1.2, 1.0) if settings_manager.high_contrast else Color.WHITE
 	for child in node.get_children():
 		_apply_accessibility_tree(child)
+
+## Extends high contrast beyond modulate to font color and shadow overrides, preserving authored values for restore.
+func _apply_high_contrast(control: Control) -> void:
+	if control is Label:
+		var label: Label = control as Label
+		if not label.has_meta(_BASE_FONT_COLOR_META):
+			label.set_meta(_BASE_FONT_COLOR_META, label.get_theme_color("font_color"))
+			label.set_meta(_BASE_FONT_COLOR_OVERRIDE_META, label.has_theme_color_override("font_color"))
+			label.set_meta(_BASE_SHADOW_COLOR_META, label.get_theme_color("font_shadow_color"))
+			label.set_meta(_BASE_SHADOW_COLOR_OVERRIDE_META, label.has_theme_color_override("font_shadow_color"))
+			label.set_meta(_BASE_SHADOW_OX_META, label.get_theme_constant("shadow_offset_x"))
+			label.set_meta(_BASE_SHADOW_OY_META, label.get_theme_constant("shadow_offset_y"))
+			label.set_meta(_BASE_SHADOW_OFFSET_OVERRIDE_META, label.has_theme_constant_override("shadow_offset_x"))
+
+		if settings_manager.high_contrast:
+			# High contrast: crisp pure white text with high-contrast black shadow outline
+			label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
+			label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 1.0))
+			label.add_theme_constant_override("shadow_offset_x", 1)
+			label.add_theme_constant_override("shadow_offset_y", 1)
+		else:
+			# Restore authored values
+			if bool(label.get_meta(_BASE_FONT_COLOR_OVERRIDE_META)):
+				label.add_theme_color_override("font_color", label.get_meta(_BASE_FONT_COLOR_META))
+			else:
+				label.remove_theme_color_override("font_color")
+
+			if bool(label.get_meta(_BASE_SHADOW_COLOR_OVERRIDE_META)):
+				label.add_theme_color_override("font_shadow_color", label.get_meta(_BASE_SHADOW_COLOR_META))
+			else:
+				label.remove_theme_color_override("font_shadow_color")
+
+			if bool(label.get_meta(_BASE_SHADOW_OFFSET_OVERRIDE_META)):
+				label.add_theme_constant_override("shadow_offset_x", int(label.get_meta(_BASE_SHADOW_OX_META)))
+				label.add_theme_constant_override("shadow_offset_y", int(label.get_meta(_BASE_SHADOW_OY_META)))
+			else:
+				label.remove_theme_constant_override("shadow_offset_x")
+				label.remove_theme_constant_override("shadow_offset_y")
 
 ## Scales each control from its authored font size. The authored size is captured once so
 ## repeated settings changes never compound (e.g. 1.5x applied twice stays 1.5x, not 2.25x),
@@ -870,6 +917,7 @@ func _on_ui_node_added(node: Node) -> void:
 	if node is Control:
 		var control: Control = node as Control
 		_apply_text_scale(control)
+		_apply_high_contrast(control)
 		if control.get_parent() is CanvasLayer or control.get_parent() == self:
 			control.modulate = Color(1.2, 1.2, 1.2, 1.0) if settings_manager.high_contrast else Color.WHITE
 

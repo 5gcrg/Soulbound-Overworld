@@ -50,8 +50,57 @@ func _ready() -> void:
 		import_text_btn.pressed.connect(_on_import_text_pressed)
 	close_btn.pressed.connect(_on_close_pressed)
 
+	setup_focus()
+
 	if settings != null:
 		refresh()
+
+func get_focusable_controls() -> Array[Control]:
+	var list: Array[Control] = [
+		master_slider,
+		music_slider,
+		sfx_slider,
+		reduced_motion_check,
+		high_contrast_check,
+		text_scale_slider,
+		export_backup_btn,
+		import_backup_btn,
+		import_text_btn,
+		backup_text_field,
+		close_btn
+	]
+	var res: Array[Control] = []
+	for c in list:
+		if c != null and is_instance_valid(c):
+			res.append(c)
+	return res
+
+func setup_focus() -> void:
+	var controls := get_focusable_controls()
+	for i in range(controls.size()):
+		var c := controls[i]
+		c.focus_mode = Control.FOCUS_ALL
+		var next_ctrl := controls[(i + 1) % controls.size()]
+		var prev_ctrl := controls[(i - 1 + controls.size()) % controls.size()]
+		c.focus_next = next_ctrl.get_path()
+		c.focus_previous = prev_ctrl.get_path()
+		_apply_visible_focus(c)
+	if controls.size() > 0:
+		controls[0].grab_focus()
+
+static func _apply_visible_focus(control: Control) -> void:
+	var focus_box := StyleBoxFlat.new()
+	focus_box.draw_center = false
+	focus_box.border_width_left = 2
+	focus_box.border_width_top = 2
+	focus_box.border_width_right = 2
+	focus_box.border_width_bottom = 2
+	focus_box.border_color = Color(1.0, 0.85, 0.1, 1.0)
+	focus_box.corner_radius_top_left = 4
+	focus_box.corner_radius_top_right = 4
+	focus_box.corner_radius_bottom_left = 4
+	focus_box.corner_radius_bottom_right = 4
+	control.add_theme_stylebox_override("focus", focus_box)
 
 func set_settings(new_settings: SettingsManager) -> void:
 	settings = new_settings

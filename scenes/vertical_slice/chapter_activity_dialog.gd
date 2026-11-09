@@ -315,6 +315,45 @@ func _refresh() -> void:
 	continue_button.disabled = _phase == Phase.AWAITING_ACK
 	_close_button.disabled = _closed_emitted
 
+	setup_focus()
+
+func get_focusable_controls() -> Array[Control]:
+	var res: Array[Control] = []
+	for btn in option_buttons:
+		if btn != null and is_instance_valid(btn):
+			res.append(btn)
+	if _retry_button != null and is_instance_valid(_retry_button) and _retry_button.visible:
+		res.append(_retry_button)
+	if continue_button != null and is_instance_valid(continue_button) and continue_button.visible:
+		res.append(continue_button)
+	if _close_button != null and is_instance_valid(_close_button):
+		res.append(_close_button)
+	return res
+
+func setup_focus() -> void:
+	var controls := get_focusable_controls()
+	for i in range(controls.size()):
+		var c := controls[i]
+		c.focus_mode = Control.FOCUS_ALL
+		var next_ctrl := controls[(i + 1) % controls.size()]
+		var prev_ctrl := controls[(i - 1 + controls.size()) % controls.size()]
+		c.focus_next = next_ctrl.get_path()
+		c.focus_previous = prev_ctrl.get_path()
+		_apply_visible_focus(c)
+
+static func _apply_visible_focus(control: Control) -> void:
+	var focus_box := StyleBoxFlat.new()
+	focus_box.draw_center = false
+	focus_box.border_width_left = 2
+	focus_box.border_width_top = 2
+	focus_box.border_width_right = 2
+	focus_box.border_width_bottom = 2
+	focus_box.border_color = Color(1.0, 0.85, 0.1, 1.0)
+	focus_box.corner_radius_top_left = 4
+	focus_box.corner_radius_top_right = 4
+	focus_box.corner_radius_bottom_left = 4
+	focus_box.corner_radius_bottom_right = 4
+	control.add_theme_stylebox_override("focus", focus_box)
 
 func _grab_initial_focus() -> void:
 	if not is_inside_tree():

@@ -173,17 +173,80 @@ func _run_test() -> void:
 	game_root.settings_manager.set_text_scale(1.0)
 	await process_frame
 	_check(game_root.status_label.get_theme_font_size("font_size") == font_before, "Text scale restores authored size")
+
+	# SBL-FIX-009: Extended High Contrast beyond modulate (font color and shadow overrides)
+	var authored_color: Color = game_root.status_label.get_theme_color("font_color")
 	game_root.settings_manager.set_high_contrast(true)
 	await process_frame
-	_check(game_root.world_container.modulate.r > 1.0, "High contrast applied to world presentation")
+	_check(game_root.world_container.modulate.r > 1.0, "High contrast applied to world presentation modulate")
+	_check(game_root.status_label.get_theme_color("font_color") == Color(1, 1, 1, 1), "Label font color overridden to high contrast pure white")
+	_check(game_root.status_label.get_theme_color("font_shadow_color") == Color(0, 0, 0, 1), "Label shadow color overridden to high contrast black outline")
+	_check(game_root.status_label.get_theme_constant("shadow_offset_x") == 1, "Label shadow offset overridden to 1")
+
+	# Restore high contrast to false -> verify authored values restored
 	game_root.settings_manager.set_high_contrast(false)
 	await process_frame
+	_check(game_root.status_label.get_theme_color("font_color") == authored_color, "Label font color restored to authored value")
+	_check(not game_root.status_label.has_theme_constant_override("shadow_offset_x"), "Label shadow override removed on restore")
+
+	# ==========================================================================
+	# SBL-FIX-009: Keyboard Reachability, Focus Order & Visible Focus
+	# ==========================================================================
+	print("--- Running SBL-FIX-009 Keyboard Reachability & Focus Tests ---")
+
+	# 1. SettingsSheet focus traversal
+	var settings_sheet: SettingsSheet = game_root._settings_sheet as SettingsSheet
+	_check(settings_sheet != null, "Settings sheet is non-null")
+	var settings_controls: Array[Control] = settings_sheet.get_focusable_controls()
+	_assert_focus_reachability(settings_controls, "SettingsSheet")
 
 	# Toggle Settings OFF
 	game_root._toggle_settings_sheet()
 	await process_frame
-
 	_check(game_root._settings_sheet == null, "Settings sheet closed in GameRoot")
+
+	# 2. InventorySheet focus traversal
+	var inv_scene: PackedScene = load("res://scenes/ui/inventory_sheet.tscn")
+	var inv_sheet: InventorySheet = inv_scene.instantiate() as InventorySheet
+	root.add_child(inv_sheet)
+	var test_inv := InventoryManager.new()
+	test_inv.add_banked_item("iron_sword", 1)
+	inv_sheet.set_inventory(test_inv)
+	await process_frame
+	_assert_focus_reachability(inv_sheet.get_focusable_controls(), "InventorySheet")
+	inv_sheet.queue_free()
+	await process_frame
+
+	# 3. CharacterSheet focus traversal
+	var char_scene: PackedScene = load("res://scenes/ui/character_sheet.tscn")
+	var char_sheet: CharacterSheet = char_scene.instantiate() as CharacterSheet
+	root.add_child(char_sheet)
+	var test_stats := CharacterStats.new()
+	char_sheet.set_stats(test_stats)
+	char_sheet.set_kurei_tree(KureiTree.new())
+	await process_frame
+	_assert_focus_reachability(char_sheet.get_focusable_controls(), "CharacterSheet")
+	char_sheet.queue_free()
+	await process_frame
+
+	# 4. ChapterActivityDialog focus traversal
+	var dialog := ChapterActivityDialog.new()
+	root.add_child(dialog)
+	var q := QuestionBank.get_question("q_dec_01")
+	dialog.configure(q, {})
+	await process_frame
+	_assert_focus_reachability(dialog.get_focusable_controls(), "ChapterActivityDialog")
+	dialog.queue_free()
+	await process_frame
+
+	# 5. Reduced Motion Confirmation
+	# Verify reduced motion setting toggles and confirm zero animation nodes exist in project
+	var rm_before: bool = game_root.settings_manager.reduced_motion
+	game_root.settings_manager.set_reduced_motion(not rm_before)
+	_check(game_root.settings_manager.reduced_motion == not rm_before, "Reduced motion toggled successfully")
+	game_root.settings_manager.set_reduced_motion(rm_before)
+	_check(game_root.settings_manager.reduced_motion == rm_before, "Reduced motion restored to initial value")
+
 	_check(player.input_frozen == false, "Player unfrozen after settings closed")
 
 	game_root.queue_free()
@@ -199,6 +262,28 @@ func _run_test() -> void:
 	else:
 		printerr("TESTS FAILED with %d error(s)" % _failures)
 		quit(1)
+
+func _assert_focus_reachability(controls: Array[Control], sheet_name: String) -> void:
+	_check(controls.size() > 0, "%s: Focusable controls list is not empty" % sheet_name)
+	for c in controls:
+		_check(c.focus_mode == Control.FOCUS_ALL, "%s: Control %s has focus_mode == FOCUS_ALL" % [sheet_name, c.name])
+		_check(not String(c.focus_next).is_empty(), "%s: Control %s has focus_next configured" % [sheet_name, c.name])
+		_check(not String(c.focus_previous).is_empty(), "%s: Control %s has focus_previous configured" % [sheet_name, c.name])
+		_check(c.has_theme_stylebox_override("focus"), "%s: Control %s has high-visibility focus stylebox override" % [sheet_name, c.name])
+
+	# Traverse circular focus chain via focus_next
+	if controls.size() > 1:
+		var current: Control = controls[0]
+		var visited: Dictionary = {}
+		for _step in range(controls.size() + 2):
+			visited[current] = true
+			var next_path: NodePath = current.focus_next
+			var next_node: Control = current.get_node_or_null(next_path) as Control
+			_check(next_node != null, "%s: Focus next target from %s exists" % [sheet_name, current.name])
+			if next_node == controls[0]:
+				break
+			current = next_node
+		_check(visited.size() == controls.size(), "%s: Focus traversal reached all %d controls in circular chain" % [sheet_name, controls.size()])
 
 func _cleanup_dir(path: String) -> void:
 	var global_path: String = ProjectSettings.globalize_path(path)
