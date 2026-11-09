@@ -77,6 +77,16 @@ entries:
 - Current Batch A full-suite and Codex re-review are **pending** until agy
   finishes `SBL-REV-002` and `SBL-REV-003`.
 
+## Batch A Codex review
+
+- **Evidence:** `report/codex_review_batchA.log`.
+- **Session:** `01a1bfe5-fd15-7463-b4b1-c55215e0c3f0`.
+- **Range:** `2596420..HEAD`.
+- **Independent verification:** 30/30 suites passed, exit 0 (`report/independent_batchA_full_suite.log`).
+- **Verdict:** `CHANGES_REQUESTED`.
+- **Finding:** P2 in `scenes/ui/title_screen.gd`: after selecting a different slot while the title remains open, Defense Demo still applies its persistent progression/inventory/stat changes through the previously active `GameRoot._profile_slot`. The selected slot must be successfully activated before the demo mutates persistent state.
+- **Disposition:** `SBL-REV-001` and `SBL-REV-002` have no actionable findings from this review. `SBL-REV-003` remains `CHANGES_REQUESTED`; Batch B and Batch C are paused until the fix and re-review.
+
 ## Rule
 
 Every future implementation, review, finding, negative control, and disposition

@@ -1430,7 +1430,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
   - Headless test suites: `tests/headless/dungeon_scene_test.gd`, `tests/headless/web_backup_test.gd`, `tests/headless/save_compatibility_recovery_test.gd`.
   - Process: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
 - **Asset provenance** None (pure code and test harnesses; zero image or audio generation).
-- **Review** REVIEW_PENDING_CODEX (Codex Finding 1, P1).
+- **Review** REVIEWED by Codex CLI session `01a1bfe5-fd15-7463-b4b1-c55215e0c3f0`; no actionable defect reported for this task. Batch A remains blocked by the SBL-REV-003 finding.
 - **Open questions** None.
 
 ### Changes
@@ -1479,7 +1479,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
   - Headless test suites: `tests/headless/title_screen_audio_test.gd`, `tests/headless/settings_accessibility_test.gd`, `tests/headless/web_backup_test.gd`.
   - Process: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
 - **Asset provenance** None (pure code and UI scene hierarchy; zero image or audio generation).
-- **Review** REVIEW_PENDING_CODEX (Codex Finding 2, P2).
+- **Review** REVIEWED by Codex CLI session `01a1bfe5-fd15-7463-b4b1-c55215e0c3f0`; no actionable defect reported for this task. Batch A remains blocked by the SBL-REV-003 finding.
 - **Open questions** None.
 
 ### Changes
@@ -1529,7 +1529,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
   - Headless test suites: `tests/headless/profile_activation_test.gd`, `tests/headless/title_screen_audio_test.gd`, `tests/headless/transition_test.gd`, `tests/headless/dimension_test.gd`.
   - Process: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
 - **Asset provenance** None (pure code and UI scene hierarchy; zero image or audio generation).
-- **Review** REVIEW_PENDING_CODEX (Codex Findings 3 & 4, P2).
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1bfe5-fd15-7463-b4b1-c55215e0c3f0` found one P2: Defense Demo can mutate the previously active profile after the title selects another slot. Activate the selected slot successfully before applying persistent demo changes.
 - **Open questions** None.
 
 ### Changes
