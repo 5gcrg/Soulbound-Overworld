@@ -41,11 +41,11 @@ func _run_loop_test() -> void:
 	await process_frame
 
 	# Configure game_root to use our isolated test store
+	game_root._init_slice_progress(test_store, "profile_01")
 	var slice_prog: SliceProgress = game_root.get("slice_progress") as SliceProgress
 	if slice_prog == null:
 		_fail("game_root missing slice_progress")
 		return
-	slice_prog.configure(test_store, "profile_01")
 
 	var player: PlayerCharacter = game_root.get_node("Player") as PlayerCharacter
 	var router: WorldRouter = game_root.get_node("WorldRouter") as WorldRouter
@@ -111,6 +111,12 @@ func _run_loop_test() -> void:
 	_check(dialog_layer.get_child_count() == 0, "Dialog closed after proceed pressed")
 	_check(not player.input_frozen, "Player movement resumed after dialog closed")
 
+	# --- SBL-VER-001 Probe 1: Newer banked gear disappears on a quest checkpoint ---
+	# Grant banked gear after practice step, advance the quest, reload the profile, assert gear is still banked.
+	game_root.inventory_manager.banked_items["probe_banked_gear"] = 2
+	var inv_save_err: Error = game_root.inventory_manager.save_to_store(test_store, "profile_01")
+	_check(inv_save_err == OK, "Saved banked gear to store after practice step")
+
 	# --- Step 4: Walk to Combat Encounter ---
 	player.global_position = encounter.global_position
 	for i in 5:
@@ -147,6 +153,25 @@ func _run_loop_test() -> void:
 	_check(slice_prog.stage == SliceProgress.Stage.TURN_IN, "Slice stage advanced to TURN_IN upon victory")
 	print("PASS: Battle won and victory checkpoint recorded in TURN_IN stage")
 
+	# Probe 1 assertion: Reload profile from store and verify newer banked gear survived the quest victory checkpoint
+	var p_after_victory: Dictionary = test_store.load_profile("profile_01")["profile"]
+	_check(p_after_victory["inventory"]["banked"].get("probe_banked_gear", 0) == 2,
+		"PROBE 1 PASSED: Newer banked gear survived quest checkpoint into TURN_IN")
+
+	# --- SBL-VER-001 Probe 2: Imported inventory disappears on the next checkpoint ---
+	# Import a backup profile mid-run, advance a stage, assert imported banked/satchel counts survive the merge.
+	var backup_res: Dictionary = test_store.export_backup("profile_01")
+	_check(backup_res["error"] == OK, "Exported backup for mid-run mutation")
+	var backup_dict: Dictionary = JSON.parse_string(backup_res["text"])
+	backup_dict["inventory"]["banked"]["imported_gem"] = 7
+	backup_dict["inventory"]["satchel"]["imported_herb"] = 3
+	var backup_text: String = JSON.stringify(backup_dict)
+	var import_err: Error = test_store.import_backup("profile_01", backup_text, GameplayProfileValidator.validate)
+	_check(import_err == OK, "Imported backup mid-run into profile_01")
+	game_root._reload_imported_profile()
+	_check(game_root.inventory_manager.banked_items.get("imported_gem", 0) == 7, "Live banked items updated from import")
+	_check(game_root.inventory_manager.satchel_items.get("imported_herb", 0) == 3, "Live satchel items updated from import")
+
 	# --- Step 5: Return to Quest NPC for Turn In ---
 	player.global_position = npc.global_position
 	for i in 5:
@@ -164,6 +189,15 @@ func _run_loop_test() -> void:
 	await process_frame
 	_check(slice_prog.stage == SliceProgress.Stage.COMPLETE, "Slice stage is now COMPLETE")
 	print("PASS: Quest turned in, stage is COMPLETE")
+
+	# Probe 2 assertion: Verify imported banked & satchel counts survived the quest turn-in checkpoint
+	var p_post_turnin: Dictionary = test_store.load_profile("profile_01")["profile"]
+	_check(p_post_turnin["inventory"]["banked"].get("imported_gem", 0) == 7,
+		"PROBE 2 PASSED: Imported banked inventory survived quest turn-in checkpoint")
+	_check(p_post_turnin["inventory"]["satchel"].get("imported_herb", 0) == 3,
+		"PROBE 2 PASSED: Imported satchel inventory survived quest turn-in checkpoint")
+	_check(p_post_turnin["inventory"]["banked"].get("probe_banked_gear", 0) == 2,
+		"PROBE 1 & 2 PASSED: Prior banked gear also survived across all checkpoints")
 
 	dialog.close_button.pressed.emit()
 	await process_frame

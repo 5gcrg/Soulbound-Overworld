@@ -470,3 +470,38 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | Full 24-suite regression check | Exit 0. All 24 suites pass with the console executable via `Start-Process` redirection. |
 | Automated Release Exporter (`export_release.ps1`) | Exit 0. Generated `dist/Soulbound-Web.zip` (10,623,505 bytes) and `dist/Soulbound-Windows-Portable.zip` (86,495,925 bytes). |
 
+---
+
+## SBL-VER-001 — Regression Tests Pinning Five Reproduced Review Probes
+
+- **Milestone** M2–M6 Verification & Regression Hardening.
+- **Requirements** GDD-031..035, GDD-067..072, GDD-098..103, FR-DNG-001/002, FR-EDU-002/003, FR-SAV-001, AGENTS.md Invariants ("Preserve secured gear, level/skills, story and educational records after expedition defeat", "Suspend/resume an expedition does not count as extraction; validate exactly-once reward transfer", "Required learning activities are completion-gated, not pass-score-gated; first-attempt correctness is immutable").
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Tests: `tests/headless/vertical_slice_loop_test.gd`, `tests/headless/chapter_progression_test.gd`, `tests/headless/dungeon_scene_test.gd`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None (pure GDScript headless regression assertions only).
+- **Review** REVIEW_PENDING_CODEX.
+- **Open questions** None.
+
+### Probe to Test Mapping & Evidence
+
+| Review Probe Defect | Where Asserted | Test Assertion & Evidence |
+| --- | --- | --- |
+| Newer banked gear disappears on a quest checkpoint | `tests/headless/vertical_slice_loop_test.gd` | Granted banked gear (`probe_banked_gear: 2`) after practice step, advanced quest via combat victory into `TURN_IN`, reloaded profile, asserted banked gear preserved on disk. |
+| Imported inventory disappears on the next checkpoint | `tests/headless/vertical_slice_loop_test.gd` | Imported backup profile mid-run (`imported_gem: 7`, `imported_herb: 3`) at `TURN_IN`, advanced stage to `COMPLETE`, asserted imported banked & satchel counts survived the merge. |
+| Incorrect answer leaves the required activity incomplete | `tests/headless/chapter_progression_test.gd` & `tests/headless/vertical_slice_test.gd` | Submitted incorrect answer; asserted activity marked completed (`is_chapter_activity_completed == true`), completion-gated advance unblocked, while `first_attempt_correct == false`. |
+| Fresh profile reaches final completion with no assessment records | `tests/headless/chapter_progression_test.gd` | Attempted advance on fresh profile with no records (`try_advance_chapter == false`, `is_academic_complete == false`), and asserted `GameplayProfileValidator.validate()` rejects bypassed completion payload (`ERR_INVALID_DATA`). |
+| Extraction reports success after an injected save failure | `tests/headless/dungeon_scene_test.gd` | Injected `ERR_FILE_CANT_WRITE` in `commit_extraction`; asserted `extraction_save_failed` emitted, `expedition_completed` not emitted, live satchel not wiped, and extract button remains enabled for retry. |
+
+### Verification Table
+
+| Suite | Result |
+| --- | --- |
+| `tests/headless/vertical_slice_loop_test.gd` | Exit 0. Probes 1 and 2 passed with explicit assertions. |
+| `tests/headless/chapter_progression_test.gd` | Exit 0. Probes 3 and 4 passed with explicit assertions. |
+| `tests/headless/dungeon_scene_test.gd` | Exit 0. Probe 5 passed with explicit assertions. |
+| `tests/headless/vertical_slice_test.gd` | Exit 0. Completion-gating not score-gating verified. |
+
+

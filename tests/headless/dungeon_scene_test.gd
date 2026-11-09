@@ -131,18 +131,18 @@ func _test_atomic_extraction_commit_and_retry() -> void:
 		failure_errors.append(err)
 	)
 
-	# Test 2: Injected first commit failure
+	# Test 2 / SBL-VER-001 Probe 5: Injected commit failure -> no success reported, satchel untouched, signal emitted
 	callback_state["fail"] = true
 	var fail_result: Dictionary = expedition.extract_now()
 
-	_check(fail_result.is_empty(), "extract_now returned empty Dictionary on commit failure")
+	_check(fail_result.is_empty(), "PROBE 5 PASSED: extract_now returned empty Dictionary on commit failure")
 	_check(callback_state["calls"] == 1, "commit_extraction callback was invoked exactly once")
-	_check(failure_errors.size() == 1, "extraction_save_failed signal emitted exactly once")
-	_check(failure_errors[0] == ERR_FILE_CANT_WRITE, "extraction_save_failed error matches injected error")
-	_check(completed_emissions.is_empty(), "expedition_completed was NOT emitted on failure (no premature success)")
-	_check(expedition.is_active == true, "Expedition remains active on commit failure (run not finished)")
-	_check(live_inventory.satchel_items.get("ancient_relic_fragment", 0) == gathered_count, "Live satchel NOT mutated on failure")
-	_check(live_inventory.banked_items.get("ancient_relic_fragment", 0) == 0, "Live bank NOT mutated on failure")
+	_check(failure_errors.size() == 1, "PROBE 5 PASSED: extraction_save_failed signal emitted exactly once")
+	_check(failure_errors[0] == ERR_FILE_CANT_WRITE, "PROBE 5 PASSED: extraction_save_failed error matches injected error")
+	_check(completed_emissions.is_empty(), "PROBE 5 PASSED: expedition_completed was NOT emitted on failure (no premature success)")
+	_check(expedition.is_active == true, "PROBE 5 PASSED: Expedition remains active on commit failure (run not finished)")
+	_check(live_inventory.satchel_items.get("ancient_relic_fragment", 0) == gathered_count, "PROBE 5 PASSED: Live satchel NOT mutated on failure")
+	_check(live_inventory.banked_items.get("ancient_relic_fragment", 0) == 0, "PROBE 5 PASSED: Live bank NOT mutated on failure")
 
 	# Verify modal UI state on failure: retry message shown without disabling retry
 	_check(expedition.extract_btn.disabled == false, "Extract button is enabled for retry")

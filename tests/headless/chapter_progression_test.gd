@@ -88,6 +88,45 @@ func _run_test() -> void:
 	_check(reloaded_mgr.is_academic_complete == true, "Academic complete state persisted")
 	_check(reloaded_mgr.unlocked_chapters.has(ChapterManager.CHAPTER_3), "Unlocked chapters persisted")
 
+	# ==========================================================================
+	# SBL-VER-001 Probe 3 & 4 Regression Proofs
+	# ==========================================================================
+	# Probe 3: Incorrect answer leaves the required activity incomplete -> assert completion-gated unblock with first_attempt_correct == false
+	var probe3_assessment := AssessmentController.new()
+	var probe3_q: Dictionary = QuestionBank.get_question("q_dec_01")
+	var p3_wrong_idx: int = 0 if int(probe3_q["correct_index"]) != 0 else 1
+	probe3_assessment.submit_answer("q_dec_01", p3_wrong_idx)
+	_check(probe3_assessment.records["q_dec_01"]["first_attempt_correct"] == false,
+		"PROBE 3 PASSED: Incorrect answer records first_attempt_correct == false")
+	_check(probe3_assessment.is_chapter_activity_completed(1) == true,
+		"PROBE 3 PASSED: Required activity is completable (completion-gated) despite incorrect answer")
+	_check(probe3_assessment.records["q_dec_01"]["completed"] == true,
+		"PROBE 3 PASSED: Assessment record marks activity completed")
+
+	# Probe 4: Fresh profile reaches final completion with no assessment records -> REFUSED
+	var fresh_mgr := ChapterManager.new()
+	var fresh_assessment := AssessmentController.new()
+	_check(fresh_mgr.can_advance_chapter(fresh_assessment) == false,
+		"PROBE 4 PASSED: can_advance_chapter is false on fresh profile with no assessment records")
+	var fresh_advanced: bool = fresh_mgr.try_advance_chapter(fresh_assessment)
+	_check(fresh_advanced == false,
+		"PROBE 4 PASSED: try_advance_chapter refused on fresh profile with no assessment records")
+	_check(fresh_mgr.is_academic_complete == false,
+		"PROBE 4 PASSED: is_academic_complete remains false on fresh profile")
+
+	# Probe 4 persistence validation: Injected profile claiming Academic Completion without assessment records is rejected
+	var empty_profile: Dictionary = test_store.new_profile("profile_02")
+	var empty_world: Dictionary = empty_profile["world"] as Dictionary
+	empty_world["chapter_progress"] = {
+		"current_chapter": ChapterManager.ACADEMIC_COMPLETE,
+		"unlocked_chapters": [1, 2, 3],
+		"is_academic_complete": true,
+		"chapter_flags": {}
+	}
+	var validator_err: Error = GameplayProfileValidator.validate(empty_profile)
+	_check(validator_err == ERR_INVALID_DATA,
+		"PROBE 4 PASSED: GameplayProfileValidator strictly rejects profile reaching final completion with no assessment records")
+
 	# Cleanup temporary profile dir
 	if DirAccess.dir_exists_absolute(_test_root):
 		var d := DirAccess.open(_test_root)
