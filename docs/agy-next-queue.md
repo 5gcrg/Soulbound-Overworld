@@ -1,90 +1,65 @@
-# agy Next Work Queue — SBL-EDU-005
+# Next Work Queue — SBL-BLD-005
 
-Plan owner: Codex. Implementation owner: agy. **agy never reviews.**
+Plan owner: Codex. Implementation executor: `opencode-go/mimo-v2.6-flash`. Reviewer: Codex CLI. agy is paused.
 
-## Position
+## Approved scope
 
-- Batches A–C and `SBL-UX-001` are `REVIEWED`.
-- `SBL-UX-001` approval session: `01a1c07c-8045-7a60-bd41-1dcb9620f860`.
-- Implement only this learning-journal/report slice. The provenance manifest follows after Codex review.
+Owner approval received for the Codex plan on archive-contained JSON provenance manifests.
 
-## Requirements
+### Requirements
 
-- GDD-071: persistent activity/attempt records.
-- GDD-072: learning journal, CSV, and printable report.
-- GDD-091: learning-journal screen.
-- GDD-112: educational report export.
-- FR-EDU-002/004, TC-EDU-002/004, supporting NFR-SEC-001 and NFR-ACC-001.
+- GDD-110, GDD-124, GDD-131
+- FR-REL-001, TC-REL-001
+- GDD-093, GDD-095, GDD-107, GDD-108, GDD-109, GDD-129
+- NFR-BUILD-001, NFR-SEC-001, NFR-MAINT-001
 
-## Dependencies and boundaries
-
-- Use existing `AssessmentController.records` and immutable first-response data.
-- No profile schema bump, migration, or new saved report cache.
-- `OD-012` remains unresolved: retain explicit educator-review-pending language and make no claims of learning improvement, mastery, validity, or accreditation.
-- Browser download/print execution remains pending; test only an injectable delivery boundary.
-- Do not add questions, explanations, rubrics, scoring, analytics, names, LMS/network integration, story, images, or audio assets.
-
-## Files
+### Files
 
 Create:
 
-- `scenes/ui/learning_journal.gd`
-- `scenes/ui/learning_journal.tscn`
-- `scripts/education/learning_report.gd`
-- `tests/headless/learning_journal_test.gd`
+- `scripts/build/release_manifest.ps1`
+- `scripts/build/test_release_manifest.ps1`
 
-Change only as needed:
+Modify:
 
-- `scripts/education/assessment_controller.gd`
-- `scenes/main/game_root.gd`, `scenes/main/game_root.tscn`
-- `scenes/ui/academic_completion_modal.gd`, `.tscn`
-- `tests/headless/education_report_test.gd`
-- `tests/headless/web_backup_test.gd`
-- `tests/headless/settings_accessibility_test.gd`
-- `tests/headless/layout_audit_test.gd`
-- `docs/browser_verification_checklist.md`
-- `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`
+- `scripts/build/export_release.ps1`
+- `scripts/build/validate_release.ps1`
+- `scripts/build/run_headless_tests.ps1`
+- `scripts/build/test_export_failure_restoration.ps1`
+- `docs/agent-review-queue.md`
+- `docs/traceability-matrix.md`
+- `docs/testing.md`
+- `report/implementation-review-ledger.md`
 
-## Data and report rules
+### Required behavior
 
-- Read only existing `education.records`; do not alter `submit_answer()`, first-response merging, completion logic, or save validation.
-- Expose deep-copied transient rows sorted by question ID with the existing CSV columns:
-  `question_id,competency,difficulty,first_attempt_correct,total_attempts,completed,timestamp`.
-- Preserve first-attempt correctness; do not infer missing historical answers.
-- Label timestamp as “Last recorded activity”; do not call it completion time.
-- Journal, CSV, and HTML consume the same row model.
-- CSV remains RFC-4180 compatible and neutralizes formula-leading text in transport output.
-- HTML is standalone UTF-8 with print CSS, no scripts/external resources/remote requests/inline handlers/auto-print, and escapes all dynamic values.
-- Include: active profile slot, row count, completion/first-attempt counts, empty state, and exactly:
-  `Practice records. Educator review pending — OD-012. These records do not establish learning improvement.`
+- Every requested ZIP contains exactly one root `release-manifest.json`.
+- Write an external `<archive>.manifest.sha256` receipt for the exact manifest bytes.
+- Record full source commit, dirty state/status digest, actual Godot version and executable hash, platform, tier, preset, renderer/thread configuration, snapshots, and raw payload sizes/SHA-256 hashes.
+- Validate archive bytes, not local `builds/` substitutes.
+- Reject missing/altered/swapped manifests or receipts, malformed/future JSON, duplicate/case-colliding paths, traversal/absolute/backslash/unsafe Windows paths, unsupported entry types, missing/extra payloads, size/hash mismatches, stale output, and semantic tier/platform/configuration mismatches.
+- Preserve archive-contained PCK validation, existing forbidden-file/entry-point gates, `-SkipZip` semantics, and byte-identical restoration of `project.godot`, markers, and presets on failures.
+- Use fresh isolated staging directories and verify cleanup paths stay inside their staging root.
+- Chain `test_release_manifest.ps1` into the canonical `-Export` path and propagate failures.
 
-## UI and delivery
+### Acceptance matrix
 
-- Add a button-only Learning Journal entry to the exploration HUD; no new keyboard action.
-- One journal instance on `SheetLayer`; freeze movement, consume menu hotkeys/Escape, prevent stacking, and restore prior focus/lock on close.
-- Refresh on every open and after profile switch or successful backup import; never retain a replaced controller reference.
-- Academic completion keeps CSV export and gains direct printable HTML export without stacking the journal.
-- Desktop delivery writes fixed allowlisted filenames under `user://reports/` and reports success only after writing.
-- Web delivery uses injectable `JavaScriptBridge.download_buffer` preparation with UTF-8 bytes/MIME; do not claim browser execution.
-- Keep controls reachable at 960×540 and text scales 1.0/1.5.
+Use the same verifier functions for production and disposable synthetic tests:
 
-## Acceptance and negative controls
+- Valid synthetic fixture passes.
+- Academic MVP Web, Full Web, and Full Windows packages pass their own manifest and PCK validation.
+- Missing receipt/manifest, malformed/future manifest, changed source metadata, changed payload bytes/length, deleted/added files, duplicate/colliding/traversal paths, swapped manifests, altered configuration, stale output, Git/engine failures, packaging failure, and verification-disabled controls fail nonzero.
+- Clean/dirty Git fixtures capture correct provenance before exporter mutation.
+- `-SkipZip` creates no new archive/receipt and does not validate stale archives.
+- Existing restoration positive control exits 0; disabled-restoration control exits 1 with expected evidence.
+- Prove every Godot test/PCK gate uses disposable user data before execution.
 
-- Wrong-first/correct-retry rows agree across journal, CSV, and HTML; first response remains unchanged.
-- Legacy records lacking first-response data remain unchanged and display “Not recorded”.
-- Sorting, counts, timestamps, CSV escaping/formula neutralization, HTML escaping, empty reports, and OD-012 notice are tested.
-- Profile A → B → A shows only the selected profile; import refreshes successful data and preserves old rows on failed import.
-- Journal open/close preserves serialized controller/profile bytes, movement lock, modal exclusivity, and focus.
-- Injectable delivery receives exact UTF-8 bytes, fixed filenames, and MIME types; desktop write failure gives actionable feedback without success.
-- Disposable negative controls: mutate first-attempt data during rendering, omit HTML escaping, use stale controller after profile switch, or claim browser delivery; each must fail its assertion.
+### Boundaries
 
-## Verification
+No images, browser smoke, publishing, tagging, signing, release authorization, shipping-tier choice (`OD-017`), educator work (`OD-012`), binary audio, combat ODs, or new performance budgets.
 
-- Run `education_report_test.gd`, `learning_journal_test.gd`, `web_backup_test.gd`, settings, and layout suites.
-- Run `scripts/build/run_headless_tests.ps1`; record actual count.
-- Run export validation if build-affecting changes occur.
-- Record all logs and evidence in `report/`.
-- Commit suffix `[REVIEW_PENDING_CODEX]`; add task report and traceability/testing updates.
-- Codex CLI reviews first-attempt preservation, escaping, profile refresh, accessibility, and explicit OD-012 status.
+### Reporting
 
-Use `scripts/agy/run_next_queue.ps1`.
+Record actual commands, suite count, artifact hashes/sizes, negative-control exits, base/implementation commits, and all findings in `/report` and `docs/agent-review-queue.md`. Commit with `[REVIEW_PENDING_CODEX]`. Do not mark reviewed.
+
+Use Godot 4.7.2 Stable, Compatibility renderer, Windows portable and single-threaded Web constraints.
