@@ -1,0 +1,250 @@
+[gd_scene load_steps=2 format=3 uid="uid://bossenc001"]
+
+[ext_resource type="Script" path="res://scenes/combat/boss_encounter.gd" id="1_boss"]
+
+[node name="BossEncounter" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_boss")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.04, 0.09, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+offset_top = 20.0
+offset_right = -32.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="TitleLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.8, 0.4, 1)
+theme_override_font_sizes/font_size = 20
+text = "VOID SOVEREIGN — CHAPTER V APEX CLIMAX"
+horizontal_alignment = 1
+
+[node name="PhaseIndicator" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.4, 0.4, 1)
+theme_override_font_sizes/font_size = 13
+text = "[PHASE I: PRIMORDIAL RESONATOR]"
+horizontal_alignment = 1
+
+[node name="TelegraphBanner" type="PanelContainer" parent="VBoxContainer"]
+visible = false
+layout_mode = 2
+
+[node name="TelegraphLabel" type="Label" parent="VBoxContainer/TelegraphBanner"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
+theme_override_font_sizes/font_size = 12
+text = "CRITICAL ALERT: Void Cataclysm Charging!"
+horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Defend against strikes and mitigate Cataclysm. Breach the Void Barrier!"
+horizontal_alignment = 1
+
+[node name="OutcomeLabel" type="Label" parent="VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 1, 0.6, 1)
+theme_override_font_sizes/font_size = 13
+text = "Outcome: In Progress"
+horizontal_alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 30
+alignment = 1
+
+[node name="RenPanel" type="PanelContainer" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Margin" type="MarginContainer" parent="VBoxContainer/HBoxContainer/RenPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="VBox" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/RenPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="RenName" type="Label" parent="VBoxContainer/HBoxContainer/RenPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Ren (Hero of Resonance)"
+horizontal_alignment = 1
+
+[node name="RenSilhouette" type="ColorRect" parent="VBoxContainer/HBoxContainer/RenPanel/Margin/VBox"]
+custom_minimum_size = Vector2(80, 100)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.2, 0.5, 0.9, 1)
+
+[node name="RenHP" type="Label" parent="VBoxContainer/HBoxContainer/RenPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.9, 0.5, 1)
+theme_override_font_sizes/font_size = 12
+text = "Ren HP: 4/4"
+horizontal_alignment = 1
+
+[node name="RenSP" type="Label" parent="VBoxContainer/HBoxContainer/RenPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "Ren SP: 3/3"
+horizontal_alignment = 1
+
+[node name="RenStatuses" type="Label" parent="VBoxContainer/HBoxContainer/RenPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Statuses: None"
+horizontal_alignment = 1
+
+[node name="BossPanel" type="PanelContainer" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Margin" type="MarginContainer" parent="VBoxContainer/HBoxContainer/BossPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="VBox" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/BossPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="BossName" type="Label" parent="VBoxContainer/HBoxContainer/BossPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.3, 0.4, 1)
+theme_override_font_sizes/font_size = 14
+text = "Void Sovereign"
+horizontal_alignment = 1
+
+[node name="BossSilhouette" type="ColorRect" parent="VBoxContainer/HBoxContainer/BossPanel/Margin/VBox"]
+custom_minimum_size = Vector2(90, 100)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.7, 0.15, 0.25, 1)
+
+[node name="BossHP" type="Label" parent="VBoxContainer/HBoxContainer/BossPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
+theme_override_font_sizes/font_size = 12
+text = "Void Sovereign HP: 10/10"
+horizontal_alignment = 1
+
+[node name="BossBarrier" type="Label" parent="VBoxContainer/HBoxContainer/BossPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.6, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "Void Shield: INACTIVE"
+horizontal_alignment = 1
+
+[node name="BossIntent" type="Label" parent="VBoxContainer/HBoxContainer/BossPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.8, 0.4, 1)
+theme_override_font_sizes/font_size = 11
+text = "Intent: Void Strike"
+horizontal_alignment = 1
+
+[node name="BossStatuses" type="Label" parent="VBoxContainer/HBoxContainer/BossPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Statuses: None"
+horizontal_alignment = 1
+
+[node name="Actions" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="AttackButton" type="Button" parent="VBoxContainer/Actions"]
+custom_minimum_size = Vector2(110, 36)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Strike"
+
+[node name="DefendButton" type="Button" parent="VBoxContainer/Actions"]
+custom_minimum_size = Vector2(110, 36)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Defend"
+
+[node name="KureiButton" type="Button" parent="VBoxContainer/Actions"]
+custom_minimum_size = Vector2(120, 36)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Kurei Arts"
+
+[node name="ItemButton" type="Button" parent="VBoxContainer/Actions"]
+custom_minimum_size = Vector2(110, 36)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Item"
+
+[node name="KureiMenu" type="HBoxContainer" parent="VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="FlameBurstButton" type="Button" parent="VBoxContainer/KureiMenu"]
+custom_minimum_size = Vector2(130, 34)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Flame Burst (2 SP)"
+
+[node name="LuminaLanceButton" type="Button" parent="VBoxContainer/KureiMenu"]
+custom_minimum_size = Vector2(130, 34)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Lumina Lance (1 SP)"
+
+[node name="TorrentSurgeButton" type="Button" parent="VBoxContainer/KureiMenu"]
+custom_minimum_size = Vector2(130, 34)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Torrent Surge (2 SP)"
+
+[node name="CancelKureiButton" type="Button" parent="VBoxContainer/KureiMenu"]
+custom_minimum_size = Vector2(60, 34)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Back"
+
+[node name="ContinueButton" type="Button" parent="VBoxContainer"]
+visible = false
+custom_minimum_size = Vector2(140, 36)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 12
+text = "Continue"

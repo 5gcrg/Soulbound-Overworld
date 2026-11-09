@@ -405,3 +405,31 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | --- | --- |
 | `tests/headless/title_screen_audio_test.gd` | Exit 0. Verified procedural AudioStreamWAV synthesis for 9 sound cues (strike, defend, heal, spell_cast, shift, portal, correct, wrong, button), TitleScreen profile slot selection, defense quick-start demo trigger, and evaluator return button. |
 | Full 21-suite regression check | Exit 0. All 21 test suites pass cleanly with zero engine errors. |
+
+---
+
+## SBL-FIX-005 — Void Citadel & Dual-Ending Conclusion, Multi-Phase Boss Encounter Engine, and Kurei Art Skill Tree
+
+- **Milestone** Chapter V Full Release & Apex Climax Features (Options 1, 2, 3 Complete).
+- **Requirements** GDD-009..015, GDD-041, GDD-116, FR-WLD-001, FR-CMB-001/002/003, FR-MAG-001/002, AGENTS.md Invariants ("Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer", "Keep the 3-chapter academic MVP separate from the 5-chapter 2-ending full release").
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Option 1: `scenes/world/void_citadel.tscn`, `scenes/world/ashen_peaks.tscn`, `scenes/world/world_router.gd`, `scripts/story/ending_manager.gd`, `scenes/ui/ending_modal.{tscn,gd}`, `scripts/education/question_bank.gd`, `tests/headless/ending_chapter5_test.gd`.
+  - Option 2: `scenes/combat/boss_encounter.{tscn,gd}`, `tests/headless/boss_combat_test.gd`.
+  - Option 3: `scripts/magic/kurei_tree.gd`, `scripts/magic/kurei_system.gd`, `scenes/combat/battle_fixture.gd`, `scenes/ui/character_sheet.{tscn,gd}`, `tests/headless/kurei_tree_test.gd`.
+  - Integration: `scenes/main/game_root.gd`, `scenes/ui/evaluator_debug_bar.{tscn,gd}`, `tests/headless/education_report_test.gd`, `docs/agent-review-queue.md`.
+- **Asset provenance** None (pure code, UI nodes, Godot primitives, procedural combat math). Non-image text narratives authored by Gemini Flash.
+- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Open questions** None for this slice.
+
+### Verification across all 24 suites
+
+| Suite | Result |
+| --- | --- |
+| `tests/headless/ending_chapter5_test.gd` | Exit 0. Verified Ashen Peaks to Void Citadel portal, Altar of Transcendence (Ending A) and Altar of Restoration (Ending B) triggers, EndingModal epilogue display with honorary titular badges, profile persistence, and Capstone educational question. |
+| `tests/headless/boss_combat_test.gd` | Exit 0. Verified Void Sovereign multi-phase transition at <= 50% HP, Phase 2 Astral Shield absorption, telegraphed 2-turn Cataclysm charge and Defend damage mitigation, Lumina Lance shield piercing, status effect ticks, and sovereign victory rewards. |
+| `tests/headless/kurei_tree_test.gd` | Exit 0. Verified 4-branch 2-tier Kurei Art Skill Tree, level-based talent point grants, tier prerequisites and point cost enforcement, respec refund, ProfileStore serialization, CharacterSheet UI integration, and BattleFixture spell execution. |
+| Full 24-suite regression check | Exit 0. All 24 test suites pass cleanly with zero engine errors. |
+| Automated Release Exporter (`export_release.ps1`) | Exit 0. Generated `dist/Soulbound-Web.zip` (10.6 MB) and `dist/Soulbound-Windows-Portable.zip` (86.4 MB). |
+

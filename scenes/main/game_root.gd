@@ -13,6 +13,8 @@ const ACADEMIC_COMPLETION_SCENE: PackedScene = preload("res://scenes/ui/academic
 const SETTINGS_SHEET_SCENE: PackedScene = preload("res://scenes/ui/settings_sheet.tscn")
 const EVALUATOR_DEBUG_BAR_SCENE: PackedScene = preload("res://scenes/ui/evaluator_debug_bar.tscn")
 const TITLE_SCREEN_SCENE: PackedScene = preload("res://scenes/ui/title_screen.tscn")
+const ENDING_MODAL_SCENE: PackedScene = preload("res://scenes/ui/ending_modal.tscn")
+const BOSS_ENCOUNTER_SCENE: PackedScene = preload("res://scenes/combat/boss_encounter.tscn")
 
 const EXPECTED_ENCOUNTER_ID: StringName = &"combat_alpha_fixture"
 const EXPECTED_NPC_ID: StringName = &"quest_guide_alpha"
@@ -32,6 +34,8 @@ var _suspended_expedition: Dictionary = {}
 var _character_sheet: CharacterSheet = null
 var _inventory_sheet: InventorySheet = null
 var _academic_modal: AcademicCompletionModal = null
+var _ending_modal: EndingModal = null
+var _boss_encounter: BossEncounter = null
 var _settings_sheet: SettingsSheet = null
 var _debug_bar: EvaluatorDebugBar = null
 var _title_screen: TitleScreen = null
@@ -49,6 +53,8 @@ var character_stats: CharacterStats = CharacterStats.new()
 var chapter_manager: ChapterManager = ChapterManager.new()
 var assessment_controller: AssessmentController = AssessmentController.new()
 var settings_manager: SettingsManager = SettingsManager.new()
+var ending_manager: EndingManager = EndingManager.new()
+var kurei_tree: KureiTree = KureiTree.new()
 
 @onready var world_container: Node2D = $WorldContainer
 @onready var player: PlayerCharacter = $Player
@@ -119,12 +125,22 @@ func _init_slice_progress(store: ProfileStore = null, slot: String = "profile_01
 	chapter_manager.load_from_store(profile_store, _profile_slot)
 	assessment_controller.load_from_store(profile_store, _profile_slot)
 
+	kurei_tree = KureiTree.new()
+	kurei_tree.load_from_store(profile_store, _profile_slot)
+	kurei_tree.sync_with_level(character_stats.level)
+
+	var loaded := profile_store.load_profile(_profile_slot)
+	var prof_dict: Dictionary = loaded.get("profile", {})
+	if prof_dict.has("world") and prof_dict["world"] is Dictionary and prof_dict["world"].has("ending"):
+		ending_manager.deserialize(prof_dict["world"]["ending"])
+	else:
+		ending_manager = EndingManager.new()
+
 	_validate_and_clamp_progress()
 	_sync_chapter_gates()
 	_update_objective()
 
-	var loaded := profile_store.load_profile(_profile_slot)
-	_chapter_baseline = JSON.stringify(loaded.get("profile", {}).get("world", {}).get("chapter_progress", {}))
+	_chapter_baseline = JSON.stringify(prof_dict.get("world", {}).get("chapter_progress", {}))
 
 func _on_region_transition_completed(region_id: String, spawn_id: String) -> void:
 	_current_region_id = region_id
@@ -145,6 +161,8 @@ func _bind_region_fixtures() -> void:
 	_bind_expedition_gateway()
 	_bind_academic_portal()
 	_bind_story_fixtures()
+	_bind_ending_altars()
+	_bind_boss_encounter()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("shift_dimension"):
@@ -176,9 +194,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func has_blocking_modal() -> bool:
 	return (_battle != null and is_instance_valid(_battle)) \
+		or (_boss_encounter != null and is_instance_valid(_boss_encounter)) \
 		or (_dialog != null and is_instance_valid(_dialog)) \
 		or (_expedition != null and is_instance_valid(_expedition)) \
 		or (_academic_modal != null and is_instance_valid(_academic_modal)) \
+		or (_ending_modal != null and is_instance_valid(_ending_modal)) \
 		or (_chapter_dialog != null and is_instance_valid(_chapter_dialog)) \
 		or (_title_screen != null and is_instance_valid(_title_screen)) \
 		or _chapter_dialog_pending
@@ -239,6 +259,7 @@ func _try_open_combat(encounter_id: int) -> bool:
 	if instance == null:
 		return false
 	instance.inventory = inventory_manager
+	instance.kurei_tree = kurei_tree
 	instance.action_performed.connect(_on_combat_action_performed)
 	_battle = instance
 	player.freeze_movement()
@@ -280,6 +301,67 @@ func _on_combat_action_performed(act: StringName) -> void:
 			audio_manager.play_cue("heal")
 		&"spell":
 			audio_manager.play_cue("spell_cast")
+
+# ==============================================================================
+# Boss Encounter Binding & Handling (Void Sovereign Apex Climax)
+# ==============================================================================
+
+func _bind_boss_encounter() -> void:
+	if world_router == null or world_router.active_region == null or not is_instance_valid(world_router.active_region):
+		return
+	var trigger: Area2D = world_router.active_region.get_node_or_null("CitadelBossTrigger") as Area2D
+	if trigger == null:
+		return
+	var callback: Callable = _on_boss_trigger_entered.bind(trigger.get_instance_id())
+	if not trigger.body_entered.is_connected(callback):
+		trigger.body_entered.connect(callback)
+
+func _on_boss_trigger_entered(body: Node2D, _trigger_id: int) -> void:
+	if body != player or player == null or player.input_frozen:
+		return
+	if has_blocking_modal():
+		return
+	open_boss_encounter()
+
+func open_boss_encounter() -> void:
+	if _boss_encounter != null and is_instance_valid(_boss_encounter):
+		return
+	if _battle_layer == null:
+		return
+	if player != null:
+		player.freeze_movement()
+
+	var inst: BossEncounter = BOSS_ENCOUNTER_SCENE.instantiate() as BossEncounter
+	if inst == null:
+		_restore_combat_movement()
+		return
+
+	_boss_encounter = inst
+	inst.inventory = inventory_manager
+	inst.kurei_tree = kurei_tree
+	inst.action_performed.connect(_on_combat_action_performed)
+	inst.boss_defeated.connect(_on_boss_defeated)
+	inst.continued.connect(_close_boss_encounter)
+	_battle_layer.add_child(inst)
+
+	if status_label != null:
+		status_label.text = "Apex Encounter: Void Sovereign engaged!"
+
+func _on_boss_defeated(rewards: Dictionary) -> void:
+	if audio_manager != null:
+		audio_manager.play_cue("correct")
+	if profile_store != null:
+		inventory_manager.save_to_store(profile_store, _profile_slot)
+	if status_label != null:
+		status_label.text = "Void Sovereign defeated! Sovereign Core and Void Crown acquired."
+
+func _close_boss_encounter() -> void:
+	if _boss_encounter != null and is_instance_valid(_boss_encounter):
+		_boss_encounter.hide()
+		_boss_encounter.queue_free()
+		_boss_encounter = null
+	if not has_blocking_modal():
+		_restore_combat_movement()
 
 # ==============================================================================
 # Quest Guide NPC Binding & Handling
@@ -526,6 +608,7 @@ func _toggle_character_sheet() -> void:
 		return
 	_character_sheet = sheet
 	sheet.set_stats(character_stats)
+	sheet.set_kurei_tree(kurei_tree)
 	sheet.closed.connect(_close_character_sheet)
 	target_layer.add_child(sheet)
 
@@ -537,8 +620,9 @@ func _close_character_sheet() -> void:
 
 	if profile_store != null:
 		character_stats.save_to_store(profile_store, _profile_slot)
+		kurei_tree.save_to_store(profile_store, _profile_slot)
 
-	if _inventory_sheet == null and _settings_sheet == null and _battle == null and _dialog == null and _expedition == null and _academic_modal == null and _chapter_dialog == null:
+	if _inventory_sheet == null and _settings_sheet == null and _battle == null and _boss_encounter == null and _dialog == null and _expedition == null and _academic_modal == null and _ending_modal == null and _chapter_dialog == null:
 		_restore_combat_movement()
 
 func _toggle_inventory_sheet() -> void:
@@ -586,7 +670,7 @@ func _close_inventory_sheet() -> void:
 	if profile_store != null:
 		inventory_manager.save_to_store(profile_store, _profile_slot)
 
-	if _character_sheet == null and _settings_sheet == null and _battle == null and _dialog == null and _expedition == null and _academic_modal == null and _chapter_dialog == null:
+	if _character_sheet == null and _settings_sheet == null and _battle == null and _boss_encounter == null and _dialog == null and _expedition == null and _academic_modal == null and _ending_modal == null and _chapter_dialog == null:
 		_restore_combat_movement()
 
 func _on_equipment_changed(_slot: StringName, _item_id: String) -> void:
@@ -642,7 +726,7 @@ func _close_settings_sheet() -> void:
 	if _pending_return_to_alpha:
 		_defer_return_to_alpha.call_deferred()
 
-	if _character_sheet == null and _inventory_sheet == null and _battle == null and _dialog == null and _expedition == null and _academic_modal == null and _chapter_dialog == null:
+	if _character_sheet == null and _inventory_sheet == null and _battle == null and _boss_encounter == null and _dialog == null and _expedition == null and _academic_modal == null and _ending_modal == null and _chapter_dialog == null:
 		_restore_combat_movement()
 
 func _apply_runtime_settings() -> void:
@@ -728,11 +812,91 @@ func _close_academic_modal() -> void:
 	_academic_modal = null
 
 # ==============================================================================
+# Dual-Ending Altars & Modal Management (Chapter V Epilogue)
+# ==============================================================================
+
+func _bind_ending_altars() -> void:
+	if world_router == null or world_router.active_region == null or not is_instance_valid(world_router.active_region):
+		return
+	var altar_a := world_router.active_region.get_node_or_null("EndingAltarTranscendence") as Area2D
+	if altar_a != null:
+		var cb_a := _on_ending_altar_entered.bind(EndingManager.ENDING_A_TRANSCENDENCE)
+		if not altar_a.body_entered.is_connected(cb_a):
+			altar_a.body_entered.connect(cb_a)
+	var altar_b := world_router.active_region.get_node_or_null("EndingAltarRestoration") as Area2D
+	if altar_b != null:
+		var cb_b := _on_ending_altar_entered.bind(EndingManager.ENDING_B_RESTORATION)
+		if not altar_b.body_entered.is_connected(cb_b):
+			altar_b.body_entered.connect(cb_b)
+
+func _on_ending_altar_entered(body: Node2D, ending_type: String) -> void:
+	if body != player or player == null or player.input_frozen:
+		return
+	if has_blocking_modal():
+		return
+	open_ending_modal(ending_type)
+
+func open_ending_modal(ending_type: String) -> void:
+	if _ending_modal != null and is_instance_valid(_ending_modal):
+		return
+	var target_layer: CanvasLayer = _sheet_layer if _sheet_layer != null else _dialog_layer
+	if target_layer == null:
+		return
+
+	if player != null:
+		player.freeze_movement()
+
+	ending_manager.choose_ending(ending_type)
+	if profile_store != null:
+		var loaded := profile_store.load_profile(_profile_slot)
+		if loaded.get("error") == OK:
+			var prof: Dictionary = loaded.get("profile", {})
+			if not prof.has("world") or typeof(prof["world"]) != TYPE_DICTIONARY:
+				prof["world"] = {}
+			prof["world"]["ending"] = ending_manager.serialize()
+			profile_store.save_profile(_profile_slot, prof)
+
+	if audio_manager != null:
+		audio_manager.play_cue("portal")
+
+	var modal: EndingModal = ENDING_MODAL_SCENE.instantiate() as EndingModal
+	if modal == null:
+		_restore_combat_movement()
+		return
+
+	_ending_modal = modal
+	modal.configure(ending_type, ending_manager, character_stats, assessment_controller)
+	modal.closed.connect(_close_ending_modal)
+	modal.title_menu_requested.connect(_on_ending_title_menu_requested)
+	target_layer.add_child(modal)
+
+	if status_label != null:
+		status_label.text = "Reached Campaign Epilogue: %s" % ending_type.capitalize()
+	_update_objective()
+
+func _close_ending_modal() -> void:
+	if _ending_modal != null and is_instance_valid(_ending_modal):
+		_ending_modal.queue_free()
+		_ending_modal = null
+	if not has_blocking_modal():
+		_restore_combat_movement()
+	if status_label != null:
+		status_label.text = "Campaign epilogue archived. Free exploration active across all realms."
+
+func _on_ending_title_menu_requested() -> void:
+	_close_ending_modal()
+	open_title_screen()
+
+# ==============================================================================
 # Objective Tracking
 # ==============================================================================
 
 func _update_objective() -> void:
 	if objective_label == null:
+		return
+	if ending_manager != null and ending_manager.is_ending_achieved:
+		var ending_details: Dictionary = ending_manager.get_ending_details()
+		objective_label.text = "Campaign Complete: %s! Free exploration active across all realms." % String(ending_details.get("title", "Epilogue Active"))
 		return
 	if chapter_manager != null and chapter_manager.is_academic_complete:
 		objective_label.text = "Academic MVP Complete! Free exploration active across all chapters and modular dungeons."
@@ -909,6 +1073,7 @@ func _init_debug_bar() -> void:
 	_debug_layer.add_child(_debug_bar)
 	_debug_bar.region_warp_requested.connect(_on_debug_region_warp)
 	_debug_bar.combat_requested.connect(_on_debug_combat)
+	_debug_bar.boss_combat_requested.connect(open_boss_encounter)
 	_debug_bar.dungeon_requested.connect(_on_debug_dungeon)
 	_debug_bar.chapter_dialog_requested.connect(_on_debug_chapter_dialog)
 	_debug_bar.academic_modal_requested.connect(_on_debug_academic_modal)
@@ -917,6 +1082,7 @@ func _init_debug_bar() -> void:
 	_debug_bar.complete_activities_requested.connect(_on_debug_complete_activities)
 	_debug_bar.max_stats_requested.connect(_on_debug_max_stats)
 	_debug_bar.title_screen_requested.connect(open_title_screen)
+	_debug_bar.ending_requested.connect(open_ending_modal)
 	_sync_debug_bar()
 
 func _sync_debug_bar() -> void:
@@ -949,6 +1115,7 @@ func _on_debug_combat() -> void:
 	if instance == null:
 		return
 	instance.inventory = inventory_manager
+	instance.kurei_tree = kurei_tree
 	instance.action_performed.connect(_on_combat_action_performed)
 	_battle = instance
 	if player != null:

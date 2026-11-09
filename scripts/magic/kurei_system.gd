@@ -83,6 +83,51 @@ const SKILL_CATALOG: Dictionary = {
 		"cooldown_turns": 3,
 		"base_power": 12,
 		"effect": "drain"
+	},
+	&"solar_flare": {
+		"id": &"solar_flare",
+		"name": "Solar Flare",
+		"category": CAT_FLAME,
+		"pip_cost": 3,
+		"cooldown_turns": 3,
+		"base_power": 28,
+		"effect": "burn"
+	},
+	&"celestial_prism": {
+		"id": &"celestial_prism",
+		"name": "Celestial Prism",
+		"category": CAT_LUMINA,
+		"pip_cost": 2,
+		"cooldown_turns": 3,
+		"base_power": 20,
+		"effect": "stun"
+	},
+	&"glacial_aegis": {
+		"id": &"glacial_aegis",
+		"name": "Glacial Aegis",
+		"category": CAT_TORRENT,
+		"pip_cost": 2,
+		"cooldown_turns": 3,
+		"base_power": 16,
+		"effect": "shield"
+	},
+	&"void_shift": {
+		"id": &"void_shift",
+		"name": "Void Shift",
+		"category": CAT_UMBRA,
+		"pip_cost": 1,
+		"cooldown_turns": 2,
+		"base_power": 10,
+		"effect": "evade"
+	},
+	&"phase_mastery": {
+		"id": &"phase_mastery",
+		"name": "Phase Mastery",
+		"category": CAT_UMBRA,
+		"pip_cost": 0,
+		"cooldown_turns": 0,
+		"base_power": 0,
+		"effect": "mastery"
 	}
 }
 

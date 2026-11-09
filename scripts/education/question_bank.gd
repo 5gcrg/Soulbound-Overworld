@@ -127,6 +127,21 @@ const QUESTIONS: Dictionary = {
 		],
 		"correct_index": 1,
 		"explanation": "The instantaneous rate of change is f'(t) = -10t. Setting |-10t| = 20 gives t = 2 seconds."
+	},
+	"q_meta_01": {
+		"id": "q_meta_01",
+		"chapter": 5,
+		"competency": COMP_DECISION_MAKING,
+		"difficulty": "Advanced",
+		"prompt": "When facing the final threshold, Ren must decide whether to fuse the Spirit and Mortal dimensions (Transcendence) or seal the rift permanently (Restoration). Which evaluative process best justifies the commitment?",
+		"options": [
+			"Select arbitrarily without assessing collateral impact",
+			"Weigh the transformative potential of coexistence against irreversible risks of planar collapse",
+			"Abandon the decision entirely to avoid responsibility",
+			"Submit uncritically to the Void Sovereign's mandate"
+		],
+		"correct_index": 1,
+		"explanation": "Ethical leadership balances transformative upside against existential risk when making irreversible choices."
 	}
 }
 
@@ -157,6 +172,7 @@ static func get_required_question_id_for_chapter(chapter_num: int) -> String:
 		2: return "q_res_01"
 		3: return "q_crit_02"
 		4: return "q_calc_01"
+		5: return "q_meta_01"
 		_: return "q_crit_01"
 
 static func get_all_question_ids() -> Array[String]:

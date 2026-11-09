@@ -3,6 +3,7 @@ extends Control
 
 signal region_warp_requested(region_id: String)
 signal combat_requested()
+signal boss_combat_requested()
 signal dungeon_requested()
 signal chapter_dialog_requested()
 signal academic_modal_requested()
@@ -11,6 +12,7 @@ signal grant_items_requested()
 signal complete_activities_requested()
 signal max_stats_requested()
 signal title_screen_requested()
+signal ending_requested(ending_type: String)
 
 @onready var panel: PanelContainer = $DebugPanel
 @onready var toggle_btn: Button = $ToggleBtn
@@ -73,9 +75,24 @@ func _connect_buttons() -> void:
 	if btn_beta != null:
 		btn_beta.pressed.connect(func(): region_warp_requested.emit("test_region_beta"))
 
+	var btn_peaks: Button = panel.get_node_or_null("Margin/VBox/RegionGrid/BtnPeaks") as Button
+	if btn_peaks != null:
+		btn_peaks.pressed.connect(func(): region_warp_requested.emit("ashen_peaks"))
+
+	var btn_citadel: Button = panel.get_node_or_null("Margin/VBox/RegionGrid/BtnCitadel") as Button
+	if btn_citadel != null:
+		btn_citadel.pressed.connect(func(): region_warp_requested.emit("void_citadel"))
+
 	var btn_combat: Button = panel.get_node_or_null("Margin/VBox/ActionsGrid/BtnCombat") as Button
 	if btn_combat != null:
 		btn_combat.pressed.connect(func(): combat_requested.emit())
+
+	var btn_boss: Button = panel.get_node_or_null("Margin/VBox/ActionsGrid/BtnBoss") as Button
+	if btn_boss != null:
+		btn_boss.pressed.connect(func():
+			toggle_panel()
+			boss_combat_requested.emit()
+		)
 
 	var btn_dungeon: Button = panel.get_node_or_null("Margin/VBox/ActionsGrid/BtnDungeon") as Button
 	if btn_dungeon != null:
@@ -104,6 +121,20 @@ func _connect_buttons() -> void:
 	var btn_stats: Button = panel.get_node_or_null("Margin/VBox/CheatsGrid/BtnStats") as Button
 	if btn_stats != null:
 		btn_stats.pressed.connect(func(): max_stats_requested.emit())
+
+	var btn_ending_a: Button = panel.get_node_or_null("Margin/VBox/CheatsGrid/BtnEndingA") as Button
+	if btn_ending_a != null:
+		btn_ending_a.pressed.connect(func():
+			toggle_panel()
+			ending_requested.emit("transcendence")
+		)
+
+	var btn_ending_b: Button = panel.get_node_or_null("Margin/VBox/CheatsGrid/BtnEndingB") as Button
+	if btn_ending_b != null:
+		btn_ending_b.pressed.connect(func():
+			toggle_panel()
+			ending_requested.emit("restoration")
+		)
 
 	var btn_title: Button = panel.get_node_or_null("Margin/VBox/CheatsGrid/BtnTitle") as Button
 	if btn_title != null:

@@ -107,6 +107,18 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
 text = "Test Region Beta"
 
+[node name="BtnPeaks" type="Button" parent="DebugPanel/Margin/VBox/RegionGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "Ch 4: Ashen Peaks"
+
+[node name="BtnCitadel" type="Button" parent="DebugPanel/Margin/VBox/RegionGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "Ch 5: Void Citadel"
+
 [node name="HSeparator2" type="HSeparator" parent="DebugPanel/Margin/VBox"]
 layout_mode = 2
 
@@ -124,6 +136,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
 text = "Trigger Combat"
+
+[node name="BtnBoss" type="Button" parent="DebugPanel/Margin/VBox/ActionsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "Apex Boss Fight"
 
 [node name="BtnDungeon" type="Button" parent="DebugPanel/Margin/VBox/ActionsGrid"]
 layout_mode = 2
@@ -184,6 +202,18 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
 text = "Title Screen"
+
+[node name="BtnEndingA" type="Button" parent="DebugPanel/Margin/VBox/CheatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "Trigger Ending A"
+
+[node name="BtnEndingB" type="Button" parent="DebugPanel/Margin/VBox/CheatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "Trigger Ending B"
 
 [node name="BtnClose" type="Button" parent="DebugPanel/Margin/VBox"]
 layout_mode = 2

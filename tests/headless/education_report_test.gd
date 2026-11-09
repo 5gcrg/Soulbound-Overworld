@@ -57,7 +57,7 @@ func _run_test() -> void:
 	_check(fr_dec.get("is_correct", true) == false, "first_response is_correct preserved as false after retry")
 
 	# Test 4: ProfileStore Integration & education.vertical_slice preservation
-	var temp_dir: String = "user://test_edu_profiles_%d" % Time.get_ticks_msec()
+	var temp_dir: String = "user://test_edu_profiles_%d_%d" % [OS.get_process_id(), Time.get_ticks_usec()]
 	var store := ProfileStore.new(temp_dir)
 
 	# Seed profile with existing education.vertical_slice

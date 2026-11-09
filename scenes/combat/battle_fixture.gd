@@ -30,6 +30,7 @@ var last_player_action: StringName = &""
 var _continued_emitted: bool = false
 
 var inventory: InventoryManager = null
+var kurei_tree: KureiTree = null
 var standalone_consumables: int = 0
 var kurei: KureiSystem = KureiSystem.new()
 var ren_statuses: StatusEngine = StatusEngine.new()
@@ -119,6 +120,8 @@ func request_action(action: StringName) -> bool:
 
 	if is_kurei:
 		var skill_id: StringName = StringName(String(action).trim_prefix("kurei_"))
+		if kurei_tree != null and not kurei_tree.is_skill_unlocked(skill_id):
+			return false
 		if not kurei.can_cast(skill_id, ren_sp):
 			return false
 		var cast_res: Dictionary = kurei.cast_skill(skill_id, ren_sp)
@@ -129,10 +132,21 @@ func request_action(action: StringName) -> bool:
 		if skill_id == &"flame_burst":
 			enemy_pips -= 2
 			enemy_statuses.apply_status(StatusEngine.EFFECT_BURN, 2, 1)
+		elif skill_id == &"solar_flare":
+			enemy_pips -= 3
+			enemy_statuses.apply_status(StatusEngine.EFFECT_BURN, 3, 2)
 		elif skill_id == &"lumina_lance":
 			enemy_pips -= 1
+		elif skill_id == &"celestial_prism":
+			enemy_pips -= 2
+			enemy_statuses.apply_status(StatusEngine.EFFECT_STUN, 1, 1)
 		elif skill_id == &"torrent_surge":
 			ren_pips = mini(max_ren_pips, ren_pips + 1)
+		elif skill_id == &"glacial_aegis":
+			ren_pips = mini(max_ren_pips, ren_pips + 2)
+			ren_statuses.apply_status(StatusEngine.EFFECT_SHIELD, 2, 2)
+		elif skill_id == &"void_shift":
+			ren_statuses.apply_status(StatusEngine.EFFECT_DEFENSE_UP, 1, 2)
 
 		action_performed.emit(&"spell")
 

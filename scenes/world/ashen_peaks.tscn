@@ -102,6 +102,12 @@ target_region_id = "forgotten_shrine"
 target_spawn_id = "default"
 portal_label = "<- Forgotten Shrine"
 
+[node name="PortalToCitadel" parent="Portals" instance=ExtResource("2_portal")]
+position = Vector2(870, 270)
+target_region_id = "void_citadel"
+target_spawn_id = "from_peaks"
+portal_label = "To Void Citadel ->"
+
 [node name="Spawns" type="Node2D" parent="."]
 
 [node name="default" type="Marker2D" parent="Spawns"]
@@ -109,3 +115,6 @@ position = Vector2(200, 270)
 
 [node name="from_shrine" type="Marker2D" parent="Spawns"]
 position = Vector2(200, 270)
+
+[node name="from_citadel" type="Marker2D" parent="Spawns"]
+position = Vector2(800, 270)

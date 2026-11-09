@@ -11,7 +11,8 @@ const REGION_REGISTRY: Dictionary = {
 	"dawnreach_village": "res://scenes/world/dawnreach_village.tscn",
 	"whispering_grove": "res://scenes/world/whispering_grove.tscn",
 	"forgotten_shrine": "res://scenes/world/forgotten_shrine.tscn",
-	"ashen_peaks": "res://scenes/world/ashen_peaks.tscn"
+	"ashen_peaks": "res://scenes/world/ashen_peaks.tscn",
+	"void_citadel": "res://scenes/world/void_citadel.tscn"
 }
 
 ## Region availability table (simple policy usable by tests and future story hooks)
@@ -21,7 +22,8 @@ var available_regions: Dictionary = {
 	"dawnreach_village": true,
 	"whispering_grove": true,
 	"forgotten_shrine": true,
-	"ashen_peaks": true
+	"ashen_peaks": true,
+	"void_citadel": true
 }
 
 var active_region_id: String = ""
