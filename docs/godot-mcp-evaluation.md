@@ -2,8 +2,8 @@
 
 **Milestone**: Tooling & Workflow Validation  
 **Date**: November 9, 2026  
-**Tasks**: `SBL-MCP-001`, `SBL-MCP-002`, `SBL-MCP-003`  
-**Status**: EVALUATED, REPRODUCIBLE HARNESS COMMITTED (`tools/mcp-proof/`), PRODUCTION ISOLATED (Godot-native CLI)  
+**Tasks**: `SBL-MCP-001`, `SBL-MCP-002`, `SBL-MCP-003`, `SBL-MCP-004`  
+**Status**: EVALUATED, REPRODUCIBLE HARNESS COMMITTED & HARDENED (`tools/mcp-proof/`), PRODUCTION ISOLATED (Godot-native CLI)  
 **Operating Rule**: AGENTS.md § AI Game Developer MCP caution  
 
 ---
@@ -155,6 +155,77 @@ ALL MCP-GENERATED NODES VERIFIED IN GODOT 4.7.2 HEADLESS!
 
 ====================================================
    SBL-MCP-003 PROOF COMPLETED SUCCESSFULLY (PASS)  
+====================================================
+```
+
+---
+
+### 2.5 SBL-MCP-004: Hardened Error Rejection, Stale Scene Invalidation & Reference Isolation
+
+In response to Codex CLI review finding 3, the proof runner was hardened with the following invariants:
+1. **Strict JSON-RPC Error Trapping**: The driver handler now explicitly inspects `result.isError === true` and scans `result.content` text for error indicators, immediately rejecting with the server's failure message rather than resolving cleanly.
+2. **Stale Scene Deletion**: Any pre-existing `mcp_generated_scene.tscn` in the disposable directory is deleted before invoking `create_scene`, guaranteeing that a cached or stale file cannot satisfy subsequent validation steps.
+3. **Exact Node Tree & Hierarchy Assertions**:
+   - The driver asserts the saved `.tscn` contains root `Node2D`, `Player` `CharacterBody2D`, and `Collider` `CollisionShape2D`.
+   - `verify_mcp_scene.gd` verifies exact node classes and strict child counts (`root` has exactly 1 child, `Player` has exactly 1 child, `Collider` has 0 children).
+4. **Preserved Reference Scene**: The tracked reference `tools/mcp-proof/mcp_generated_scene.tscn` is read-only and no longer rewritten, preventing uncommitted UID changes from dirtying the git working tree.
+
+#### Re-Run Observed Evidence (SBL-MCP-004):
+
+```text
+====================================================
+   SoulBound — SBL-MCP-004 Adapter Proof Harness     
+====================================================
+Target Disposable Project: C:\Users\ALCOHOL\AppData\Local\Temp\disposable_godot_mcp_proof
+Godot Binary:              C:\Users\ALCOHOL\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe
+
+[1/4] Disposable project exists.
+
+[2/4] Spawning @coding-solo/godot-mcp server via stdio...
+  Sending initialize request...
+[SERVER-LOG] [SERVER] Using Godot at: C:\Users\ALCOHOL\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe
+[SERVER-LOG] Godot MCP server running on stdio
+  PASS: MCP server initialized. Server: godot-mcp v0.1.0
+
+[3/4] Executing tool calls on disposable project...
+  -> Calling get_godot_version...
+  PASS: get_godot_version returned: 4.7.2.stable.official.ed1daf0bf
+  -> Calling get_project_info...
+  PASS: get_project_info returned metadata.
+  Deleting pre-existing scene to prevent stale verification pass: C:\Users\ALCOHOL\AppData\Local\Temp\disposable_godot_mcp_proof\mcp_generated_scene.tscn
+  -> Calling create_scene (mcp_generated_scene.tscn, Node2D)...
+  PASS: create_scene succeeded.
+  -> Calling add_node (Player: CharacterBody2D under root)...
+  PASS: add_node Player succeeded.
+  -> Calling add_node (Collider: CollisionShape2D under Player)...
+  PASS: add_node Collider succeeded.
+  -> Calling save_scene...
+  PASS: save_scene succeeded.
+
+Generated Scene File (.tscn):
+[gd_scene format=3]
+
+[node name="root" type="Node2D" unique_id=570437169]
+
+[node name="Player" type="CharacterBody2D" parent="." unique_id=1692330066]
+
+[node name="Collider" type="CollisionShape2D" parent="Player" unique_id=2038120460]
+
+  PASS: Generated scene structure verified (root Node2D, Player CharacterBody2D, Collider CollisionShape2D).
+  PASS: Compared against reference scene at: C:\Users\ALCOHOL\.codex\worktrees\soulbound-overworld\SoulBound\tools\mcp-proof\mcp_generated_scene.tscn (preserved read-only, working tree unmodified)
+
+[4/4] Running Headless Godot Runtime Validation on Generated Scene...
+Executing: "C:\Users\ALCOHOL\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe" --headless --path "C:\Users\ALCOHOL\AppData\Local\Temp\disposable_godot_mcp_proof" --script "res://verify_mcp_scene.gd" --quit-after 60
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+--- Verifying MCP Generated Scene in Godot 4.7.2 Headless ---
+  PASS: Root node name: root (Node2D, children=1)
+  PASS: Player node: Player (CharacterBody2D, children=1)
+  PASS: Collider node: Collider (CollisionShape2D, children=0)
+ALL MCP-GENERATED NODES VERIFIED IN GODOT 4.7.2 HEADLESS!
+
+====================================================
+   SBL-MCP-004 PROOF COMPLETED SUCCESSFULLY (PASS)  
 ====================================================
 ```
 

@@ -35,21 +35,33 @@ func _run_verification() -> void:
 		printerr("FAIL: Root node mismatch (expected Node2D named 'root', got %s: %s)" % [inst.name, inst.get_class()])
 		quit(1)
 		return
-	print("  PASS: Root node name: %s (%s)" % [inst.name, inst.get_class()])
+	if inst.get_child_count() != 1:
+		printerr("FAIL: Root node expected exactly 1 child, got %d" % inst.get_child_count())
+		quit(1)
+		return
+	print("  PASS: Root node name: %s (%s, children=%d)" % [inst.name, inst.get_class(), inst.get_child_count()])
 
 	var player: Node = inst.get_node_or_null("Player")
 	if player == null or not (player is CharacterBody2D):
 		printerr("FAIL: Player node missing or not CharacterBody2D")
 		quit(1)
 		return
-	print("  PASS: Player node: %s (%s)" % [player.name, player.get_class()])
+	if player.get_child_count() != 1:
+		printerr("FAIL: Player node expected exactly 1 child, got %d" % player.get_child_count())
+		quit(1)
+		return
+	print("  PASS: Player node: %s (%s, children=%d)" % [player.name, player.get_class(), player.get_child_count()])
 
 	var collider: Node = player.get_node_or_null("Collider")
 	if collider == null or not (collider is CollisionShape2D):
 		printerr("FAIL: Collider node missing or not CollisionShape2D under Player")
 		quit(1)
 		return
-	print("  PASS: Collider node: %s (%s)" % [collider.name, collider.get_class()])
+	if collider.get_child_count() != 0:
+		printerr("FAIL: Collider node expected 0 children, got %d" % collider.get_child_count())
+		quit(1)
+		return
+	print("  PASS: Collider node: %s (%s, children=%d)" % [collider.name, collider.get_class(), collider.get_child_count()])
 
 	print("ALL MCP-GENERATED NODES VERIFIED IN GODOT 4.7.2 HEADLESS!")
 	inst.queue_free()

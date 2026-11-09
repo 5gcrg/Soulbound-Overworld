@@ -1212,3 +1212,43 @@ The `SliceProgress: Invalid data` warning seen when mounting a packed build came
 | Negative control: swapped marker on MVP Web zip | Exit 1 | Caught marker mismatch `[AcademicMVP-Web] build_tier.txt marker 'full_release' does not match expected tier 'academic_mvp'` and gate failure `FAIL: Active tier 'academic_mvp' matches expected 'full_release'`. |
 | Negative control: swapped marker on Full Web zip | Exit 1 | Caught marker mismatch `[FullRelease-Web] build_tier.txt marker 'academic_mvp' does not match expected tier 'full_release'` and gate failure `FAIL: Active tier 'full_release' matches expected 'academic_mvp'`. |
 
+---
+
+## SBL-MCP-004 — Reject Error Results, Stale Scenes & Isolate Tracked Reference (Review Finding 3)
+
+- **Milestone** Tooling & Workflow Validation.
+- **Requirements** AGENTS.md § AI Game Developer MCP caution.
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Tooling harness: `tools/mcp-proof/run_adapter_proof.js`, `tools/mcp-proof/verify_mcp_scene.gd`.
+  - Documentation: `docs/godot-mcp-evaluation.md`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None (tooling verification harness, documentation, and external test artifacts; zero art or runtime assets).
+- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5; Codex CLI will review after batch completion.
+- **Open questions** None. Production toolchain remains isolated to native GDScript and headless CLI.
+
+### Changes
+
+1. **Reject `isError: true` & Content Errors in JSON-RPC Handler**:
+   - Hardened `run_adapter_proof.js` message parser: tool responses with `result.isError === true` or containing content error text (`c.isError === true` or matching `/^error[:\s]/i`) are immediately rejected, terminating execution with the server's error message.
+2. **Stale Scene Deletion**:
+   - Injected pre-execution cleanup in `run_adapter_proof.js`: any pre-existing `mcp_generated_scene.tscn` in the disposable directory is deleted before calling `create_scene`, ensuring an old valid file can never satisfy verification.
+3. **Exact Node Tree & Hierarchy Assertions**:
+   - `run_adapter_proof.js` asserts the generated `.tscn` contains root `Node2D`, `Player` `CharacterBody2D`, and `Collider` `CollisionShape2D`.
+   - `verify_mcp_scene.gd` asserts exact node types and strict child counts (`root` has 1 child, `Player` has 1 child, `Collider` has 0 children).
+4. **Preserved Tracked Reference Scene**:
+   - Removed destructive rewrite of `tools/mcp-proof/mcp_generated_scene.tscn`. The reference scene is preserved read-only, ensuring `run_adapter_proof.js` leaves the git working tree clean.
+5. **Re-Run & Documentation**:
+   - Executed `node tools/mcp-proof/run_adapter_proof.js` against `@coding-solo/godot-mcp` v0.1.1 and `Godot_v4.7.2-stable_win64_console.exe`.
+   - Observed output pasted into `docs/godot-mcp-evaluation.md`.
+
+### Verification Table
+
+| Test Scope / Invocation | Result | Evidence |
+|---|---|---|
+| Driver execution: `node tools/mcp-proof/run_adapter_proof.js` | Exit 0 | Deleted stale scene, initialized MCP server, executed tool calls, verified node hierarchy in JS, and verified in headless Godot with strict child count checks. |
+| Headless verification: `godot --headless --script res://verify_mcp_scene.gd` | Exit 0 | Scene tree parsed and verified: `root` (Node2D, children=1) -> `Player` (CharacterBody2D, children=1) -> `Collider` (CollisionShape2D, children=0). |
+| Working tree cleanliness | Clean | `tools/mcp-proof/mcp_generated_scene.tscn` untouched; zero unwanted diffs in worktree. |
+
+
