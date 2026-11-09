@@ -10,8 +10,17 @@ enum Phase {
 	DEFEAT,
 }
 
+const HEALING_ITEMS: Array[String] = [
+	"spirit_salve",
+	"health_elixir",
+	"potion",
+	"potions",
+	"healing_herb"
+]
+
 var phase: Phase = Phase.PLAYER
 var ren_pips: int = 1
+var max_ren_pips: int = 3
 var enemy_pips: int = 2
 var ren_sp: int = 2
 var max_sp: int = 2
@@ -19,6 +28,8 @@ var enemy_intent: StringName = &"Strike"
 var last_player_action: StringName = &""
 var _continued_emitted: bool = false
 
+var inventory: InventoryManager = null
+var standalone_consumables: int = 0
 var kurei: KureiSystem = KureiSystem.new()
 
 @onready var title_label: Label = $VBoxContainer/TitleLabel
@@ -67,6 +78,34 @@ func _update_kurei_buttons() -> void:
 	lumina_lance_btn.disabled = not kurei.can_cast(&"lumina_lance", ren_sp)
 	torrent_surge_btn.disabled = not kurei.can_cast(&"torrent_surge", ren_sp)
 
+func get_available_item_count() -> int:
+	if inventory == null:
+		return standalone_consumables
+	var total: int = 0
+	for item_id: String in HEALING_ITEMS:
+		total += int(inventory.satchel_items.get(item_id, 0))
+		total += int(inventory.banked_items.get(item_id, 0))
+	return total
+
+func consume_healing_item() -> bool:
+	if inventory == null:
+		if standalone_consumables > 0:
+			standalone_consumables -= 1
+			return true
+		return false
+
+	for item_id: String in HEALING_ITEMS:
+		if inventory.satchel_items.get(item_id, 0) > 0:
+			var cnt: int = int(inventory.satchel_items[item_id]) - 1
+			if cnt <= 0:
+				inventory.satchel_items.erase(item_id)
+			else:
+				inventory.satchel_items[item_id] = cnt
+			return true
+		if inventory.banked_items.get(item_id, 0) > 0:
+			return inventory.remove_banked_item(item_id, 1)
+	return false
+
 func request_action(action: StringName) -> bool:
 	if phase != Phase.PLAYER:
 		return false
@@ -89,13 +128,22 @@ func request_action(action: StringName) -> bool:
 		elif skill_id == &"lumina_lance":
 			enemy_pips -= 1
 		elif skill_id == &"torrent_surge":
-			ren_pips += 1
+			ren_pips = mini(max_ren_pips, ren_pips + 1)
 
 		if enemy_pips <= 0:
 			enemy_pips = 0
 			phase = Phase.VICTORY
 			_update_ui()
 			return true
+
+	if action == &"item":
+		if get_available_item_count() <= 0:
+			return false
+		if ren_pips >= max_ren_pips:
+			return false
+		if not consume_healing_item():
+			return false
+		ren_pips = mini(max_ren_pips, ren_pips + 1)
 
 	last_player_action = action
 	phase = Phase.ENEMY
@@ -108,8 +156,6 @@ func request_action(action: StringName) -> bool:
 			phase = Phase.VICTORY
 			_update_ui()
 			return true
-	elif action == &"item":
-		ren_pips += 1
 
 	_update_ui()
 	_resolve_enemy_turn.call_deferred()
@@ -145,7 +191,7 @@ func _update_ui() -> void:
 	if not is_node_ready():
 		return
 
-	ren_pips_label.text = "Ren HP: %d | SP: %d" % [ren_pips, ren_sp]
+	ren_pips_label.text = "Ren HP: %d/%d | SP: %d" % [ren_pips, max_ren_pips, ren_sp]
 	enemy_pips_label.text = "Enemy HP: %d" % enemy_pips
 	enemy_intent_label.text = "Intent: %s" % enemy_intent
 	status_label.text = "Phase: %s" % Phase.keys()[phase]
@@ -157,7 +203,10 @@ func _update_ui() -> void:
 	defend_button.disabled = not is_player
 	kurei_button.disabled = not is_player
 	if item_button != null:
-		item_button.disabled = not is_player
+		var items_available: int = get_available_item_count()
+		var can_use_item: bool = is_player and (items_available > 0) and (ren_pips < max_ren_pips)
+		item_button.disabled = not can_use_item
+		item_button.text = "Item (%d)" % items_available
 	continue_button.visible = is_terminal
 	continue_button.disabled = not is_terminal or _continued_emitted
 
@@ -169,3 +218,9 @@ func _update_ui() -> void:
 		outcome_label.text = "Outcome: DEFEAT"
 	else:
 		outcome_label.text = "Outcome: In Progress"
+
+func _input(event: InputEvent) -> void:
+	if not is_visible_in_tree():
+		return
+	if event.is_action_pressed("toggle_character") or event.is_action_pressed("toggle_inventory") or event.is_action_pressed("toggle_settings"):
+		get_viewport().set_input_as_handled()

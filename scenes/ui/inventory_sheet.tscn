@@ -131,6 +131,11 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
 text = "(Empty)"
 
+[node name="EquipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/WeaponRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Equip"
+
 [node name="UnequipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/WeaponRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 10
@@ -150,6 +155,11 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
 text = "(Empty)"
+
+[node name="EquipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/ArmorRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Equip"
 
 [node name="UnequipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/ArmorRow"]
 layout_mode = 2
@@ -171,6 +181,11 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
 text = "(Empty)"
 
+[node name="EquipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/Relic1Row"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Equip"
+
 [node name="UnequipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/Relic1Row"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 10
@@ -190,6 +205,11 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
 text = "(Empty)"
+
+[node name="EquipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/Relic2Row"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Equip"
 
 [node name="UnequipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/Relic2Row"]
 layout_mode = 2

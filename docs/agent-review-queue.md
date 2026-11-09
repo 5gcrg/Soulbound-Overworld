@@ -320,3 +320,24 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | --- | --- |
 | `tests/headless/web_backup_test.gd` | Exit 0. Verified profile string export, import into fresh slot, rejection of corrupted/invalid JSON, and SettingsSheet UI clipboard bridge with headless fallback. |
 | Full 18-suite regression check | Exit 0. All 18 test suites pass cleanly with zero engine errors. |
+
+---
+
+## SBL-FIX-001 — Combat Item Validation, UI Sheet Equip Wiring & Modal Exclusivity
+
+- **Milestone** M3 & M4 Hardening.
+- **Requirements** GDD-016, GDD-018, GDD-023, GDD-025–030, GDD-103, FR-CMB-001/004, FR-INV-001, AGENTS.md Invariants.
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files** `scenes/combat/battle_fixture.gd`, `scenes/main/game_root.gd`, `scenes/ui/inventory_sheet.{tscn,gd}`, `scenes/vertical_slice/quest_dialog.gd`, `scenes/vertical_slice/chapter_activity_dialog.gd`, `scenes/ui/academic_completion_modal.gd`, `tests/headless/{combat_test,ui_sheets_test}.gd`, and `docs/agent-review-queue.md`.
+- **Asset provenance** None (pure code and Godot UI primitives only).
+- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Open questions** None for this slice.
+
+### Verification across all 18 suites
+
+| Suite | Result |
+| --- | --- |
+| `tests/headless/combat_test.gd` | Exit 0. Verified item rejection when 0 owned, item consumption from inventory, healing 1 pip, healing cap rejection at `max_ren_pips` (3), and modal hotkey blocking. |
+| `tests/headless/ui_sheets_test.gd` | Exit 0. Verified UI equip buttons (`weapon_equip_btn`, `relic1_equip_btn`), unequip buttons, button disabling when no candidates exist, and `equipment_changed` signal emission. |
+| Full 18-suite regression check | Exit 0. All 18 test suites pass cleanly with zero engine errors. |

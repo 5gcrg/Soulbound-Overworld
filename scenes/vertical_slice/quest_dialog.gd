@@ -93,6 +93,11 @@ func _on_accept_pressed() -> void:
 	if err == OK:
 		quest_accepted.emit()
 		_refresh_view()
+	else:
+		feedback_label.text = "Save error: Failed to record quest acceptance (Error %d). Press Escape or Close to exit." % err
+		feedback_label.modulate = Color(1.0, 0.4, 0.4)
+		close_button.visible = true
+		close_button.grab_focus()
 
 func _on_practice_choice(choice: String) -> void:
 	if _progress == null or _progress.stage != SliceProgress.Stage.PRACTICE:
@@ -100,6 +105,10 @@ func _on_practice_choice(choice: String) -> void:
 
 	var err: Error = _progress.finish_practice(choice)
 	if err != OK:
+		feedback_label.text = "Save error: Failed to record practice completion (Error %d). Press Escape or Close to exit." % err
+		feedback_label.modulate = Color(1.0, 0.4, 0.4)
+		close_button.visible = true
+		close_button.grab_focus()
 		return
 
 	var is_correct: bool = (choice == SliceProgress.CHOICE_MATCH)
@@ -123,10 +132,24 @@ func _on_turn_in_pressed() -> void:
 	if err == OK:
 		quest_turned_in.emit()
 		_refresh_view()
+	else:
+		feedback_label.text = "Save error: Failed to record quest turn-in (Error %d). Press Escape or Close to exit." % err
+		feedback_label.modulate = Color(1.0, 0.4, 0.4)
+		close_button.visible = true
+		close_button.grab_focus()
 
 func _on_close_pressed() -> void:
 	closed.emit()
 	queue_free()
+
+func _input(event: InputEvent) -> void:
+	if not is_visible_in_tree():
+		return
+	if event.is_action_pressed("toggle_character") or event.is_action_pressed("toggle_inventory") or event.is_action_pressed("toggle_settings"):
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		_on_close_pressed()
 
 func _hide_all_buttons() -> void:
 	accept_button.visible = false

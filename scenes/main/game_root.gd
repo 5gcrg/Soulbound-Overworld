@@ -137,11 +137,22 @@ func _unhandled_input(event: InputEvent) -> void:
 					var dim_name: String = "Spirit Dimension" if dimension_manager.current_dimension == DimensionManager.Dimension.SPIRIT else "Physical Dimension"
 					status_label.text = "Shifted to %s" % dim_name
 	elif event.is_action_pressed("toggle_character"):
-		_toggle_character_sheet()
+		if not has_blocking_modal():
+			_toggle_character_sheet()
 	elif event.is_action_pressed("toggle_inventory"):
-		_toggle_inventory_sheet()
+		if not has_blocking_modal():
+			_toggle_inventory_sheet()
 	elif event.is_action_pressed("toggle_settings"):
-		_toggle_settings_sheet()
+		if not has_blocking_modal():
+			_toggle_settings_sheet()
+
+func has_blocking_modal() -> bool:
+	return (_battle != null and is_instance_valid(_battle)) \
+		or (_dialog != null and is_instance_valid(_dialog)) \
+		or (_expedition != null and is_instance_valid(_expedition)) \
+		or (_academic_modal != null and is_instance_valid(_academic_modal)) \
+		or (_chapter_dialog != null and is_instance_valid(_chapter_dialog)) \
+		or _chapter_dialog_pending
 
 # ==============================================================================
 # Combat Encounter Binding & Handling
@@ -195,9 +206,10 @@ func _try_open_combat(encounter_id: int) -> bool:
 	if player == null or _battle_layer == null:
 		return false
 
-	var instance: Control = BATTLE_FIXTURE_SCENE.instantiate() as Control
+	var instance: BattleFixture = BATTLE_FIXTURE_SCENE.instantiate() as BattleFixture
 	if instance == null:
 		return false
+	instance.inventory = inventory_manager
 	_battle = instance
 	player.freeze_movement()
 	if not _battle.is_connected("continued", _close_combat):
@@ -428,7 +440,7 @@ func _close_expedition() -> void:
 # ==============================================================================
 
 func _toggle_character_sheet() -> void:
-	if _chapter_dialog_pending or _chapter_dialog != null or _academic_modal != null:
+	if has_blocking_modal():
 		return
 	if _pending_return_to_alpha:
 		if _settings_sheet != null:
@@ -443,9 +455,6 @@ func _toggle_character_sheet() -> void:
 		_close_inventory_sheet()
 	if _settings_sheet != null and is_instance_valid(_settings_sheet):
 		_close_settings_sheet()
-
-	if _battle != null or _dialog != null or _expedition != null:
-		return
 
 	var target_layer: CanvasLayer = _sheet_layer if _sheet_layer != null else _dialog_layer
 	if target_layer == null:
@@ -476,7 +485,7 @@ func _close_character_sheet() -> void:
 		_restore_combat_movement()
 
 func _toggle_inventory_sheet() -> void:
-	if _chapter_dialog_pending or _chapter_dialog != null or _academic_modal != null:
+	if has_blocking_modal():
 		return
 	if _pending_return_to_alpha:
 		if _settings_sheet != null:
@@ -491,9 +500,6 @@ func _toggle_inventory_sheet() -> void:
 		_close_character_sheet()
 	if _settings_sheet != null and is_instance_valid(_settings_sheet):
 		_close_settings_sheet()
-
-	if _battle != null or _dialog != null or _expedition != null:
-		return
 
 	var target_layer: CanvasLayer = _sheet_layer if _sheet_layer != null else _dialog_layer
 	if target_layer == null:
@@ -508,11 +514,14 @@ func _toggle_inventory_sheet() -> void:
 		return
 	_inventory_sheet = sheet
 	sheet.set_inventory(inventory_manager)
+	sheet.equipment_changed.connect(_on_equipment_changed)
 	sheet.closed.connect(_close_inventory_sheet)
 	target_layer.add_child(sheet)
 
 func _close_inventory_sheet() -> void:
 	if _inventory_sheet != null and is_instance_valid(_inventory_sheet):
+		if _inventory_sheet.equipment_changed.is_connected(_on_equipment_changed):
+			_inventory_sheet.equipment_changed.disconnect(_on_equipment_changed)
 		_inventory_sheet.closed.disconnect(_close_inventory_sheet)
 		_inventory_sheet.queue_free()
 		_inventory_sheet = null
@@ -523,8 +532,12 @@ func _close_inventory_sheet() -> void:
 	if _character_sheet == null and _settings_sheet == null and _battle == null and _dialog == null and _expedition == null and _academic_modal == null and _chapter_dialog == null:
 		_restore_combat_movement()
 
+func _on_equipment_changed(_slot: StringName, _item_id: String) -> void:
+	if profile_store != null:
+		inventory_manager.save_to_store(profile_store, _profile_slot)
+
 func _toggle_settings_sheet() -> void:
-	if _chapter_dialog_pending or _chapter_dialog != null or _academic_modal != null:
+	if has_blocking_modal():
 		return
 	if _pending_return_to_alpha:
 		if _settings_sheet != null:
@@ -539,9 +552,6 @@ func _toggle_settings_sheet() -> void:
 		_close_character_sheet()
 	if _inventory_sheet != null and is_instance_valid(_inventory_sheet):
 		_close_inventory_sheet()
-
-	if _battle != null or _dialog != null or _expedition != null:
-		return
 
 	var target_layer: CanvasLayer = _sheet_layer if _sheet_layer != null else _dialog_layer
 	if target_layer == null:

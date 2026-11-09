@@ -193,5 +193,107 @@ func _run_test() -> void:
 		_fail("Stale encounter did not release the reservation")
 		return
 
+	# =========================================================================
+	# Part 4: Combat Item Action, Ownership Validation & Healing Cap Hardening
+	# =========================================================================
+	var fixture_scene: PackedScene = load("res://scenes/combat/battle_fixture.tscn")
+	var item_fixture: BattleFixture = fixture_scene.instantiate() as BattleFixture
+	root.add_child(item_fixture)
+	await process_frame
+
+	# 1. Reject item when 0 items owned
+	if item_fixture.get_available_item_count() != 0:
+		_fail("Expected 0 items available initially")
+		return
+	if item_fixture.request_action(&"item"):
+		_fail("Item action must be rejected when 0 items owned")
+		return
+
+	# 2. Attach InventoryManager with consumable items
+	var test_inv: InventoryManager = InventoryManager.new()
+	test_inv.add_satchel_item("spirit_salve", 2)
+	item_fixture.inventory = test_inv
+	if item_fixture.get_available_item_count() != 2:
+		_fail("Expected 2 spirit_salves available")
+		return
+
+	# 3. Defend against opening Strike, then use item during enemy Recover
+	if item_fixture.ren_pips != 1:
+		_fail("Expected ren_pips == 1 initially")
+		return
+	if not item_fixture.request_action(&"defend"):
+		_fail("Defend action rejected")
+		return
+	await process_frame
+	await process_frame
+	if item_fixture.ren_pips != 1 or item_fixture.enemy_intent != &"Recover":
+		_fail("Expected 1 pip and Recover intent after defend")
+		return
+
+	# Heal during Recover: 1 -> 2 pips, consumes 1 from inventory
+	if not item_fixture.request_action(&"item"):
+		_fail("Item action rejected when item owned")
+		return
+	if item_fixture.ren_pips != 2:
+		_fail("Expected ren_pips healed to 2")
+		return
+	if item_fixture.get_available_item_count() != 1:
+		_fail("Expected 1 spirit_salve remaining after consumption")
+		return
+
+	# Enemy recovers harmlessly, intent becomes Strike
+	await process_frame
+	await process_frame
+
+	# Defend against Strike
+	if not item_fixture.request_action(&"defend"):
+		_fail("Second defend action rejected")
+		return
+	await process_frame
+	await process_frame
+
+	# 4. Use second item during Recover: heals 2 -> 3 (max_ren_pips)
+	if not item_fixture.request_action(&"item"):
+		_fail("Second item action rejected")
+		return
+	if item_fixture.ren_pips != 3:
+		_fail("Expected ren_pips at max cap 3")
+		return
+	await process_frame
+	await process_frame
+
+	# 5. Healing Cap: When at max_ren_pips, item action must be rejected
+	test_inv.add_banked_item("health_elixir", 1)
+	if item_fixture.ren_pips != item_fixture.max_ren_pips:
+		_fail("Expected ren_pips to equal max_ren_pips")
+		return
+	if item_fixture.request_action(&"item"):
+		_fail("Item action must be rejected when at healing cap")
+		return
+	if test_inv.banked_items.get("health_elixir", 0) != 1:
+		_fail("Item must not be consumed when rejected at healing cap")
+		return
+
+	# 6. Modal Hotkey Blocking
+	game_root._battle = item_fixture
+	if not game_root.has_blocking_modal():
+		_fail("Expected has_blocking_modal() == true while BattleFixture active")
+		return
+	game_root._toggle_character_sheet()
+	if game_root._character_sheet != null:
+		_fail("Character sheet must not open over active BattleFixture")
+		return
+	game_root._toggle_inventory_sheet()
+	if game_root._inventory_sheet != null:
+		_fail("Inventory sheet must not open over active BattleFixture")
+		return
+	game_root._toggle_settings_sheet()
+	if game_root._settings_sheet != null:
+		_fail("Settings sheet must not open over active BattleFixture")
+		return
+
+	item_fixture.queue_free()
+	await process_frame
+
 	print("COMBAT TESTS PASSED")
 	quit(0)

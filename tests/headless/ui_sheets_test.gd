@@ -89,17 +89,34 @@ func _run_test() -> void:
 
 	var inv_sheet: InventorySheet = game_root._inventory_sheet
 	_check(inv.banked_items.has("iron_blade"), "Iron blade present in bank")
+	_check(inv_sheet.weapon_equip_btn.disabled == false, "Weapon equip button enabled with banked blade")
 
-	# Equip weapon from bank
-	var equip_ok: bool = inv_sheet.equip_from_bank(InventoryManager.SLOT_WEAPON, "iron_blade")
-	_check(equip_ok == true, "Equipped iron blade to weapon slot")
-	_check(inv.equipment["weapon"] == "iron_blade", "Weapon slot holds iron blade")
+	# 1. Equip weapon via UI Button
+	var equipment_changed_received: Array[Dictionary] = []
+	inv_sheet.equipment_changed.connect(func(slot: StringName, item_id: String) -> void:
+		equipment_changed_received.append({"slot": slot, "item_id": item_id})
+	)
+
+	inv_sheet.weapon_equip_btn.pressed.emit()
+	_check(inv.equipment["weapon"] == "iron_blade", "Weapon slot holds iron blade via UI button")
 	_check(not inv.banked_items.has("iron_blade"), "Iron blade moved out of bank")
+	_check(inv_sheet.weapon_unequip_btn.disabled == false, "Unequip button enabled after equip")
+	_check(inv_sheet.weapon_equip_btn.disabled == true, "Weapon equip button disabled when no more banked weapons")
+	_check(equipment_changed_received.size() == 1, "equipment_changed signal emitted on UI equip")
 
-	# Unequip weapon
-	inv_sheet._on_unequip(InventoryManager.SLOT_WEAPON)
-	_check(inv.equipment["weapon"] == "", "Weapon slot unequipped")
+	# 2. Unequip weapon via UI Button
+	inv_sheet.weapon_unequip_btn.pressed.emit()
+	_check(inv.equipment["weapon"] == "", "Weapon slot unequipped via UI button")
 	_check(inv.banked_items.has("iron_blade"), "Iron blade returned to bank")
+	_check(inv_sheet.weapon_unequip_btn.disabled == true, "Unequip button disabled after unequip")
+	_check(inv_sheet.weapon_equip_btn.disabled == false, "Weapon equip button re-enabled")
+	_check(equipment_changed_received.size() == 2, "equipment_changed signal emitted on UI unequip")
+
+	# 3. Equip relic via UI Button
+	_check(inv_sheet.relic1_equip_btn.disabled == false, "Relic 1 equip button enabled with banked amulet")
+	inv_sheet.relic1_equip_btn.pressed.emit()
+	_check(inv.equipment["relic_1"] == "spirit_amulet", "Relic 1 slot holds spirit amulet via UI button")
+	_check(inv_sheet.relic1_unequip_btn.disabled == false, "Relic 1 unequip button enabled")
 
 	# Close Inventory Sheet
 	inv_sheet.closed.emit()
