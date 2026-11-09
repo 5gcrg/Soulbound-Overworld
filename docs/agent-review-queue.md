@@ -1713,7 +1713,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
   - Test suites: `tests/headless/kurei_tree_test.gd`, `tests/headless/kurei_combat_test.gd`, `tests/headless/boss_combat_test.gd`.
   - Documentation: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
 - **Asset provenance** None (pure GDScript logic and state synchronization; zero image generation, zero audio assets).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1c033-a580-7dc0-b15a-1a703f857eb0` found two Batch C P2 findings: boss-menu viewport overflow and empty equipped-loadout validation. No Phase Mastery-specific defect was reported.
+- **Review** REVIEWED by Codex CLI session `01a1c058-93ab-7bc0-beec-1fe287126bf8`; no actionable regressions in the Batch C fix scope. OD-003/004 remains an explicit partial boundary for undefined boss effects.
 - **Open questions** `OD-002/003/004` combat balance numbers, elemental affinities, and status formulas remain blocked for human authority sign-off; authored maximum capacity is 4.
 
 ### Changes
@@ -1767,7 +1767,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
   - Test suites: `tests/headless/kurei_tree_test.gd`, `tests/headless/kurei_combat_test.gd`, `tests/headless/boss_combat_test.gd`, `tests/headless/layout_audit_test.gd`, `tests/headless/settings_accessibility_test.gd`.
   - Documentation: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
 - **Asset provenance** None (pure GDScript logic, UI controls, theme styles; zero image generation, zero audio assets).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1c04c-cc02-7c12-8171-7c27cadfcb1e` found one P2 in the fix audit: the boss layout test opens the menu before the scene enters the tree, so `@onready` controls are null and the audit crashes. The original two Batch C findings are addressed.
+- **Review** REVIEWED by Codex CLI session `01a1c058-93ab-7bc0-beec-1fe287126bf8`; no actionable regressions in the Batch C fix scope. OD-003/004 remains an explicit partial boundary for undefined boss effects.
 - **Explicit OD boundary & Partial Remediation Disposition**:
   Finding 5 is recorded as a **partial remediation** blocked by `OD-003/004`. `BossEncounter` currently lacks authoritative SRS-backed effect semantics for the 4 purchased active skills (`solar_flare`, `celestial_prism`, `glacial_aegis`, `void_shift`). Rather than inventing combat balance stats or transplanting normal-combat numbers without SRS authorization, `BossEncounter` renders equipped advanced skills disabled with the explicit label `<Skill Name> (Boss effect pending design approval)`, and `request_action()` rejects requests atomically with zero state mutation (SP, turn counter, cooldown, HP, and status remain untouched). Starter skills (`flame_burst`, `lumina_lance`, `torrent_surge`) remain fully functional against the boss.
 - **Open questions** `OD-003/004` boss effect specifications for the 4 purchased active skills remain open pending educator/designer approval.
@@ -1839,7 +1839,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
   - Evidence logs: `report/neg_boss_menu_viewport.log`.
   - Process: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
 - **Asset provenance** None (Godot Control containers, themes, and GDScript layout logic; zero image or audio generation).
-- **Review** REVIEW: REVIEW_PENDING_CODEX.
+- **Review** REVIEWED by Codex CLI session `01a1c058-93ab-7bc0-beec-1fe287126bf8`; no actionable regressions in the Batch C fix scope. OD-003/004 remains an explicit partial boundary for undefined boss effects.
 - **Open questions** `OD-003/004`: advanced boss skill effect specifications remain open pending designer/educator approval; notices remain displayed on disabled buttons and tooltips without inventing combat values.
 
 ### Changes
@@ -1887,7 +1887,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
   - Evidence logs: `report/neg_empty_equipped_loadout.log`.
   - Process: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
 - **Asset provenance** None (pure GDScript persistence validation and combat logic; zero image or audio generation).
-- **Review** REVIEW: REVIEW_PENDING_CODEX.
+- **Review** REVIEWED by Codex CLI session `01a1c058-93ab-7bc0-beec-1fe287126bf8`; no actionable regressions in the Batch C fix scope. OD-003/004 remains an explicit partial boundary for undefined boss effects.
 - **Open questions** None.
 
 ### Changes
@@ -1940,7 +1940,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
   - Evidence logs: `report/neg_boss_layout_audit_order.log`.
   - Process: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
 - **Asset provenance** None (pure test harness lifecycle order fix; zero image or audio generation).
-- **Review** REVIEW: REVIEW_PENDING_CODEX.
+- **Review** REVIEWED by Codex CLI session `01a1c058-93ab-7bc0-beec-1fe287126bf8`; no actionable regressions in the Batch C fix scope. OD-003/004 remains an explicit partial boundary for undefined boss effects.
 - **Open questions** `OD-003/004`: advanced boss skill effect specifications remain open pending designer/educator approval; notices remain displayed on disabled buttons and tooltips without inventing combat values.
 
 ### Changes

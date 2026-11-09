@@ -125,6 +125,15 @@ entries:
 - **Finding:** `tests/headless/layout_audit_test.gd` accesses `b.kurei_btn` before `root_control.add_child(inst)`, so the `@onready` node is null and the claimed boss viewport coverage is not actually executed.
 - **Disposition:** Stage a focused test-order fix, then re-run the layout and full suites and obtain Codex re-review. `OD-003/004` remains unchanged.
 
+## Batch C fix re-review approval
+
+- **Evidence:** `report/codex_rereview_rev009.log`.
+- **Session:** `01a1c058-93ab-7bc0-beec-1fe287126bf8`.
+- **Range:** `bac4346..4f35aae`.
+- **Independent targeted verification:** layout, boss combat, normal combat, and Kurei tree suites passed.
+- **Verdict:** `APPROVED`; no actionable regressions. Godot 4.7.2 layout audit passed at both text scales.
+- **Disposition:** Batch C (`SBL-REV-005/006` plus fixes `SBL-REV-007..009`) is `REVIEWED`. The only remaining combat boundary is the explicitly blocked OD-003/004 boss-effect mapping.
+
 ## Batch C audit order fix (SBL-REV-009)
 
 - **Task:** `SBL-REV-009` (Fix boss layout audit initialization order).
