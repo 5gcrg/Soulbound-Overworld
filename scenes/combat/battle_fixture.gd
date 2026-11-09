@@ -31,6 +31,8 @@ var _continued_emitted: bool = false
 var inventory: InventoryManager = null
 var standalone_consumables: int = 0
 var kurei: KureiSystem = KureiSystem.new()
+var ren_statuses: StatusEngine = StatusEngine.new()
+var enemy_statuses: StatusEngine = StatusEngine.new()
 
 @onready var title_label: Label = $VBoxContainer/TitleLabel
 @onready var status_label: Label = $VBoxContainer/StatusLabel
@@ -125,6 +127,7 @@ func request_action(action: StringName) -> bool:
 
 		if skill_id == &"flame_burst":
 			enemy_pips -= 2
+			enemy_statuses.apply_status(StatusEngine.EFFECT_BURN, 2, 1)
 		elif skill_id == &"lumina_lance":
 			enemy_pips -= 1
 		elif skill_id == &"torrent_surge":
@@ -165,9 +168,20 @@ func _resolve_enemy_turn() -> void:
 	if phase != Phase.ENEMY:
 		return
 
+	# Start of enemy turn: tick status effects
+	var enemy_events: Array[Dictionary] = enemy_statuses.tick_turn_start()
+	for ev: Dictionary in enemy_events:
+		if int(ev.get("damage", 0)) > 0:
+			enemy_pips = maxi(0, enemy_pips - int(ev["damage"]))
+			if enemy_pips <= 0:
+				phase = Phase.VICTORY
+				_update_ui()
+				return
+
 	if enemy_intent == &"Strike":
 		if last_player_action != &"defend":
-			ren_pips -= 1
+			var dmg_info: Dictionary = ren_statuses.process_incoming_damage(1)
+			ren_pips -= int(dmg_info.get("hp_damage", 0))
 			if ren_pips <= 0:
 				ren_pips = 0
 				phase = Phase.DEFEAT
@@ -176,6 +190,9 @@ func _resolve_enemy_turn() -> void:
 	# Recover is harmless to the player
 
 	enemy_intent = &"Recover" if enemy_intent == &"Strike" else &"Strike"
+	ren_statuses.tick_turn_end()
+	enemy_statuses.tick_turn_end()
+
 	phase = Phase.PLAYER
 	kurei.tick_cooldowns()
 	ren_sp = mini(max_sp, ren_sp + 1)

@@ -105,11 +105,15 @@ func _run_test() -> void:
 			if rec.get("first_attempt_correct", false) == true:
 				first_attempt_correct_count += 1
 
-	_check(total_records_evaluated == cohort_size * question_ids.size(), "All 72 student activities evaluated")
+	_check(total_records_evaluated == cohort_size * question_ids.size(), "All student activities evaluated: %d" % total_records_evaluated)
 	_check(total_completed == total_records_evaluated, "100% completion rate achieved (completion-gated invariant)")
 
-	# Expected first attempt correct: 4 students * 6 + 0 + 4 students * 3 (indices 0, 2, 4) = 24 + 0 + 12 = 36
-	_check(first_attempt_correct_count == 36, "First-attempt accuracy matches exact archetype expectation: 36/72 (50.0%%)")
+	var half_q: int = 0
+	for idx in range(question_ids.size()):
+		if idx % 2 == 0:
+			half_q += 1
+	var expected_first_attempt: int = 4 * question_ids.size() + 0 + 4 * half_q
+	_check(first_attempt_correct_count == expected_first_attempt, "First-attempt accuracy matches exact archetype expectation: %d/%d" % [first_attempt_correct_count, total_records_evaluated])
 
 	# ==========================================================================
 	# Step 3: Generate Aggregated Cohort RFC-4180 CSV Export

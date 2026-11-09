@@ -11,6 +11,7 @@ const CHARACTER_SHEET_SCENE: PackedScene = preload("res://scenes/ui/character_sh
 const INVENTORY_SHEET_SCENE: PackedScene = preload("res://scenes/ui/inventory_sheet.tscn")
 const ACADEMIC_COMPLETION_SCENE: PackedScene = preload("res://scenes/ui/academic_completion_modal.tscn")
 const SETTINGS_SHEET_SCENE: PackedScene = preload("res://scenes/ui/settings_sheet.tscn")
+const EVALUATOR_DEBUG_BAR_SCENE: PackedScene = preload("res://scenes/ui/evaluator_debug_bar.tscn")
 
 const EXPECTED_ENCOUNTER_ID: StringName = &"combat_alpha_fixture"
 const EXPECTED_NPC_ID: StringName = &"quest_guide_alpha"
@@ -31,6 +32,7 @@ var _character_sheet: CharacterSheet = null
 var _inventory_sheet: InventorySheet = null
 var _academic_modal: AcademicCompletionModal = null
 var _settings_sheet: SettingsSheet = null
+var _debug_bar: EvaluatorDebugBar = null
 var _previous_input_frozen: bool = false
 var _pending_return_to_alpha: bool = false
 var _chapter_baseline: String = "{}"
@@ -55,6 +57,7 @@ var settings_manager: SettingsManager = SettingsManager.new()
 @onready var _dialog_layer: CanvasLayer = $DialogLayer
 @onready var _expedition_layer: CanvasLayer = $ExpeditionLayer
 @onready var _sheet_layer: CanvasLayer = $SheetLayer
+@onready var _debug_layer: CanvasLayer = $DebugLayer
 
 func _ready() -> void:
 	if status_label != null:
@@ -66,6 +69,7 @@ func _ready() -> void:
 		_apply_runtime_settings()
 
 	_init_slice_progress()
+	_init_debug_bar()
 
 	if world_router != null and world_container != null and player != null:
 		world_router.setup(world_container, player)
@@ -852,3 +856,167 @@ func _can_complete_academic() -> bool:
 		if not assessment_controller.is_chapter_activity_completed(chapter):
 			return false
 	return true
+
+# ==============================================================================
+# Evaluator Debug Bar Integration
+# ==============================================================================
+
+func _init_debug_bar() -> void:
+	if _debug_layer == null:
+		return
+	var bar := EVALUATOR_DEBUG_BAR_SCENE.instantiate() as EvaluatorDebugBar
+	if bar == null:
+		return
+	_debug_bar = bar
+	_debug_layer.add_child(_debug_bar)
+	_debug_bar.region_warp_requested.connect(_on_debug_region_warp)
+	_debug_bar.combat_requested.connect(_on_debug_combat)
+	_debug_bar.dungeon_requested.connect(_on_debug_dungeon)
+	_debug_bar.chapter_dialog_requested.connect(_on_debug_chapter_dialog)
+	_debug_bar.academic_modal_requested.connect(_on_debug_academic_modal)
+	_debug_bar.dimension_shift_requested.connect(_on_debug_dimension_shift)
+	_debug_bar.grant_items_requested.connect(_on_debug_grant_items)
+	_debug_bar.complete_activities_requested.connect(_on_debug_complete_activities)
+	_debug_bar.max_stats_requested.connect(_on_debug_max_stats)
+	_sync_debug_bar()
+
+func _sync_debug_bar() -> void:
+	if _debug_bar == null:
+		return
+	var dim_str: String = "Spirit" if dimension_manager != null and dimension_manager.current_dimension == DimensionManager.Dimension.SPIRIT else "Physical"
+	var max_hp_val: int = character_stats.get_max_hp() if character_stats != null else 100
+	_debug_bar.update_status({
+		"region": _current_region_id,
+		"dimension": dim_str,
+		"chapter": chapter_manager.current_chapter if chapter_manager != null else 1,
+		"level": character_stats.level if character_stats != null else 1,
+		"hp": max_hp_val,
+		"max_hp": max_hp_val,
+		"pips": 3,
+		"max_pips": 3
+	})
+
+func _on_debug_region_warp(region_id: String) -> void:
+	if has_blocking_modal():
+		return
+	if world_router != null:
+		world_router.debug_warp(region_id, "default")
+		_sync_debug_bar()
+
+func _on_debug_combat() -> void:
+	if has_blocking_modal():
+		return
+	var instance: BattleFixture = BATTLE_FIXTURE_SCENE.instantiate() as BattleFixture
+	if instance == null:
+		return
+	instance.inventory = inventory_manager
+	_battle = instance
+	if player != null:
+		player.freeze_movement()
+	if not _battle.is_connected("continued", _close_combat):
+		_battle.connect("continued", _close_combat, CONNECT_ONE_SHOT)
+	_battle_layer.add_child(_battle)
+
+func _on_debug_dungeon() -> void:
+	if has_blocking_modal():
+		return
+	var target_layer: CanvasLayer = _expedition_layer if _expedition_layer != null else _battle_layer
+	if target_layer == null:
+		return
+	var instance: DungeonExpedition = DUNGEON_EXPEDITION_SCENE.instantiate() as DungeonExpedition
+	if instance == null:
+		return
+	_expedition = instance
+	if player != null:
+		player.freeze_movement()
+	instance.inventory = inventory_manager
+	instance.commit_extraction = _commit_extraction
+	instance.expedition_completed.connect(_on_expedition_completed)
+	instance.expedition_failed.connect(_on_expedition_failed)
+	instance.expedition_cancelled.connect(_on_expedition_cancelled)
+	instance.expedition_suspended.connect(_on_expedition_suspended)
+	target_layer.add_child(_expedition)
+	instance.setup(1337, 6)
+
+func _on_debug_chapter_dialog() -> void:
+	if has_blocking_modal():
+		return
+	var q_id := QuestionBank.get_required_question_id_for_chapter(chapter_manager.current_chapter)
+	var dialog := ChapterActivityDialog.new()
+	dialog.name = "ChapterActivityDialog"
+	dialog.configure(QuestionBank.get_question(q_id), assessment_controller.records.get(q_id, {}))
+	dialog.answer_selected.connect(_on_chapter_answer.bind(q_id))
+	dialog.feedback_acknowledged.connect(_on_chapter_feedback.bind(chapter_manager.current_chapter))
+	dialog.closed.connect(_close_chapter_dialog)
+	_chapter_dialog = dialog
+	if player != null:
+		player.freeze_movement()
+	_dialog_layer.add_child(dialog)
+
+func _on_debug_academic_modal() -> void:
+	if _academic_modal != null:
+		return
+	var modal := ACADEMIC_COMPLETION_SCENE.instantiate() as AcademicCompletionModal
+	_academic_modal = modal
+	modal.configure(chapter_manager, assessment_controller, character_stats, inventory_manager)
+	modal.closed.connect(_close_academic_modal)
+	_sheet_layer.add_child(modal)
+	if player != null:
+		player.freeze_movement()
+
+func _on_debug_dimension_shift() -> void:
+	if player != null and world_router != null and world_router.active_region != null:
+		var space: PhysicsDirectSpaceState2D = player.get_world_2d().direct_space_state if player.get_world_2d() != null else null
+		var err: Error = dimension_manager.request_shift(player, space)
+		if err == OK:
+			dimension_manager.apply_dimension_to_region(world_router.active_region)
+			_sync_debug_bar()
+
+func _on_debug_grant_items() -> void:
+	if inventory_manager != null:
+		inventory_manager.add_banked_item("spirit_salve", 5)
+		inventory_manager.add_banked_item("health_elixir", 5)
+		inventory_manager.add_banked_item("iron_sword", 1)
+		inventory_manager.add_banked_item("iron_armor", 1)
+		inventory_manager.add_banked_item("flame_relic", 1)
+		inventory_manager.add_banked_item("void_key", 1)
+		if profile_store != null:
+			inventory_manager.save_to_store(profile_store, _profile_slot)
+	if status_label != null:
+		status_label.text = "[Evaluator] Granted full equipment set & consumables."
+
+func _on_debug_complete_activities() -> void:
+	for ch in [1, 2, 3]:
+		var q_id := QuestionBank.get_required_question_id_for_chapter(ch)
+		var q: Dictionary = QuestionBank.get_question(q_id)
+		if not q.is_empty():
+			assessment_controller.submit_answer(q_id, int(q["correct_index"]))
+	if profile_store != null:
+		assessment_controller.save_to_store(profile_store, _profile_slot)
+	chapter_manager.current_chapter = ChapterManager.CHAPTER_3
+	chapter_manager.set_chapter_flag(SHRINE_FEEDBACK, true)
+	if not chapter_manager.unlocked_chapters.has(ChapterManager.CHAPTER_2):
+		chapter_manager.unlocked_chapters.append(ChapterManager.CHAPTER_2)
+	if not chapter_manager.unlocked_chapters.has(ChapterManager.CHAPTER_3):
+		chapter_manager.unlocked_chapters.append(ChapterManager.CHAPTER_3)
+	if profile_store != null:
+		chapter_manager.save_to_store(profile_store, _profile_slot)
+	_sync_chapter_gates()
+	_update_objective()
+	_sync_debug_bar()
+	if status_label != null:
+		status_label.text = "[Evaluator] Completed Chapters 1-3 activities. Sanctum portal active!"
+
+func _on_debug_max_stats() -> void:
+	if character_stats != null:
+		character_stats.level = 10
+		character_stats.vitality = 25
+		character_stats.resonance = 25
+		character_stats.agility = 25
+		character_stats.focus = 25
+		if profile_store != null:
+			character_stats.save_to_store(profile_store, _profile_slot)
+		_sync_debug_bar()
+	if status_label != null:
+		status_label.text = "[Evaluator] Maximized Ren stats (Lvl 10, HP %d, Attributes 25)." % character_stats.get_max_hp()
+		status_label.text = "[Evaluator] Maximized Ren stats (Lvl 10, HP 250/250, Pips 3/3)."

@@ -363,3 +363,25 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | `tests/headless/web_backup_test.gd` | Exit 0. Verified in-memory `generate_csv_text()` RFC-4180 format, web UTF-8 buffer preparation for `JavaScriptBridge.download_buffer`, and profile backup export. |
 | `tests/headless/settings_accessibility_test.gd` | Exit 0. Verified `set_music_volume`, `set_sfx_volume`, `apply_audio_buses`, and `apply_all_settings` without recursive loops. |
 | Full 18-suite regression check | Exit 0. All 18 test suites pass cleanly with zero engine errors. |
+
+---
+
+## SBL-FIX-003 — Automated Release Exporter, Evaluator Defense Tools, Status Engine & Chapter IV Foundation
+
+- **Milestone** M6 & Academic Defense Readiness / Post-MVP Expansion Phase 1.
+- **Requirements** GDD-018, GDD-022, GDD-025, GDD-041, GDD-063, GDD-070, GDD-116, GDD-098–103, FR-CBT-003, FR-WLD-001, FR-EDU-001/003, AGENTS.md Invariants ("Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer", "Keep the 3-chapter academic MVP separate from the 5-chapter 2-ending full release").
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files** `export_presets.cfg`, `.gitignore`, `scripts/build/export_release.ps1`, `scenes/ui/evaluator_debug_bar.{tscn,gd}`, `scenes/world/ashen_peaks.tscn`, `scenes/world/world_router.gd`, `scenes/combat/battle_fixture.gd`, `scripts/combat/status_engine.gd`, `scripts/education/question_bank.gd`, `scenes/main/game_root.{tscn,gd}`, `tests/headless/{status_engine_test,evaluator_debug_bar_test,educator_analytics_test}.gd`, and `docs/agent-review-queue.md`.
+- **Asset provenance** None (pure code, UI nodes, build automation, and Godot primitives).
+- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Open questions** None for this slice.
+
+### Verification across all 20 suites
+
+| Suite | Result |
+| --- | --- |
+| `scripts/build/export_release.ps1` | Exit 0. Automated release export produced standalone `dist/Soulbound-Web.zip` (10.5 MB) and `dist/Soulbound-Windows-Portable.zip` (86.4 MB) matching size and renderer invariants. |
+| `tests/headless/status_engine_test.gd` | Exit 0. Verified Poison/Burn DoT, Regeneration HoT, Shield absorption, Defense Up/Down modifiers, Stun action blocking, Silence skill blocking, and round-trip serialization. |
+| `tests/headless/evaluator_debug_bar_test.gd` | Exit 0. Verified F1 toggleable evaluator tools, direct region warps (Dawnreach, Whispering Grove, Forgotten Shrine, Ashen Peaks), instant item granting, level 10 max stats, instant activity completions, and direct modal triggering. |
+| Full 20-suite regression check | Exit 0. All 20 test suites pass cleanly with zero engine errors. |

@@ -3,8 +3,10 @@
 .import/
 
 # Local export / build artifacts
-build/
-exports/
+/build/
+/builds/
+/dist/
+/exports/
 *.pck
 *.apk
 *.aab

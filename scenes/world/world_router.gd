@@ -10,7 +10,8 @@ const REGION_REGISTRY: Dictionary = {
 	"test_region_beta": "res://scenes/world/test_region_beta.tscn",
 	"dawnreach_village": "res://scenes/world/dawnreach_village.tscn",
 	"whispering_grove": "res://scenes/world/whispering_grove.tscn",
-	"forgotten_shrine": "res://scenes/world/forgotten_shrine.tscn"
+	"forgotten_shrine": "res://scenes/world/forgotten_shrine.tscn",
+	"ashen_peaks": "res://scenes/world/ashen_peaks.tscn"
 }
 
 ## Region availability table (simple policy usable by tests and future story hooks)
@@ -19,7 +20,8 @@ var available_regions: Dictionary = {
 	"test_region_beta": true,
 	"dawnreach_village": true,
 	"whispering_grove": true,
-	"forgotten_shrine": true
+	"forgotten_shrine": true,
+	"ashen_peaks": true
 }
 
 var active_region_id: String = ""
@@ -208,6 +210,44 @@ func _execute_transition(emitter_id: int, original_active_region_id: int, target
 
 	is_transition_in_flight = false
 	region_transition_completed.emit(active_region_id, target_spawn_id)
+
+func debug_warp(target_region_id: String, target_spawn_id: String = "default") -> bool:
+	if world_container == null or player == null:
+		return false
+	if not REGION_REGISTRY.has(target_region_id):
+		return false
+	var scene_path: String = REGION_REGISTRY[target_region_id]
+	var packed: PackedScene = load(scene_path) as PackedScene
+	if not packed:
+		return false
+	var candidate: Node = packed.instantiate()
+	if not (candidate is BaseRegion):
+		if candidate != null:
+			candidate.queue_free()
+		return false
+	var region_instance: BaseRegion = candidate as BaseRegion
+	var validation_error: String = _validate_candidate_spawn(region_instance, target_region_id, target_spawn_id)
+	if validation_error != "":
+		region_instance.queue_free()
+		return false
+	var spawn_world_pos: Vector2 = _get_spawn_world_pos(region_instance, target_spawn_id)
+
+	if active_region != null and is_instance_valid(active_region):
+		if active_region.portal_triggered.is_connected(_on_region_portal_triggered):
+			active_region.portal_triggered.disconnect(_on_region_portal_triggered)
+		world_container.remove_child(active_region)
+		active_region.queue_free()
+
+	active_region = region_instance
+	active_region_id = target_region_id
+	world_container.add_child(active_region)
+	active_region.portal_triggered.connect(_on_region_portal_triggered)
+
+	player.global_position = spawn_world_pos
+	player.velocity = Vector2.ZERO
+	is_transition_in_flight = false
+	region_transition_completed.emit(active_region_id, target_spawn_id)
+	return true
 
 func _get_spawn_world_pos(candidate: BaseRegion, spawn_id: String) -> Vector2:
 	var marker: Marker2D = candidate.get_spawn_point(spawn_id)

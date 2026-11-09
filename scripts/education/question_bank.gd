@@ -112,6 +112,21 @@ const QUESTIONS: Dictionary = {
 		],
 		"correct_index": 1,
 		"explanation": "Effective decision-making prioritizes actions with reversible consequences under uncertainty."
+	},
+	"q_calc_01": {
+		"id": "q_calc_01",
+		"chapter": 4,
+		"competency": COMP_CRITICAL_THINKING,
+		"difficulty": "Advanced",
+		"prompt": "An energy barrier decays according to f(t) = 100 - 5t^2. At what instant t is the rate of energy dissipation exactly 20 units/sec?",
+		"options": [
+			"t = 1 second",
+			"t = 2 seconds",
+			"t = 4 seconds",
+			"t = 10 seconds"
+		],
+		"correct_index": 1,
+		"explanation": "The instantaneous rate of change is f'(t) = -10t. Setting |-10t| = 20 gives t = 2 seconds."
 	}
 }
 
@@ -141,6 +156,7 @@ static func get_required_question_id_for_chapter(chapter_num: int) -> String:
 		1: return "q_dec_01"
 		2: return "q_res_01"
 		3: return "q_crit_02"
+		4: return "q_calc_01"
 		_: return "q_crit_01"
 
 static func get_all_question_ids() -> Array[String]:

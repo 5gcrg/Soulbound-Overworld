@@ -1,0 +1,185 @@
+[gd_scene load_steps=2 format=3 uid="uid://evaldebugbar001"]
+
+[ext_resource type="Script" path="res://scenes/ui/evaluator_debug_bar.gd" id="1_debug"]
+
+[node name="EvaluatorDebugBar" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_debug")
+
+[node name="ToggleBtn" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -220.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 40.0
+grow_horizontal = 0
+theme_override_font_sizes/font_size = 12
+text = "[⚙ Evaluator Tools (F1)]"
+
+[node name="DebugPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -220.0
+offset_right = 280.0
+offset_bottom = 220.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="DebugPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 14
+
+[node name="VBox" type="VBoxContainer" parent="DebugPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="DebugPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.8, 0.3, 1)
+theme_override_font_sizes/font_size = 15
+text = "Evaluator Defense Tools (SBL-EVAL)"
+horizontal_alignment = 1
+
+[node name="StatusSummary" type="Label" parent="DebugPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "Region: n/a | Dim: n/a | Ch: 1 | Level: 1"
+horizontal_alignment = 1
+
+[node name="HSeparator1" type="HSeparator" parent="DebugPanel/Margin/VBox"]
+layout_mode = 2
+
+[node name="RegionHeader" type="Label" parent="DebugPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Quick Region Warp:"
+
+[node name="RegionGrid" type="GridContainer" parent="DebugPanel/Margin/VBox"]
+layout_mode = 2
+columns = 3
+
+[node name="BtnDawnreach" type="Button" parent="DebugPanel/Margin/VBox/RegionGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "Ch 1: Dawnreach"
+
+[node name="BtnGrove" type="Button" parent="DebugPanel/Margin/VBox/RegionGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "Ch 2: Whispering Grove"
+
+[node name="BtnShrine" type="Button" parent="DebugPanel/Margin/VBox/RegionGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "Ch 3: Forgotten Shrine"
+
+[node name="BtnAlpha" type="Button" parent="DebugPanel/Margin/VBox/RegionGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "Test Region Alpha"
+
+[node name="BtnBeta" type="Button" parent="DebugPanel/Margin/VBox/RegionGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "Test Region Beta"
+
+[node name="HSeparator2" type="HSeparator" parent="DebugPanel/Margin/VBox"]
+layout_mode = 2
+
+[node name="ActionHeader" type="Label" parent="DebugPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Launch Scenario / Encounters:"
+
+[node name="ActionsGrid" type="GridContainer" parent="DebugPanel/Margin/VBox"]
+layout_mode = 2
+columns = 3
+
+[node name="BtnCombat" type="Button" parent="DebugPanel/Margin/VBox/ActionsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "Trigger Combat"
+
+[node name="BtnDungeon" type="Button" parent="DebugPanel/Margin/VBox/ActionsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "Start Dungeon"
+
+[node name="BtnDialog" type="Button" parent="DebugPanel/Margin/VBox/ActionsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "Chapter Question"
+
+[node name="BtnAcademic" type="Button" parent="DebugPanel/Margin/VBox/ActionsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "Sanctum Modal"
+
+[node name="BtnShift" type="Button" parent="DebugPanel/Margin/VBox/ActionsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "Shift Dimension"
+
+[node name="HSeparator3" type="HSeparator" parent="DebugPanel/Margin/VBox"]
+layout_mode = 2
+
+[node name="CheatsHeader" type="Label" parent="DebugPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Evaluator State Cheats:"
+
+[node name="CheatsGrid" type="GridContainer" parent="DebugPanel/Margin/VBox"]
+layout_mode = 2
+columns = 3
+
+[node name="BtnItems" type="Button" parent="DebugPanel/Margin/VBox/CheatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "+All Gear & Items"
+
+[node name="BtnActivities" type="Button" parent="DebugPanel/Margin/VBox/CheatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "Pass Ch 1-3 Activities"
+
+[node name="BtnStats" type="Button" parent="DebugPanel/Margin/VBox/CheatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "Max Level 10 & HP"
+
+[node name="BtnClose" type="Button" parent="DebugPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Close Panel (F1)"

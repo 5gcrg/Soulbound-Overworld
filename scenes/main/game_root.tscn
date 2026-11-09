@@ -82,3 +82,6 @@ layer = 4
 [node name="SheetLayer" type="CanvasLayer" parent="."]
 layer = 5
 
+[node name="DebugLayer" type="CanvasLayer" parent="."]
+layer = 10
+
