@@ -332,7 +332,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files** `scenes/combat/battle_fixture.gd`, `scenes/main/game_root.gd`, `scenes/ui/inventory_sheet.{tscn,gd}`, `scenes/vertical_slice/quest_dialog.gd`, `scenes/vertical_slice/chapter_activity_dialog.gd`, `scenes/ui/academic_completion_modal.gd`, `tests/headless/{combat_test,ui_sheets_test}.gd`, and `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure code and Godot UI primitives only).
-- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1bee0-6c04-72b0-b38d-6bce20925f2f` reviewed `0b66fdb..f26f2d1` and found 7 defects (1 P1, 6 P2). See the review section at the end of this file. Human release acceptance remains pending.
 - **Open questions** None for this slice.
 
 ### Verification across all 18 suites
@@ -353,7 +353,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files** `scenes/dungeon/dungeon_expedition.{tscn,gd}`, `scenes/main/game_root.gd`, `scenes/ui/academic_completion_modal.gd`, `scenes/ui/settings_sheet.gd`, `scripts/education/assessment_controller.gd`, `scripts/settings/settings_manager.gd`, `tests/headless/{dungeon_scene_test,web_backup_test}.gd`, and `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure code and Godot UI primitives only).
-- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1bee0-6c04-72b0-b38d-6bce20925f2f` reviewed `0b66fdb..f26f2d1` and found 7 defects (1 P1, 6 P2). See the review section at the end of this file. Human release acceptance remains pending.
 - **Open questions** None for this slice.
 
 ### Verification across all 18 suites
@@ -375,7 +375,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files** `export_presets.cfg`, `.gitignore`, `scripts/build/export_release.ps1`, `scenes/ui/evaluator_debug_bar.{tscn,gd}`, `scenes/world/ashen_peaks.tscn`, `scenes/world/world_router.gd`, `scenes/combat/battle_fixture.gd`, `scripts/combat/status_engine.gd`, `scripts/education/question_bank.gd`, `scenes/main/game_root.{tscn,gd}`, `tests/headless/{status_engine_test,evaluator_debug_bar_test,educator_analytics_test}.gd`, and `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure code, UI nodes, build automation, and Godot primitives).
-- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1bee0-6c04-72b0-b38d-6bce20925f2f` reviewed `0b66fdb..f26f2d1` and found 7 defects (1 P1, 6 P2). See the review section at the end of this file. Human release acceptance remains pending.
 - **Open questions** None for this slice.
 
 ### Verification across all 20 suites
@@ -397,7 +397,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files** `scenes/ui/title_screen.{tscn,gd}`, `scripts/audio/audio_manager.gd`, `scenes/main/game_root.{tscn,gd}`, `scenes/combat/battle_fixture.gd`, `scenes/ui/evaluator_debug_bar.{tscn,gd}`, `tests/headless/title_screen_audio_test.gd`, `docs/defense_presentation_guide.md`, and `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure code, UI nodes, procedural AudioStreamWAV synthesis with zero external binary dependencies).
-- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1bee0-6c04-72b0-b38d-6bce20925f2f` reviewed `0b66fdb..f26f2d1` and found 7 defects (1 P1, 6 P2). See the review section at the end of this file. Human release acceptance remains pending.
 - **Open questions** None for this slice.
 
 ### Verification across all 21 suites
@@ -421,7 +421,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Option 3: `scripts/magic/kurei_tree.gd`, `scripts/magic/kurei_system.gd`, `scenes/combat/battle_fixture.gd`, `scenes/ui/character_sheet.{tscn,gd}`, `tests/headless/kurei_tree_test.gd`.
   - Integration: `scenes/main/game_root.gd`, `scenes/ui/evaluator_debug_bar.{tscn,gd}`, `tests/headless/education_report_test.gd`, `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure code, UI nodes, Godot primitives, procedural combat math). Non-image text narratives authored by Gemini Flash.
-- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1bee0-6c04-72b0-b38d-6bce20925f2f` reviewed `0b66fdb..f26f2d1` and found 7 defects (1 P1, 6 P2). See the review section at the end of this file. Human release acceptance remains pending.
 - **Open questions** None for this slice.
 
 ### Verification across all 24 suites
@@ -1387,3 +1387,31 @@ The `SliceProgress: Invalid data` warning seen when mounting a packed build came
 ### Status
 
 Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human milestone and release acceptance remain the open gate. `SBL-FIX-001` through `SBL-FIX-005` predate `e25491d` and remain `REVIEW_PENDING_CODEX`.
+
+
+---
+
+## Codex CLI review of SBL-FIX-001..005
+
+- **Snapshot** `feature/w4-5-vertical-slice`, `0b66fdb..f26f2d1` (the five pre-`e25491d` remediation commits), reviewed in a detached worktree so later reviewed batches were not included.
+- **Review** CHANGES_REQUESTED. Codex CLI `0.167.0`, session `01a1bee0-6c04-72b0-b38d-6bce20925f2f`, exit 0, 9 November 2026.
+- **Verdict** The patch introduces lost and cross-profile expedition state, nonfunctional title-menu actions, and incomplete skill and audio integration. These are observable gameplay and persistence defects rather than presentation nits.
+
+### Findings
+
+| # | Severity | Location | Defect |
+| --- | --- | --- | --- |
+| 1 | P1 | `scenes/main/game_root.gd:563-567` | Suspended expeditions live only in a `GameRoot` field; nothing saves or reloads them, so closing the app loses the run. Selecting another profile leaves the field intact, letting that profile resume and extract the previous profile's satchel. Persist/restore per profile and clear the runtime snapshot on profile switch. |
+| 2 | P2 | `scenes/main/game_root.gd:1246-1247` | Title-screen Settings and Backup both call `_toggle_settings_sheet()`, which returns immediately because `has_blocking_modal()` includes the title screen, so both actions do nothing. Provide a title-aware settings path above the title layer. |
+| 3 | P2 | `scenes/ui/title_screen.gd:90-91` | Start New Journey emits the same signal as Continue for a slot with saved progress, so it reloads the existing profile. There is no reset or fresh-slot selection. |
+| 4 | P2 | `scenes/main/game_root.gd:1259-1261` | Selecting another profile reloads progression but leaves the active region, player position, and dimension unchanged, so an early-game profile can start inside a region its chapter gates prohibit. |
+| 5 | P2 | `scenes/ui/character_sheet.gd:117-119` | Purchasing Solar Flare, Celestial Prism, Glacial Aegis, or Void Shift spends talent points, but combat scenes still expose only the three starter-skill buttons. The new test bypasses this by calling `request_action()` directly. |
+| 6 | P2 | `scripts/magic/kurei_tree.gd:99-107` | Phase Mastery advertises raising maximum SP to four, but neither combat scene reads the unlock; `BattleFixture` stays at two and `BossEncounter` at three, so the purchase has no effect and Solar Flare's three-SP cost is unreachable in ordinary battles. |
+| 7 | P2 | `scripts/audio/audio_manager.gd:28-31` | No audio bus layout defines `SFX` and no code creates it, so the players fall back to Master and `apply_audio_buses()` skips SFX. Setting SFX volume to zero does not mute the new sound effects. |
+
+### Status
+
+- `SBL-FIX-001` through `SBL-FIX-005` are now `CHANGES_REQUESTED`; they are not `REVIEWED`.
+- The findings are separate scoped remediation work; they do not retroactively change the approvals already recorded for `e25491d..e0ed0b5`.
+- Batch 1 (`SBL-UX-001`) remains staged in `docs/agy-next-queue.md`. Finding 2 touches the settings entry path and should be accounted for when the rebinding UI is reviewed.
+- Human release acceptance remains pending.

@@ -43,6 +43,8 @@ Definition of done per task: relevant suites green with real assertion evidence,
 - **Codex CLI review of `e25491d..5e81a04`** (session `01a1be9a-5583-7252-b082-ebd436372c80`): CHANGES_REQUESTED, three P2 findings.
 - **Codex CLI re-review of `b2ddee1..b2b45a4`** (session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`): the three findings cleared; one new P2 in the failure-restoration test.
 - **Codex CLI re-review of `81d613e..e0ed0b5`** (session `01a1becc-d949-7cc3-867d-a0a8ede9510b`): APPROVED for the patch, no actionable defects. The failure-injection P2 is fixed.
-- **Every implementation entry from `e25491d..e0ed0b5` is `REVIEWED`.** Only `SBL-FIX-001..005`, which predate `e25491d`, remain `REVIEW_PENDING_CODEX`.
+- **Every implementation entry from `e25491d..e0ed0b5` is `REVIEWED`.**
+- **Codex CLI review of `SBL-FIX-001..005`** (`0b66fdb..f26f2d1`, session `01a1bee0-6c04-72b0-b38d-6bce20925f2f`): CHANGES_REQUESTED, 7 defects (1 P1 lost/cross-profile suspended expedition, 6 P2 title-menu actions, new-journey flow, profile location reset, purchased skills, Phase Mastery SP, SFX bus). These five entries are now `CHANGES_REQUESTED`.
+- **Batch 1 staged:** `docs/agy-next-queue.md` now contains only `SBL-UX-001` (persistent keyboard/mouse rebinding). Batches 2 and 3 follow after review.
 - **Next gate is human**: milestone/release acceptance, `OD-017` shipping tier, browser smoke, educator sign-off (`OD-012`), audio binaries, and Codex-only image assets.
 - Runner pins `--model gemini-3.8-flash-high --effort high` because Gemini 4 Argon is quota-blocked until ~14 Nov 09:21.
