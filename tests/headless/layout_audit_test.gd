@@ -39,6 +39,9 @@ func _find_panel(node: Node) -> Control:
 			for sub in child.get_children():
 				if sub is PanelContainer:
 					return sub as Control
+	for child in node.get_children():
+		if child is VBoxContainer:
+			return child as Control
 	return null
 
 func _get_scroll_containers(node: Node) -> Array[ScrollContainer]:
@@ -119,7 +122,17 @@ func _run_tests() -> void:
 			var em := EndingManager.new()
 			em.choose_ending("transcendence")
 			m.configure("transcendence", em, CharacterStats.new(), AssessmentController.new())
-			return m
+			return m,
+		"BossEncounter": func() -> Control:
+			var b: BossEncounter = load("res://scenes/combat/boss_encounter.tscn").instantiate() as BossEncounter
+			var tree := KureiTree.new()
+			tree.sync_with_level(10)
+			tree.unlock_skill(&"solar_flare")
+			tree.unlock_skill(&"celestial_prism")
+			tree.unlock_skill(&"glacial_aegis")
+			b.kurei_tree = tree
+			b.kurei_btn.pressed.emit()
+			return b
 	}
 
 	# 1. Audit at text_scale 1.0

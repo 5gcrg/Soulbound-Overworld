@@ -197,16 +197,37 @@ func _run_test() -> void:
 	# Open Kurei menu
 	boss_dyn.kurei_btn.pressed.emit()
 	_check(boss_dyn.kurei_menu.visible == true, "Boss Kurei menu visible after toggle")
+	_check(boss_dyn.kurei_menu is GridContainer, "Boss Kurei menu uses GridContainer layout")
+	_check((boss_dyn.kurei_menu as GridContainer).columns == 4, "Boss Kurei menu configured with 4 columns")
 	_check(boss_dyn._active_skill_buttons.size() == 6, "Boss Kurei menu has 6 dynamic buttons for 6 equipped skills")
 	_check(boss_dyn._active_skill_buttons.has(&"void_shift") == false, "Unequipped void_shift not in Boss menu")
 
-	# Check starter buttons are enabled
+	# Viewport safety at 960x540 (text_scale 1.0)
+	var vbox: VBoxContainer = boss_dyn.get_node("VBoxContainer") as VBoxContainer
+	var vbox_rect: Rect2 = vbox.get_global_rect()
+	var menu_rect: Rect2 = boss_dyn.kurei_menu.get_global_rect()
+	_check(vbox_rect.position.x >= 0 and vbox_rect.position.y >= 0 and vbox_rect.end.x <= 960 and vbox_rect.end.y <= 540,
+		"BossEncounter VBoxContainer stays inside 960x540 at 1.0x (rect=%s)" % vbox_rect)
+	_check(menu_rect.position.x >= 0 and menu_rect.position.y >= 0 and menu_rect.end.x <= 960 and menu_rect.end.y <= 540,
+		"BossEncounter KureiMenu stays inside 960x540 at 1.0x (rect=%s)" % menu_rect)
+
+	# Check starter buttons are enabled and within viewport
 	var fb_btn: Button = boss_dyn._active_skill_buttons[&"flame_burst"]
 	var ll_btn: Button = boss_dyn._active_skill_buttons[&"lumina_lance"]
 	var ts_btn: Button = boss_dyn._active_skill_buttons[&"torrent_surge"]
 	_check(fb_btn != null and fb_btn.disabled == false, "Starter flame_burst button enabled in BossEncounter")
 	_check(ll_btn != null and ll_btn.disabled == false, "Starter lumina_lance button enabled in BossEncounter")
 	_check(ts_btn != null and ts_btn.disabled == false, "Starter torrent_surge button enabled in BossEncounter")
+	_check(boss_dyn.cancel_kurei_btn != null and boss_dyn.cancel_kurei_btn.disabled == false, "Cancel button enabled in BossEncounter")
+	var cancel_rect: Rect2 = boss_dyn.cancel_kurei_btn.get_global_rect()
+	_check(cancel_rect.position.x >= 0 and cancel_rect.position.y >= 0 and cancel_rect.end.x <= 960 and cancel_rect.end.y <= 540,
+		"Cancel button reachable inside 960x540 at 1.0x (rect=%s)" % cancel_rect)
+
+	# Keyboard navigation verification: starter skills and Cancel reachable
+	fb_btn.grab_focus()
+	_check(fb_btn.has_focus(), "Starter flame_burst button receives keyboard focus")
+	boss_dyn.cancel_kurei_btn.grab_focus()
+	_check(boss_dyn.cancel_kurei_btn.has_focus(), "Cancel button receives keyboard focus")
 
 	# Check advanced buttons are disabled with explicit OD-003/004 notice
 	var sf_btn: Button = boss_dyn._active_skill_buttons[&"solar_flare"]
@@ -247,6 +268,20 @@ func _run_test() -> void:
 	_check(boss_dyn.last_player_action == &"kurei_flame_burst", "last_player_action set to kurei_flame_burst")
 
 	boss_dyn.queue_free()
+
+	# Regression test: Empty equipped loadout normalization in BossEncounter prevents visible-but-unusable menu
+	var boss_empty: BossEncounter = boss_scene.instantiate() as BossEncounter
+	root.add_child(boss_empty)
+	await process_frame
+	var empty_boss_tree := KureiTree.new()
+	empty_boss_tree.equipped_skills.clear()
+	boss_empty.kurei_tree = empty_boss_tree
+	boss_empty.kurei_btn.pressed.emit()
+	_check(boss_empty.kurei_menu.visible == true, "Boss Kurei menu visible with empty_boss_tree")
+	_check(boss_empty._active_skill_buttons.size() == 3, "Boss menu displays 3 starter buttons via normalization")
+	var boss_empty_cast_ok: bool = boss_empty.request_action(&"kurei_flame_burst")
+	_check(boss_empty_cast_ok == true, "request_action for visible flame_burst succeeds on normalized tree in BossEncounter")
+	boss_empty.queue_free()
 
 	if _failures == 0:
 		print("--- SBL-W11-002 Multi-Phase Boss Encounter Test Suite PASSED ---")

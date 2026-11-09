@@ -165,12 +165,8 @@ func is_boss_skill_supported(skill_id: StringName) -> bool:
 	return SUPPORTED_BOSS_SKILLS.has(skill_id)
 
 func get_equipped_active_skills() -> Array[StringName]:
-	if kurei_tree != null and not kurei_tree.equipped_skills.is_empty():
-		var list: Array[StringName] = []
-		for sid in kurei_tree.equipped_skills:
-			if kurei_tree.is_skill_active(sid):
-				list.append(sid)
-		return list
+	if kurei_tree != null:
+		return kurei_tree.get_equipped_active_skills()
 	var defaults: Array[StringName] = []
 	for sid in KureiTree.STARTER_SKILLS:
 		defaults.append(sid)
@@ -197,13 +193,18 @@ func _rebuild_kurei_menu() -> void:
 	for sid in skills:
 		var btn := Button.new()
 		btn.name = "SkillBtn_" + String(sid)
-		btn.custom_minimum_size = Vector2(120, 36)
+		btn.custom_minimum_size = Vector2(130, 34)
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		btn.add_theme_font_size_override("font_size", 10)
 		btn.pressed.connect(func() -> void: request_action("kurei_" + String(sid)))
 		kurei_menu.add_child(btn)
 		if cancel_kurei_btn != null:
 			kurei_menu.move_child(btn, cancel_kurei_btn.get_index())
 		_active_skill_buttons[sid] = btn
+
+	if cancel_kurei_btn != null:
+		cancel_kurei_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	if _active_skill_buttons.has(&"flame_burst"):
 		flame_burst_btn = _active_skill_buttons[&"flame_burst"]
@@ -246,6 +247,7 @@ func _update_kurei_buttons() -> void:
 		# Explicit OD-003/004 boundary:
 		if not is_boss_skill_supported(sid):
 			btn.text = "%s (Boss effect pending design approval)" % sname
+			btn.tooltip_text = "%s: Boss effect pending design approval (OD-003/004)" % sname
 			btn.disabled = true
 		elif cd > 0:
 			btn.text = "%s (CD: %d)" % [sname, cd]

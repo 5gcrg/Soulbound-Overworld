@@ -31,7 +31,7 @@ offset_right = -32.0
 offset_bottom = -20.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 6
 
 [node name="TitleLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
@@ -101,7 +101,7 @@ text = "Ren (Hero of Resonance)"
 horizontal_alignment = 1
 
 [node name="RenSilhouette" type="ColorRect" parent="VBoxContainer/HBoxContainer/RenPanel/Margin/VBox"]
-custom_minimum_size = Vector2(80, 100)
+custom_minimum_size = Vector2(80, 70)
 layout_mode = 2
 size_flags_horizontal = 4
 color = Color(0.2, 0.5, 0.9, 1)
@@ -150,7 +150,7 @@ text = "Void Sovereign"
 horizontal_alignment = 1
 
 [node name="BossSilhouette" type="ColorRect" parent="VBoxContainer/HBoxContainer/BossPanel/Margin/VBox"]
-custom_minimum_size = Vector2(90, 100)
+custom_minimum_size = Vector2(90, 70)
 layout_mode = 2
 size_flags_horizontal = 4
 color = Color(0.7, 0.15, 0.25, 1)
@@ -211,34 +211,39 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Item"
 
-[node name="KureiMenu" type="HBoxContainer" parent="VBoxContainer"]
+[node name="KureiMenu" type="GridContainer" parent="VBoxContainer"]
 visible = false
 layout_mode = 2
-theme_override_constants/separation = 10
-alignment = 1
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 6
+columns = 4
 
 [node name="FlameBurstButton" type="Button" parent="VBoxContainer/KureiMenu"]
 custom_minimum_size = Vector2(130, 34)
 layout_mode = 2
-theme_override_font_sizes/font_size = 11
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 10
 text = "Flame Burst (2 SP)"
 
 [node name="LuminaLanceButton" type="Button" parent="VBoxContainer/KureiMenu"]
 custom_minimum_size = Vector2(130, 34)
 layout_mode = 2
-theme_override_font_sizes/font_size = 11
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 10
 text = "Lumina Lance (1 SP)"
 
 [node name="TorrentSurgeButton" type="Button" parent="VBoxContainer/KureiMenu"]
 custom_minimum_size = Vector2(130, 34)
 layout_mode = 2
-theme_override_font_sizes/font_size = 11
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 10
 text = "Torrent Surge (2 SP)"
 
 [node name="CancelKureiButton" type="Button" parent="VBoxContainer/KureiMenu"]
-custom_minimum_size = Vector2(60, 34)
+custom_minimum_size = Vector2(70, 34)
 layout_mode = 2
-theme_override_font_sizes/font_size = 11
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 10
 text = "Back"
 
 [node name="ContinueButton" type="Button" parent="VBoxContainer"]
