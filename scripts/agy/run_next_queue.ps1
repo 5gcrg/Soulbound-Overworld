@@ -3,6 +3,9 @@
 
 param (
     [string]$AgyPath = "C:\Users\ALCOHOL\AppData\Local\agy\bin\agy.exe",
+    # Gemini 4 Argon is quota-blocked (429) while Gemini 3.8 Flash still has quota.
+    [string]$Model = "gemini-3.8-flash-high",
+    [string]$Effort = "high",
     [switch]$ContinueLast
 )
 
@@ -41,6 +44,8 @@ function ConvertTo-CommandLineArg([string]$value) {
 }
 
 $argLine = "-p " + (ConvertTo-CommandLineArg $prompt) + " --dangerously-skip-permissions"
+$argLine += " --model " + (ConvertTo-CommandLineArg $Model)
+$argLine += " --effort " + (ConvertTo-CommandLineArg $Effort)
 if ($ContinueLast) { $argLine += " -c" }
 
 $psi = New-Object System.Diagnostics.ProcessStartInfo
@@ -52,6 +57,7 @@ $psi.RedirectStandardError = $true
 $psi.Arguments = $argLine
 
 Write-Host "agy: $AgyPath" -ForegroundColor Cyan
+Write-Host "model: $Model (effort $Effort)" -ForegroundColor Cyan
 Write-Host "log: $log" -ForegroundColor Cyan
 
 $proc = New-Object System.Diagnostics.Process

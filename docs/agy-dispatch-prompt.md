@@ -40,5 +40,5 @@ Definition of done per task: relevant suites green with real assertion evidence,
 
 ## Dispatch status
 
-- **Last attempt** 9 November 2026: `agy -p` returned `RESOURCE_EXHAUSTED (code 429)`, reset in ~118h.
-- **Queued, not started.** No task above has been implemented by agy. `SBL-FIX-006` (`e25491d`) and the queue doc (`21b8ca1`) remain `REVIEW_PENDING_CODEX`.
+- **9 November 2026:** the default model (Gemini 4 Argon) is quota-blocked (`RESOURCE_EXHAUSTED 429`, ~118h reset). Gemini 3.8 Flash still has quota, so the runner pins `--model gemini-3.8-flash-high --effort high`.
+- **Dispatched, in progress.** agy implements the queue; every commit stays `REVIEW_PENDING_CODEX`. `SBL-FIX-006` (`e25491d`) and the queue doc (`21b8ca1`) remain unreviewed.
