@@ -2,6 +2,12 @@
 
 This directory stores the official engineering and milestone implementation reports for the Soulbound project.
 
+- [SBL-EDU-005-FIX Remediation Report (November 9, 2026)](sbl_edu_005_fix_report.md)
+  - Fixes P1: learning journal test isolation (disposable ProfileStore root, disposable CSV/HTML export paths, real `user://profiles` + `user://reports` byte-identity invariant)
+  - Fixes P2: active profile slot passed from GameRoot into AcademicCompletionModal desktop/Web HTML reports (regression-covered with `profile_02`)
+  - Pre-fix reproduction, post-fix targeted run, 32/32 full regression, and a per-suite real-user-data isolation probe
+  - Status: `REVIEW_PENDING_CODEX`
+
 - [Milestone M5 & M6 Verification & Release Report (November 9, 2026)](m5_m6_verification_and_release_report.md)
   - Covers Full End-to-End Academic Playthrough QA Harness
   - Covers Educator Cohort & Analytics Simulator (12 students, 72 activity assessments)

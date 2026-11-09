@@ -172,6 +172,17 @@ entries:
 - **Full verification:** 30/30 headless suites passed with zero script or engine errors; automated release exporter succeeded across all tiers (`run_headless_tests.ps1 -Export -Tier all`).
 - **Review status:** `REVIEW_PENDING_CODEX` awaiting Codex CLI re-review.
 
+## SBL-EDU-005-FIX remediation (test isolation & active-profile report attribution)
+
+- **Evidence:** `report/sbl_edu_005_fix_report.md`, `report/learning_journal_test.log`.
+- **Queue entry:** `docs/agent-review-queue.md` → `SBL-EDU-005-FIX`.
+- **Implementation:** `tests/headless/learning_journal_test.gd`, `scenes/ui/academic_completion_modal.gd`, `scenes/main/game_root.gd`.
+- **Targeted verification:** `learning_journal_test.gd` exit 0 (9 parts, 116 PASS / 0 FAIL); in-suite byte-identity INVARIANTs for the real `user://profiles` (4 files) and `user://reports` (1 file) PASS; external SHA-256 manifest diff 0; no leftover disposable directory.
+- **Pre-fix reproduction:** with the fix stashed at `e45f7d8` the suite exited 0 but ADDED 3 fixture revisions to the real `user://profiles` and REMOVED 3 real revisions (P1 reproduced); real user data was restored byte-identically from a verified backup (5 files, 0 diffs) before the fix was re-applied.
+- **Full verification:** 32/32 headless suites passed with exit 0 on Godot 4.7.2 Stable.
+- **Review status:** `REVIEW_PENDING_CODEX` awaiting Codex CLI re-review of session `01a1c094-60d4-70c0-aaa6-37f8ffbce421` findings P1 and P2. Nothing in this slice is `REVIEWED`.
+- **Open observation:** `ending_chapter5_test.gd`, `evaluator_debug_bar_test.gd`, `release_tier_test.gd`, `title_screen_audio_test.gd`, and `verify_exported_tier.gd` still write the real `user://profiles/profile_01` (pre-existing, outside the approved remediation plan; a separate approved slice is recommended).
+
 ## Rule
 
 Every future implementation, review, finding, negative control, and disposition

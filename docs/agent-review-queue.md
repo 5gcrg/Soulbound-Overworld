@@ -2103,7 +2103,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
   - Modified audits & documentation: `tests/headless/layout_audit_test.gd`, `docs/browser_verification_checklist.md`, `docs/traceability-matrix.md`, `docs/testing.md`, `docs/agent-review-queue.md`.
   - Negative control logs: `report/neg_journal_mutate_first_attempt.log`, `report/neg_journal_omit_html_escaping.log`, `report/neg_journal_stale_controller.log`, `report/neg_journal_claim_browser_delivery.log`.
 - **Asset provenance** None (pure GDScript, Control UI scene nodes, and test automation; zero image generation, zero audio generation).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1c094-60d4-70c0-aaa6-37f8ffbce421` found a P1 test-profile isolation defect and a P2 active-profile attribution defect in completion report exports.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1c094-60d4-70c0-aaa6-37f8ffbce421` found a P1 test-profile isolation defect and a P2 active-profile attribution defect in completion report exports. Remediation is implemented in [SBL-EDU-005-FIX](#sbl-edu-005-fix--learning-journal-test-isolation--active-profile-report-attribution) at the end of this file and remains `REVIEW_PENDING_CODEX`.
 - **Open questions** `OD-012` remains open pending human educator review. Mandatory notice is prominently displayed in both journal and reports: `"Practice records. Educator review pending — OD-012. These records do not establish learning improvement."` Browser download/print execution remains PENDING human evaluation per AGENTS.md.
 
 ### Changes
@@ -2163,3 +2163,60 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 | Negative control 4: claim browser delivery | Exit 0 | Proved claiming browser execution in non-browser environment is flagged (`report/neg_journal_claim_browser_delivery.log`). |
 | Full headless runner (`run_headless_tests.ps1`) | Exit 0 (32/32 passed) | All 32 project headless suites pass cleanly with 0 Godot script/engine errors across all game systems. |
 | Full release exporter (`run_headless_tests.ps1 -Export -SkipImport`) | Exit 0 | Built and validated `Soulbound-AcademicMVP-Web.zip` (10.8 MB), `Soulbound-Web.zip` (10.8 MB), and `Soulbound-Windows-Portable.zip` (86.7 MB); PCK gates passed; working tree verified byte-identical. |
+
+---
+
+## SBL-EDU-005-FIX — Learning Journal Test Isolation & Active-Profile Report Attribution
+
+- **Milestone** M2 / M3 / M4 / M6 Educational Reporting Hardening (remediation of the `SBL-EDU-005` Codex review findings).
+- **Requirements** GDD-071 (persistent activity/attempt records), GDD-072 (learning journal, CSV and printable report export), GDD-112 (educational report export), FR-EDU-002 (immutable first-attempt tracking), FR-EDU-004 (local CSV and printable report export), TC-EDU-004 (CSV and printable report correctness), NFR-SEC-001. Findings under review: P1 (fixture answers written to the real `user://profiles`) and P2 (`profile_01` hardcoded in completion HTML exports), Codex CLI session `01a1c094-60d4-70c0-aaa6-37f8ffbce421`.
+- **Implementation owner** agy (slice executed in-session by the implementation executor under the approved remediation plan). **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files** `tests/headless/learning_journal_test.gd`, `scenes/ui/academic_completion_modal.gd`, `scenes/main/game_root.gd`, plus `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`, `report/sbl_edu_005_fix_report.md`, `report/implementation-review-ledger.md`, `report/README.md`.
+- **Asset provenance** None (pure GDScript, Control UI wiring, and documentation; zero image generation, zero audio generation, zero new educational content).
+- **Review** REVIEW_PENDING_CODEX. Nothing in this slice has been reviewed; Codex CLI must review before any status may change to `REVIEWED`.
+- **Open questions** `OD-012` educator-pending language is retained verbatim in every report output and no learning-improvement claim was added. Browser execution remains PENDING human evaluation. New observation: five other suites still write the real `user://profiles/profile_01` (see Changes 4 / Open question 2) — pre-existing behavior outside this approved slice.
+
+### Required report block
+
+```text
+TASK ID: SBL-EDU-005-FIX
+REQUIREMENTS: GDD-071, GDD-072, GDD-112, FR-EDU-002, FR-EDU-004, TC-EDU-004, NFR-SEC-001
+MILESTONE: M2/M3/M4/M6 Educational Reporting Hardening (SBL-EDU-005 remediation)
+OWNER: agy
+PLAN OWNER: Codex
+BRANCH/COMMIT: feature/w4-5-vertical-slice (implementation commit hash recorded in report/implementation-review-ledger.md and in this entry's follow-up docs commit; both tagged [REVIEW_PENDING_CODEX])
+FILES CHANGED: tests/headless/learning_journal_test.gd, scenes/ui/academic_completion_modal.gd, scenes/main/game_root.gd, docs/agent-review-queue.md, docs/traceability-matrix.md, docs/testing.md, report/sbl_edu_005_fix_report.md, report/implementation-review-ledger.md, report/README.md
+ASSET PROVENANCE: none
+TESTS RUN + RESULTS: learning_journal_test.gd exit 0 (9 parts, 116 PASS / 0 FAIL, in-suite byte-identity INVARIANTs for real user://profiles and user://reports PASS, external SHA-256 manifest diff 0); full runner exit 0 (32/32); pre-fix reproduction run exit 0 but added 3 fixture revisions to the real user://profiles and rotated out 3 real revisions (P1), restored byte-identically from backup
+REVIEW: REVIEW_PENDING_CODEX
+OPEN QUESTIONS: OD-012 educator sign-off; browser execution PENDING human evaluation; five other suites (ending_chapter5_test, evaluator_debug_bar_test, release_tier_test, title_screen_audio_test, verify_exported_tier) still write real user://profiles/profile_01 — pre-existing, out of scope for this slice
+```
+
+### Changes
+
+1. **Disposable ProfileStore fixtures in the journal test (P1).** `tests/headless/learning_journal_test.gd` now builds every `ProfileStore` under the suite's disposable `_test_root` (`_test_root/profiles`) for the profile-isolation part, and injects that store into the GameRoot fixture before `add_child` (`game_root.profile_store = ProfileStore.new(_disposable_store_root)`), which `_init_slice_progress()` preserves because it only constructs a default store when none is present. Desktop CSV/HTML exports in the delivery part were redirected to `_test_root/learning_report.{csv,html}`; the path-traversal rejection probe is unchanged. Disposable cleanup is now recursive so the nested `profiles/` fixture tree is removed. **Production save semantics were not changed** — `ProfileStore`, `AssessmentController`, and `GameRoot` write paths are untouched.
+2. **Real-directory byte-identity invariant (P1).** The suite takes a recursive pre-suite snapshot (relative path -> raw bytes) of the real `user://profiles` and `user://reports` and, after all nine parts, asserts both are byte-identical (same file set, same bytes), printing `ADDED` / `MODIFIED` / `REMOVED` diagnostics on any drift.
+3. **Active profile attribution through GameRoot (P2).** `AcademicCompletionModal` gains `profile_slot` (default `profile_01`) assigned in `configure(..., slot)` and used by `LearningReport.generate_html()` and `LearningReport.export_html_file()` in **both** the desktop file path and the Web/injectable-bridge path. `GameRoot._open_academic_modal()` and `GameRoot._on_debug_academic_modal()` now pass `_profile_slot`. CSV rows carry no profile column (profile schema unchanged), so the CSV generators are unchanged; both CSV export paths now use the overridable `report_export_dir` (default `user://reports`, same testability pattern as the pre-existing `injectable_download_bridge`) so tests never write the real reports directory.
+4. **Regression coverage with `profile_02` (Part 9).** New suite part asserts: the modal holds the configured `profile_02`; the Web HTML buffer attributes the report to `profile_02` and contains no `profile_01` fallback; the desktop HTML file written to a disposable directory attributes to `profile_02`, retains the mandatory OD-012 notice and the recorded activity rows, and never claims browser execution; the Web CSV buffer still carries the RFC-4180 header; and a GameRoot instance whose active slot is `profile_02` opens the completion modal with `profile_slot == "profile_02"`.
+
+### Preserved invariants
+
+- First-attempt correctness behavior is unchanged: all pre-existing Parts 1–8 assertions (immutable first attempt across wrong-first/correct-retry, legacy "Not recorded", completion gating, CSV formula neutralization, HTML escaping/print CSS, OD-012 exact text, no browser-execution claims, 4 negative controls) still pass unmodified.
+- Report escaping, allowlisted filenames, and `LearningReport` output format are unchanged; only the slot passed into HTML generation and the export directory are now supplied by the caller.
+- No profile schema change, no new educational content, no numeric values or formula coefficients invented, no images or audio, no OD resolution.
+
+### Verification (Godot 4.7.2 Stable `ed1daf0bf`, Windows headless)
+
+| Command / probe | Result |
+|---|---|
+| Pre-fix reproduction: changes stashed, `run_headless_tests.ps1 -Suite learning_journal_test` at `e45f7d8` | Exit 0 (suite does not detect its own defect), but the SHA-256 manifest diff of the real user data shows **3 ADDED** fixture revisions (`profiles/profile_01/profile.0000000000000418.21372.907546.json`, `profiles/profile_01/profile.0000000000000419.21372.914726.json`, `profiles/profile_02/profile.0000000000000009.21372.936191.json`) and **3 REMOVED** real revisions (`profiles/profile_01/profile.0000000000000416.10180.912338.json`, `profiles/profile_01/profile.0000000000000417.10180.924200.json`, `profiles/profile_02/profile.0000000000000007.4800.909876.json`) — **P1 reproduced**. Real user data was restored from a verified backup before continuing (5 files, 0 diffs vs the pre-run manifest). |
+| `run_headless_tests.ps1 -Suite learning_journal_test` (post-fix) | Exit 0 in 2.03 s. 9 parts, **116 PASS / 0 FAIL**. `INVARIANT: real user://profiles (4 file(s)) is byte-identical before and after the suite` PASS; `INVARIANT: real user://reports (1 file(s)) is byte-identical before and after the suite` PASS. External SHA-256 manifest diff after the run: **0**. No leftover `test_learning_journal_*` directory (`report/learning_journal_test.log`). |
+| Part 9 assertions (post-fix) | PASS: modal holds configured slot `profile_02`; Web HTML buffer attributes report to `profile_02` with no `profile_01` fallback; Web CSV buffer carries `LearningReport.CSV_HEADER`; desktop HTML file written under the disposable root attributes to `profile_02`, keeps the OD-012 notice and activity rows; status reports a prepared buffer and never claims browser execution; `INVARIANT: GameRoot passes its active profile slot (profile_02) into the modal`. |
+| Full regression `run_headless_tests.ps1` | Exit 0 — **32/32 suites passed**, including `e2e_academic_playthrough_test`, `evaluator_debug_bar_test`, `chapter_progression_test`, `layout_audit_test`, `education_report_test`, and `web_backup_test`. |
+| Isolation probe: all 32 suites run individually with a before/after SHA-256 manifest of the real `user://profiles` + `user://reports` | `learning_journal_test.gd`: **0 changes**. Pre-existing writers of the real `user://profiles/profile_01` (out of scope for this slice): `ending_chapter5_test.gd`, `evaluator_debug_bar_test.gd`, `release_tier_test.gd`, `title_screen_audio_test.gd`, `verify_exported_tier.gd`. Real user data was restored byte-identically afterwards (5 files, 0 diffs). |
+
+### Open questions for Codex review
+
+1. `OD-012` educator sign-off and browser execution/PWA evaluation remain pending human authority; no report text changed in this slice.
+2. Five non-journal suites still write the real `user://profiles/profile_01` (probe above). This is pre-existing behavior that predates `SBL-EDU-005` and was **not** in the approved remediation plan, so it is recorded here rather than fixed. Recommend a separate approved slice to give those suites the same disposable-store injection.

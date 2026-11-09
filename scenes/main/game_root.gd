@@ -1203,7 +1203,7 @@ func _open_academic_modal() -> void:
 			return
 	var modal := ACADEMIC_COMPLETION_SCENE.instantiate() as AcademicCompletionModal
 	_academic_modal = modal
-	modal.configure(chapter_manager, assessment_controller, character_stats, inventory_manager)
+	modal.configure(chapter_manager, assessment_controller, character_stats, inventory_manager, _profile_slot)
 	modal.closed.connect(_close_academic_modal)
 	_sheet_layer.add_child(modal)
 	status_label.text = "Soulbound Academic MVP Cleared! Congratulations!"
@@ -1611,7 +1611,7 @@ func _on_debug_academic_modal() -> void:
 		return
 	var modal := ACADEMIC_COMPLETION_SCENE.instantiate() as AcademicCompletionModal
 	_academic_modal = modal
-	modal.configure(chapter_manager, assessment_controller, character_stats, inventory_manager)
+	modal.configure(chapter_manager, assessment_controller, character_stats, inventory_manager, _profile_slot)
 	modal.closed.connect(_close_academic_modal)
 	_sheet_layer.add_child(modal)
 	if player != null:

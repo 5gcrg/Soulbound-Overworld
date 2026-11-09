@@ -11,6 +11,12 @@ var assessment_controller: AssessmentController = null
 var character_stats: CharacterStats = null
 var inventory_manager: InventoryManager = null
 
+## Active profile slot supplied by GameRoot; used for HTML report attribution.
+var profile_slot: String = "profile_01"
+## Report output directory. Defaults to the production user://reports location;
+## tests redirect it to a disposable path (same pattern as injectable_download_bridge).
+var report_export_dir: String = "user://reports"
+
 @onready var title_label: Label = $Panel/Margin/VBox/TitleLabel
 @onready var stats_summary_label: Label = _find_node(["Panel/Margin/VBox/Scroll/SummaryBox/StatsSummaryLabel", "Panel/Margin/VBox/StatsSummaryLabel"]) as Label
 @onready var edu_summary_label: Label = _find_node(["Panel/Margin/VBox/Scroll/SummaryBox/EduSummaryLabel", "Panel/Margin/VBox/EduSummaryLabel"]) as Label
@@ -35,11 +41,12 @@ func _ready() -> void:
 	close_btn.pressed.connect(_on_close_pressed)
 	refresh()
 
-func configure(ch_mgr: ChapterManager, assessment: AssessmentController, stats: CharacterStats, inv: InventoryManager) -> void:
+func configure(ch_mgr: ChapterManager, assessment: AssessmentController, stats: CharacterStats, inv: InventoryManager, slot: String = "profile_01") -> void:
 	chapter_manager = ch_mgr
 	assessment_controller = assessment
 	character_stats = stats
 	inventory_manager = inv
+	profile_slot = slot
 	if is_inside_tree():
 		refresh()
 
@@ -63,7 +70,7 @@ func refresh() -> void:
 func _on_export_pressed() -> void:
 	if assessment_controller == null:
 		return
-	var export_path: String = "user://reports/soulbound_academic_mvp_report.csv"
+	var export_path: String = report_export_dir.path_join("soulbound_academic_mvp_report.csv")
 	if OS.has_feature("web") or injectable_download_bridge.is_valid():
 		var csv_text: String = LearningReport.generate_csv(assessment_controller.records)
 		var res: Dictionary = LearningReport.prepare_web_download(csv_text, "soulbound_academic_mvp_report.csv", "text/csv", injectable_download_bridge)
@@ -81,16 +88,16 @@ func _on_export_pressed() -> void:
 func _on_export_html_pressed() -> void:
 	if assessment_controller == null:
 		return
-	var export_path: String = "user://reports/soulbound_academic_mvp_report.html"
+	var export_path: String = report_export_dir.path_join("soulbound_academic_mvp_report.html")
 	if OS.has_feature("web") or injectable_download_bridge.is_valid():
-		var html_text: String = LearningReport.generate_html(assessment_controller.records, "profile_01")
+		var html_text: String = LearningReport.generate_html(assessment_controller.records, profile_slot)
 		var res: Dictionary = LearningReport.prepare_web_download(html_text, "soulbound_academic_mvp_report.html", "text/html", injectable_download_bridge)
 		if res["error"] == OK:
 			status_feedback_label.text = "Prepared web download buffer: soulbound_academic_mvp_report.html"
 		else:
 			status_feedback_label.text = "Web export failed: Error %d" % res["error"]
 		return
-	var err: Error = LearningReport.export_html_file(assessment_controller.records, "profile_01", export_path)
+	var err: Error = LearningReport.export_html_file(assessment_controller.records, profile_slot, export_path)
 	if err == OK:
 		status_feedback_label.text = "Report exported to: %s" % export_path
 	else:

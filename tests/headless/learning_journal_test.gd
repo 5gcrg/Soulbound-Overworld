@@ -8,6 +8,11 @@ const LearningJournalScene: PackedScene = preload("res://scenes/ui/learning_jour
 
 var _failures: int = 0
 var _test_root: String = ""
+var _disposable_store_root: String = ""
+var _real_profiles_dir: String = "user://profiles"
+var _real_reports_dir: String = "user://reports"
+var _pre_profiles_snapshot: Dictionary = {}
+var _pre_reports_snapshot: Dictionary = {}
 
 func _check(condition: bool, message: String) -> bool:
 	if condition:
@@ -26,6 +31,17 @@ func _run_suite() -> void:
 
 	_test_root = "user://test_learning_journal_%d_%d" % [OS.get_process_id(), Time.get_ticks_usec()]
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_test_root))
+	# All ProfileStore fixtures in this suite live under the disposable root so no
+	# fixture answer can ever reach the real user://profiles (SBL-EDU-005-FIX P1).
+	_disposable_store_root = _test_root.path_join("profiles")
+
+	# Snapshot the real profile and report directories before any test part runs so
+	# the suite can prove they are byte-identical when it finishes.
+	_pre_profiles_snapshot = _snapshot_dir_bytes(_real_profiles_dir)
+	_pre_reports_snapshot = _snapshot_dir_bytes(_real_reports_dir)
+	print("Pre-suite snapshot: %d file(s) in %s, %d file(s) in %s" % [
+		_pre_profiles_snapshot.size(), _real_profiles_dir,
+		_pre_reports_snapshot.size(), _real_reports_dir])
 
 	await _test_part1_row_model_and_legacy()
 	await _test_part2_sorting_counts_and_od012()
@@ -35,6 +51,12 @@ func _run_suite() -> void:
 	await _test_part6_profile_isolation_and_backup_refresh()
 	await _test_part7_desktop_and_injectable_web_delivery()
 	await _test_part8_disposable_negative_controls()
+	await _test_part9_academic_modal_active_profile_attribution()
+
+	# INVARIANT (SBL-EDU-005-FIX P1): the real profile and report directories must
+	# be untouched by this suite — same file set, same bytes.
+	_assert_dir_byte_identical(_real_profiles_dir, _pre_profiles_snapshot, "real user://profiles")
+	_assert_dir_byte_identical(_real_reports_dir, _pre_reports_snapshot, "real user://reports")
 
 	_cleanup_test_dir(_test_root)
 
@@ -240,6 +262,9 @@ func _test_part5_journal_ui_and_sheet_lifecycle() -> void:
 	print("\n[Part 5] Testing Journal UI, Exploration HUD Button & SheetLayer Lifecycle...")
 
 	var game_root: Control = GameRootScene.instantiate() as Control
+	# Inject a disposable ProfileStore before _ready so GameRoot can never read or
+	# write the real user://profiles during this fixture (SBL-EDU-005-FIX P1).
+	game_root.profile_store = ProfileStore.new(_disposable_store_root)
 	root.add_child(game_root)
 	await process_frame
 	await process_frame
@@ -306,7 +331,8 @@ func _test_part5_journal_ui_and_sheet_lifecycle() -> void:
 func _test_part6_profile_isolation_and_backup_refresh() -> void:
 	print("\n[Part 6] Testing Profile Isolation, Switching & Backup Import Refresh...")
 
-	var store := ProfileStore.new()
+	# Disposable root: fixture answers for Profile A/B must never touch real user://profiles.
+	var store := ProfileStore.new(_disposable_store_root)
 	var slot_a: String = "profile_01"
 	var slot_b: String = "profile_02"
 
@@ -363,16 +389,16 @@ func _test_part7_desktop_and_injectable_web_delivery() -> void:
 	var ac := AssessmentController.new()
 	ac.submit_answer("q_crit_01", 0)
 
-	# 1. Desktop allowlisted CSV export
-	var csv_path: String = "user://reports/learning_report.csv"
+	# 1. Desktop allowlisted CSV export (disposable path — never the real user://reports)
+	var csv_path: String = _test_root.path_join("learning_report.csv")
 	var csv_err: Error = LearningReport.export_csv_file(ac.records, csv_path)
-	_check(csv_err == OK, "Desktop CSV export succeeded to user://reports/learning_report.csv")
+	_check(csv_err == OK, "Desktop CSV export succeeded to disposable path %s" % csv_path)
 	_check(FileAccess.file_exists(csv_path), "Exported CSV file exists on disk")
 
-	# 2. Desktop allowlisted HTML export
-	var html_path: String = "user://reports/learning_report.html"
+	# 2. Desktop allowlisted HTML export (disposable path)
+	var html_path: String = _test_root.path_join("learning_report.html")
 	var html_err: Error = LearningReport.export_html_file(ac.records, "profile_01", html_path)
-	_check(html_err == OK, "Desktop HTML export succeeded to user://reports/learning_report.html")
+	_check(html_err == OK, "Desktop HTML export succeeded to disposable path %s" % html_path)
 	_check(FileAccess.file_exists(html_path), "Exported HTML file exists on disk")
 
 	# 3. Path traversal and unallowlisted filenames rejected
@@ -411,11 +437,11 @@ func _test_part7_desktop_and_injectable_web_delivery() -> void:
 	_check(not journal.status_label.text.contains("downloaded via browser"),
 		"INVARIANT: UI does not claim browser execution occurred")
 
-	# Cleanup written files
+	# Cleanup written files (disposable paths only)
 	if FileAccess.file_exists(csv_path):
-		DirAccess.remove_absolute(csv_path)
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(csv_path))
 	if FileAccess.file_exists(html_path):
-		DirAccess.remove_absolute(html_path)
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(html_path))
 
 	journal.queue_free()
 	await process_frame
@@ -482,11 +508,148 @@ func _test_part8_disposable_negative_controls() -> void:
 		log4.store_string("DISPOSABLE NEGATIVE CONTROL 4 PROOF:\nMessage '%s' falsely claims browser execution in non-browser environment; flagged by delivery audit.\n" % false_claim)
 		log4.close()
 
+# ==============================================================================
+# Part 9: Academic Completion Modal Active-Profile Attribution (SBL-EDU-005-FIX)
+# ==============================================================================
+func _test_part9_academic_modal_active_profile_attribution() -> void:
+	print("\n[Part 9] Testing Academic Completion Modal active-profile attribution (profile_02)...")
+
+	var modal: AcademicCompletionModal = load("res://scenes/ui/academic_completion_modal.tscn").instantiate() as AcademicCompletionModal
+	var ac := AssessmentController.new()
+	ac.submit_answer("q_crit_01", 0)
+	root.add_child(modal)
+	await process_frame
+	modal.configure(ChapterManager.new(), ac, CharacterStats.new(), InventoryManager.new(), "profile_02")
+	_check(modal.profile_slot == "profile_02", "Modal holds configured active profile slot profile_02")
+
+	# 1. Web / injectable-bridge delivery must attribute the HTML report to profile_02.
+	var captured: Dictionary = {"html": "", "csv": ""}
+	var bridge: Callable = func(buf: PackedByteArray, filename: String, mime: String) -> void:
+		if filename.ends_with(".html"):
+			captured["html"] = buf.get_string_from_utf8()
+		else:
+			captured["csv"] = buf.get_string_from_utf8()
+	modal.injectable_download_bridge = bridge
+
+	modal.export_html_btn.pressed.emit()
+	_check(captured["html"].contains("profile_02"), "Web HTML buffer attributes report to profile_02")
+	_check(not captured["html"].contains("profile_01"), "Web HTML buffer does not fall back to hardcoded profile_01")
+	_check(modal.status_feedback_label.text.contains("Prepared web download buffer: soulbound_academic_mvp_report.html"),
+		"Web HTML status reports prepared download buffer")
+	_check(not modal.status_feedback_label.text.contains("downloaded via browser"),
+		"INVARIANT: modal never claims browser execution occurred")
+
+	modal.export_btn.pressed.emit()
+	_check(captured["csv"].contains(LearningReport.CSV_HEADER), "Web CSV buffer generated with RFC-4180 header")
+
+	# 2. Desktop delivery redirected to a disposable directory; real user://reports untouched.
+	modal.injectable_download_bridge = Callable()
+	var modal_report_dir: String = _test_root.path_join("modal_reports")
+	modal.report_export_dir = modal_report_dir
+	var desktop_html_path: String = modal_report_dir.path_join("soulbound_academic_mvp_report.html")
+	var desktop_csv_path: String = modal_report_dir.path_join("soulbound_academic_mvp_report.csv")
+
+	modal.export_html_btn.pressed.emit()
+	_check(FileAccess.file_exists(desktop_html_path), "Desktop HTML export written to disposable path")
+	if FileAccess.file_exists(desktop_html_path):
+		var html_text: String = FileAccess.get_file_as_string(desktop_html_path)
+		_check(html_text.contains("profile_02"), "Desktop HTML report attributes report to profile_02")
+		_check(not html_text.contains("profile_01"), "Desktop HTML report does not fall back to hardcoded profile_01")
+		_check(html_text.contains(LearningReport.OD012_NOTICE), "Desktop HTML retains the mandatory OD-012 notice")
+		_check(html_text.contains("<td>q_crit_01</td>"), "Desktop HTML retains recorded activity rows")
+
+	modal.export_btn.pressed.emit()
+	_check(FileAccess.file_exists(desktop_csv_path), "Desktop CSV export written to disposable path")
+
+	modal.queue_free()
+	await process_frame
+
+	# 3. GameRoot must pass its active profile slot into the modal configuration.
+	var game_root: Control = GameRootScene.instantiate() as Control
+	game_root.profile_store = ProfileStore.new(_disposable_store_root)
+	root.add_child(game_root)
+	await process_frame
+	await process_frame
+	game_root._init_slice_progress(game_root.profile_store, "profile_02")
+	await process_frame
+	game_root._on_debug_academic_modal()
+	await process_frame
+
+	var opened: AcademicCompletionModal = game_root._academic_modal
+	_check(opened != null, "GameRoot opened the academic completion modal")
+	if opened != null:
+		_check(opened.profile_slot == "profile_02",
+			"INVARIANT: GameRoot passes its active profile slot (profile_02) into the modal")
+	game_root._close_academic_modal()
+	game_root.queue_free()
+	await process_frame
+
+# ==============================================================================
+# Disposable-tree helpers & real-directory byte-identity proof
+# ==============================================================================
+## Recursively maps every file under dir_path to its raw bytes, keyed by the
+## path relative to dir_path (subdirectories included).
+func _snapshot_dir_bytes(dir_path: String) -> Dictionary:
+	var snapshot: Dictionary = {}
+	_collect_dir_bytes(dir_path, "", snapshot)
+	return snapshot
+
+func _collect_dir_bytes(dir_path: String, prefix: String, out: Dictionary) -> void:
+	var global_path: String = ProjectSettings.globalize_path(dir_path)
+	if not DirAccess.dir_exists_absolute(global_path):
+		return
+	var dir := DirAccess.open(global_path)
+	if dir == null:
+		return
+	dir.list_dir_begin()
+	var entry: String = dir.get_next()
+	while entry != "":
+		if not entry.begins_with("."):
+			if dir.current_is_dir():
+				_collect_dir_bytes(dir_path.path_join(entry), prefix + entry + "/", out)
+			else:
+				out[prefix + entry] = FileAccess.get_file_as_bytes(dir_path.path_join(entry))
+		entry = dir.get_next()
+	dir.list_dir_end()
+
+## Asserts the current contents of dir_path are byte-identical to the baseline
+## snapshot (same file set, same bytes) and prints any drift for review evidence.
+func _assert_dir_byte_identical(dir_path: String, baseline: Dictionary, label: String) -> void:
+	var current: Dictionary = _snapshot_dir_bytes(dir_path)
+	var identical: bool = current.size() == baseline.size()
+	if identical:
+		for file_name: Variant in baseline.keys():
+			if not current.has(file_name) or current[file_name] != baseline[file_name]:
+				identical = false
+				break
+	_check(identical, "INVARIANT: %s (%d file(s)) is byte-identical before and after the suite" % [label, baseline.size()])
+	if not identical:
+		for file_name: Variant in current.keys():
+			if not baseline.has(file_name):
+				printerr("    ADDED: %s/%s" % [dir_path, file_name])
+			elif current[file_name] != baseline[file_name]:
+				printerr("    MODIFIED: %s/%s" % [dir_path, file_name])
+		for file_name: Variant in baseline.keys():
+			if not current.has(file_name):
+				printerr("    REMOVED: %s/%s" % [dir_path, file_name])
+
 func _cleanup_test_dir(path: String) -> void:
 	var global_path: String = ProjectSettings.globalize_path(path)
 	if DirAccess.dir_exists_absolute(global_path):
-		var dir := DirAccess.open(global_path)
-		if dir != null:
-			for file in dir.get_files():
-				DirAccess.remove_absolute(global_path + "/" + file)
-			DirAccess.remove_absolute(global_path)
+		_remove_dir_recursive(global_path)
+
+func _remove_dir_recursive(global_path: String) -> void:
+	var dir := DirAccess.open(global_path)
+	if dir == null:
+		return
+	dir.list_dir_begin()
+	var entry: String = dir.get_next()
+	while entry != "":
+		var child: String = global_path.rstrip("/") + "/" + entry
+		if dir.current_is_dir():
+			_remove_dir_recursive(child)
+		else:
+			DirAccess.remove_absolute(child)
+		entry = dir.get_next()
+	dir.list_dir_end()
+	DirAccess.remove_absolute(global_path)
