@@ -597,6 +597,35 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 - [ ] **High Contrast Text**: In High Contrast mode, all UI labels render with pure white text and crisp black drop shadows for legible contrast against any background.
 - [ ] **Authored Value Restorability**: Disabling High Contrast restores original label tints without residual overrides.
 
+---
+
+## SBL-DOC-001 — Reconcile Requirements Traceability Matrix
+
+- **Milestone** Documentation & Traceability Alignment.
+- **Requirements** GDD-124, GDD-129, AGENTS.md Operating Contract.
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Documentation: `docs/traceability-matrix.md`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None (documentation reconciliation only).
+- **Review** REVIEW_PENDING_CODEX.
+- **Open questions** None.
+
+### Changes
+
+1. **Remediation Slices Documented.** Added remediation rows/links for `SBL-FIX-001` through `SBL-FIX-009` and `SBL-VER-001` against all requirement IDs they touch.
+2. **Review Status Synchronization.** Replaced stale `CHANGES_REQUESTED` statuses with `REVIEW_PENDING_CODEX` for requirement rows where subsequent fix slices landed in code. Retained `CHANGES_REQUESTED` on any requirement where no fix slice landed.
+3. **Audit Preservation.** Maintained strict fidelity with Codex CLI review history: no row or section reads `REVIEWED` unless accompanied by an explicit Codex CLI session ID from M1, W2, or W3 reviews.
+4. **Row-for-Row Agreement.** Verified that every requirement ID from GDD/SRS §14.3 is represented, with no orphan requirement IDs and exact mapping to implementation files and test suites.
+
+### Verification Table
+
+| Audit / Check | Result |
+| --- | --- |
+| Traceability Matrix Cross-Reference | Pass. All 132 high-level GDD requirements and technical NFRs mapped. Remediation rows for SBL-FIX-001..009 documented. No false REVIEWED statuses. |
+
+
 
 
 
