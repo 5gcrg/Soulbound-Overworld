@@ -12,28 +12,34 @@ var profile_store: ProfileStore = null
 var active_profile_id: String = "profile_01"
 var last_exported_backup: String = ""
 
-@onready var master_slider: HSlider = $Panel/Margin/VBox/AudioBox/MasterRow/MasterSlider
-@onready var master_val_label: Label = $Panel/Margin/VBox/AudioBox/MasterRow/ValLabel
+@onready var master_slider: HSlider = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/AudioBox/MasterRow/MasterSlider", "Panel/Margin/VBox/AudioBox/MasterRow/MasterSlider"]) as HSlider
+@onready var master_val_label: Label = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/AudioBox/MasterRow/ValLabel", "Panel/Margin/VBox/AudioBox/MasterRow/ValLabel"]) as Label
 
-@onready var music_slider: HSlider = $Panel/Margin/VBox/AudioBox/MusicRow/MusicSlider
-@onready var music_val_label: Label = $Panel/Margin/VBox/AudioBox/MusicRow/ValLabel
+@onready var music_slider: HSlider = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/AudioBox/MusicRow/MusicSlider", "Panel/Margin/VBox/AudioBox/MusicRow/MusicSlider"]) as HSlider
+@onready var music_val_label: Label = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/AudioBox/MusicRow/ValLabel", "Panel/Margin/VBox/AudioBox/MusicRow/ValLabel"]) as Label
 
-@onready var sfx_slider: HSlider = $Panel/Margin/VBox/AudioBox/SfxRow/SfxSlider
-@onready var sfx_val_label: Label = $Panel/Margin/VBox/AudioBox/SfxRow/ValLabel
+@onready var sfx_slider: HSlider = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/AudioBox/SfxRow/SfxSlider", "Panel/Margin/VBox/AudioBox/SfxRow/SfxSlider"]) as HSlider
+@onready var sfx_val_label: Label = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/AudioBox/SfxRow/ValLabel", "Panel/Margin/VBox/AudioBox/SfxRow/ValLabel"]) as Label
 
-@onready var reduced_motion_check: CheckBox = $Panel/Margin/VBox/AccessBox/ReducedMotionCheck
-@onready var high_contrast_check: CheckBox = $Panel/Margin/VBox/AccessBox/HighContrastCheck
+@onready var reduced_motion_check: CheckBox = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/AccessBox/ReducedMotionCheck", "Panel/Margin/VBox/AccessBox/ReducedMotionCheck"]) as CheckBox
+@onready var high_contrast_check: CheckBox = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/AccessBox/HighContrastCheck", "Panel/Margin/VBox/AccessBox/HighContrastCheck"]) as CheckBox
 
-@onready var text_scale_slider: HSlider = $Panel/Margin/VBox/AccessBox/TextScaleRow/ScaleSlider
-@onready var text_scale_label: Label = $Panel/Margin/VBox/AccessBox/TextScaleRow/ValLabel
+@onready var text_scale_slider: HSlider = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/AccessBox/TextScaleRow/ScaleSlider", "Panel/Margin/VBox/AccessBox/TextScaleRow/ScaleSlider"]) as HSlider
+@onready var text_scale_label: Label = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/AccessBox/TextScaleRow/ValLabel", "Panel/Margin/VBox/AccessBox/TextScaleRow/ValLabel"]) as Label
 
-@onready var export_backup_btn: Button = $Panel/Margin/VBox/BackupRow/ExportBackupBtn
-@onready var import_backup_btn: Button = $Panel/Margin/VBox/BackupRow/ImportBackupBtn
-@onready var import_text_btn: Button = $Panel/Margin/VBox/BackupRow/ImportTextBtn
-@onready var backup_text_field: TextEdit = $Panel/Margin/VBox/BackupTextField
-@onready var backup_status_label: Label = $Panel/Margin/VBox/BackupStatusLabel
+@onready var export_backup_btn: Button = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/BackupRow/ExportBackupBtn", "Panel/Margin/VBox/BackupRow/ExportBackupBtn"]) as Button
+@onready var import_backup_btn: Button = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/BackupRow/ImportBackupBtn", "Panel/Margin/VBox/BackupRow/ImportBackupBtn"]) as Button
+@onready var import_text_btn: Button = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/BackupRow/ImportTextBtn", "Panel/Margin/VBox/BackupRow/ImportTextBtn"]) as Button
+@onready var backup_text_field: TextEdit = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/BackupTextField", "Panel/Margin/VBox/BackupTextField"]) as TextEdit
+@onready var backup_status_label: Label = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/BackupStatusLabel", "Panel/Margin/VBox/BackupStatusLabel"]) as Label
 
 @onready var close_btn: Button = $Panel/Margin/VBox/CloseBtn
+
+func _find_node(paths: Array) -> Node:
+	for p in paths:
+		if has_node(String(p)):
+			return get_node(String(p))
+	return null
 
 func _ready() -> void:
 	master_slider.value_changed.connect(_on_master_slider_changed)

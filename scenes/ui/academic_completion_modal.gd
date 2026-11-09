@@ -12,12 +12,18 @@ var character_stats: CharacterStats = null
 var inventory_manager: InventoryManager = null
 
 @onready var title_label: Label = $Panel/Margin/VBox/TitleLabel
-@onready var stats_summary_label: Label = $Panel/Margin/VBox/StatsSummaryLabel
-@onready var edu_summary_label: Label = $Panel/Margin/VBox/EduSummaryLabel
-@onready var status_feedback_label: Label = $Panel/Margin/VBox/StatusFeedbackLabel
+@onready var stats_summary_label: Label = _find_node(["Panel/Margin/VBox/Scroll/SummaryBox/StatsSummaryLabel", "Panel/Margin/VBox/StatsSummaryLabel"]) as Label
+@onready var edu_summary_label: Label = _find_node(["Panel/Margin/VBox/Scroll/SummaryBox/EduSummaryLabel", "Panel/Margin/VBox/EduSummaryLabel"]) as Label
+@onready var status_feedback_label: Label = _find_node(["Panel/Margin/VBox/Scroll/SummaryBox/StatusFeedbackLabel", "Panel/Margin/VBox/StatusFeedbackLabel"]) as Label
 
 @onready var export_btn: Button = $Panel/Margin/VBox/Buttons/ExportBtn
 @onready var close_btn: Button = $Panel/Margin/VBox/Buttons/CloseBtn
+
+func _find_node(paths: Array) -> Node:
+	for p in paths:
+		if has_node(String(p)):
+			return get_node(String(p))
+	return null
 
 func _ready() -> void:
 	export_btn.pressed.connect(_on_export_pressed)

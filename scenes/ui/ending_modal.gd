@@ -5,12 +5,18 @@ signal closed()
 signal title_menu_requested()
 
 @onready var ending_title: Label = $PanelContainer/Margin/VBox/EndingTitle
-@onready var summary_label: Label = $PanelContainer/Margin/VBox/SummaryLabel
-@onready var epilogue_label: Label = $PanelContainer/Margin/VBox/EpilogueLabel
-@onready var stats_label: Label = $PanelContainer/Margin/VBox/StatsPanel/Margin/StatsLabel
-@onready var badge_label: Label = $PanelContainer/Margin/VBox/BadgeLabel
+@onready var summary_label: Label = _find_node(["PanelContainer/Margin/VBox/Scroll/ContentBox/SummaryLabel", "PanelContainer/Margin/VBox/SummaryLabel"]) as Label
+@onready var epilogue_label: Label = _find_node(["PanelContainer/Margin/VBox/Scroll/ContentBox/EpilogueLabel", "PanelContainer/Margin/VBox/EpilogueLabel"]) as Label
+@onready var stats_label: Label = _find_node(["PanelContainer/Margin/VBox/Scroll/ContentBox/StatsPanel/Margin/StatsLabel", "PanelContainer/Margin/VBox/StatsPanel/Margin/StatsLabel"]) as Label
+@onready var badge_label: Label = _find_node(["PanelContainer/Margin/VBox/Scroll/ContentBox/BadgeLabel", "PanelContainer/Margin/VBox/BadgeLabel"]) as Label
 @onready var roam_btn: Button = $PanelContainer/Margin/VBox/ButtonRow/RoamBtn
 @onready var title_btn: Button = $PanelContainer/Margin/VBox/ButtonRow/TitleBtn
+
+func _find_node(paths: Array) -> Node:
+	for p in paths:
+		if has_node(String(p)):
+			return get_node(String(p))
+	return null
 
 var _cached_details: Dictionary = {}
 var _cached_stats_text: String = ""

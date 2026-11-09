@@ -331,6 +331,8 @@ func get_focusable_controls() -> Array[Control]:
 	return res
 
 func setup_focus() -> void:
+	if not is_inside_tree():
+		return
 	var controls := get_focusable_controls()
 	for i in range(controls.size()):
 		var c := controls[i]

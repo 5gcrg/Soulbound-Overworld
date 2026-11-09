@@ -9,30 +9,36 @@ signal closed
 var stats: CharacterStats = null
 var kurei_tree: KureiTree = null
 
-@onready var level_label: Label = $Panel/Margin/VBox/HeaderBox/LevelLabel
-@onready var xp_label: Label = $Panel/Margin/VBox/HeaderBox/XpLabel
-@onready var unspent_label: Label = $Panel/Margin/VBox/HeaderBox/UnspentLabel
+@onready var level_label: Label = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/HeaderBox/LevelLabel", "Panel/Margin/VBox/HeaderBox/LevelLabel"]) as Label
+@onready var xp_label: Label = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/HeaderBox/XpLabel", "Panel/Margin/VBox/HeaderBox/XpLabel"]) as Label
+@onready var unspent_label: Label = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/HeaderBox/UnspentLabel", "Panel/Margin/VBox/HeaderBox/UnspentLabel"]) as Label
 
-@onready var vit_label: Label = $Panel/Margin/VBox/Grid/VitRow/ValueLabel
-@onready var res_label: Label = $Panel/Margin/VBox/Grid/ResRow/ValueLabel
-@onready var agi_label: Label = $Panel/Margin/VBox/Grid/AgiRow/ValueLabel
-@onready var foc_label: Label = $Panel/Margin/VBox/Grid/FocRow/ValueLabel
+@onready var vit_label: Label = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/Grid/VitRow/ValueLabel", "Panel/Margin/VBox/Grid/VitRow/ValueLabel"]) as Label
+@onready var res_label: Label = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/Grid/ResRow/ValueLabel", "Panel/Margin/VBox/Grid/ResRow/ValueLabel"]) as Label
+@onready var agi_label: Label = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/Grid/AgiRow/ValueLabel", "Panel/Margin/VBox/Grid/AgiRow/ValueLabel"]) as Label
+@onready var foc_label: Label = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/Grid/FocRow/ValueLabel", "Panel/Margin/VBox/Grid/FocRow/ValueLabel"]) as Label
 
-@onready var vit_btn: Button = $Panel/Margin/VBox/Grid/VitRow/AddButton
-@onready var res_btn: Button = $Panel/Margin/VBox/Grid/ResRow/AddButton
-@onready var agi_btn: Button = $Panel/Margin/VBox/Grid/AgiRow/AddButton
-@onready var foc_btn: Button = $Panel/Margin/VBox/Grid/FocRow/AddButton
+@onready var vit_btn: Button = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/Grid/VitRow/AddButton", "Panel/Margin/VBox/Grid/VitRow/AddButton"]) as Button
+@onready var res_btn: Button = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/Grid/ResRow/AddButton", "Panel/Margin/VBox/Grid/ResRow/AddButton"]) as Button
+@onready var agi_btn: Button = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/Grid/AgiRow/AddButton", "Panel/Margin/VBox/Grid/AgiRow/AddButton"]) as Button
+@onready var foc_btn: Button = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/Grid/FocRow/AddButton", "Panel/Margin/VBox/Grid/FocRow/AddButton"]) as Button
 
-@onready var combat_stats_label: Label = $Panel/Margin/VBox/CombatStatsLabel
+@onready var combat_stats_label: Label = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/CombatStatsLabel", "Panel/Margin/VBox/CombatStatsLabel"]) as Label
 @onready var close_btn: Button = $Panel/Margin/VBox/CloseButton
 
-@onready var kurei_header: Label = $Panel/Margin/VBox/KureiSection/KureiHeader
-@onready var btn_solar: Button = $Panel/Margin/VBox/KureiSection/SkillGrid/BtnSolarFlare
-@onready var btn_prism: Button = $Panel/Margin/VBox/KureiSection/SkillGrid/BtnCelestialPrism
-@onready var btn_aegis: Button = $Panel/Margin/VBox/KureiSection/SkillGrid/BtnGlacialAegis
-@onready var btn_void_shift: Button = $Panel/Margin/VBox/KureiSection/SkillGrid/BtnVoidShift
-@onready var btn_mastery: Button = $Panel/Margin/VBox/KureiSection/SkillGrid/BtnPhaseMastery
-@onready var btn_respec: Button = $Panel/Margin/VBox/KureiSection/RespecButton
+@onready var kurei_header: Label = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/KureiSection/KureiHeader", "Panel/Margin/VBox/KureiSection/KureiHeader"]) as Label
+@onready var btn_solar: Button = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/KureiSection/SkillGrid/BtnSolarFlare", "Panel/Margin/VBox/KureiSection/SkillGrid/BtnSolarFlare"]) as Button
+@onready var btn_prism: Button = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/KureiSection/SkillGrid/BtnCelestialPrism", "Panel/Margin/VBox/KureiSection/SkillGrid/BtnCelestialPrism"]) as Button
+@onready var btn_aegis: Button = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/KureiSection/SkillGrid/BtnGlacialAegis", "Panel/Margin/VBox/KureiSection/SkillGrid/BtnGlacialAegis"]) as Button
+@onready var btn_void_shift: Button = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/KureiSection/SkillGrid/BtnVoidShift", "Panel/Margin/VBox/KureiSection/SkillGrid/BtnVoidShift"]) as Button
+@onready var btn_mastery: Button = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/KureiSection/SkillGrid/BtnPhaseMastery", "Panel/Margin/VBox/KureiSection/SkillGrid/BtnPhaseMastery"]) as Button
+@onready var btn_respec: Button = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/KureiSection/RespecButton", "Panel/Margin/VBox/KureiSection/RespecButton"]) as Button
+
+func _find_node(paths: Array) -> Node:
+	for p in paths:
+		if has_node(String(p)):
+			return get_node(String(p))
+	return null
 
 func _ready() -> void:
 	vit_btn.pressed.connect(_on_allocate.bind(CharacterStats.ATTR_VITALITY))

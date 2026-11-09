@@ -12,23 +12,29 @@ var inventory: InventoryManager = null
 @onready var bank_list_label: Label = $Panel/Margin/VBox/Columns/BankCol/Scroll/BankListLabel
 @onready var satchel_list_label: Label = $Panel/Margin/VBox/Columns/SatchelCol/Scroll/SatchelListLabel
 
-@onready var weapon_label: Label = $Panel/Margin/VBox/Columns/EquipCol/WeaponRow/Value
-@onready var weapon_equip_btn: Button = $Panel/Margin/VBox/Columns/EquipCol/WeaponRow/EquipBtn
-@onready var weapon_unequip_btn: Button = $Panel/Margin/VBox/Columns/EquipCol/WeaponRow/UnequipBtn
+@onready var weapon_label: Label = _find_node(["Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/WeaponRow/Value", "Panel/Margin/VBox/Columns/EquipCol/WeaponRow/Value"]) as Label
+@onready var weapon_equip_btn: Button = _find_node(["Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/WeaponRow/EquipBtn", "Panel/Margin/VBox/Columns/EquipCol/WeaponRow/EquipBtn"]) as Button
+@onready var weapon_unequip_btn: Button = _find_node(["Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/WeaponRow/UnequipBtn", "Panel/Margin/VBox/Columns/EquipCol/WeaponRow/UnequipBtn"]) as Button
 
-@onready var armor_label: Label = $Panel/Margin/VBox/Columns/EquipCol/ArmorRow/Value
-@onready var armor_equip_btn: Button = $Panel/Margin/VBox/Columns/EquipCol/ArmorRow/EquipBtn
-@onready var armor_unequip_btn: Button = $Panel/Margin/VBox/Columns/EquipCol/ArmorRow/UnequipBtn
+@onready var armor_label: Label = _find_node(["Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/ArmorRow/Value", "Panel/Margin/VBox/Columns/EquipCol/ArmorRow/Value"]) as Label
+@onready var armor_equip_btn: Button = _find_node(["Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/ArmorRow/EquipBtn", "Panel/Margin/VBox/Columns/EquipCol/ArmorRow/EquipBtn"]) as Button
+@onready var armor_unequip_btn: Button = _find_node(["Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/ArmorRow/UnequipBtn", "Panel/Margin/VBox/Columns/EquipCol/ArmorRow/UnequipBtn"]) as Button
 
-@onready var relic1_label: Label = $Panel/Margin/VBox/Columns/EquipCol/Relic1Row/Value
-@onready var relic1_equip_btn: Button = $Panel/Margin/VBox/Columns/EquipCol/Relic1Row/EquipBtn
-@onready var relic1_unequip_btn: Button = $Panel/Margin/VBox/Columns/EquipCol/Relic1Row/UnequipBtn
+@onready var relic1_label: Label = _find_node(["Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/Relic1Row/Value", "Panel/Margin/VBox/Columns/EquipCol/Relic1Row/Value"]) as Label
+@onready var relic1_equip_btn: Button = _find_node(["Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/Relic1Row/EquipBtn", "Panel/Margin/VBox/Columns/EquipCol/Relic1Row/EquipBtn"]) as Button
+@onready var relic1_unequip_btn: Button = _find_node(["Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/Relic1Row/UnequipBtn", "Panel/Margin/VBox/Columns/EquipCol/Relic1Row/UnequipBtn"]) as Button
 
-@onready var relic2_label: Label = $Panel/Margin/VBox/Columns/EquipCol/Relic2Row/Value
-@onready var relic2_equip_btn: Button = $Panel/Margin/VBox/Columns/EquipCol/Relic2Row/EquipBtn
-@onready var relic2_unequip_btn: Button = $Panel/Margin/VBox/Columns/EquipCol/Relic2Row/UnequipBtn
+@onready var relic2_label: Label = _find_node(["Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/Relic2Row/Value", "Panel/Margin/VBox/Columns/EquipCol/Relic2Row/Value"]) as Label
+@onready var relic2_equip_btn: Button = _find_node(["Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/Relic2Row/EquipBtn", "Panel/Margin/VBox/Columns/EquipCol/Relic2Row/EquipBtn"]) as Button
+@onready var relic2_unequip_btn: Button = _find_node(["Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/Relic2Row/UnequipBtn", "Panel/Margin/VBox/Columns/EquipCol/Relic2Row/UnequipBtn"]) as Button
 
 @onready var close_btn: Button = $Panel/Margin/VBox/CloseButton
+
+func _find_node(paths: Array) -> Node:
+	for p in paths:
+		if has_node(String(p)):
+			return get_node(String(p))
+	return null
 
 func _ready() -> void:
 	weapon_equip_btn.pressed.connect(_on_equip_slot.bind(InventoryManager.SLOT_WEAPON))

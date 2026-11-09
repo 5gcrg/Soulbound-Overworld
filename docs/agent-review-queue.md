@@ -811,6 +811,47 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | Injected failure: `temporary_broken_test.gd` (quit(1)) | Exit 1 | Exit 1 | Non-zero exit code propagation verified; runner terminates with exit code 1. |
 | Full 25-suite suite execution: `run_headless_tests.ps1` | Exit 0 | Exit 0 | All 25 suites passed cleanly with 0 failures in 27.5s. |
 
+---
+
+## SBL-FIX-011 — 960×540 Layout & Overflow Audit
+
+- **Milestone** UX, Accessibility & Resolution Guard Hardening.
+- **Requirements** GDD-103 (960×540 logical resolution), TC-ACC-001 (Text scale 0.8–1.5x, High contrast), AGENTS.md Engineering Invariants.
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Settings: `scenes/ui/settings_sheet.{tscn,gd}`.
+  - Inventory: `scenes/ui/inventory_sheet.{tscn,gd}`.
+  - Character: `scenes/ui/character_sheet.{tscn,gd}`.
+  - Chapter Dialog: `scenes/vertical_slice/chapter_activity_dialog.gd`.
+  - Academic Modal: `scenes/ui/academic_completion_modal.{tscn,gd}`.
+  - Ending Modal: `scenes/ui/ending_modal.{tscn,gd}`.
+  - Tests: `tests/headless/layout_audit_test.gd`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None (pure GDScript and Godot UI primitives; zero generated art).
+- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Open questions** None.
+
+### Changes
+
+1. **Resolution & Text-Scale Overflow Audit.** Audited all six core UI panels/modals (SettingsSheet, InventorySheet, CharacterSheet, ChapterActivityDialog, AcademicCompletionModal, EndingModal) under the fixed 960×540 logical viewport at authored base scale (1.0×) and maximum accessibility scaling (1.5×).
+2. **SettingsSheet Scroll Integration.** Restructured `SettingsSheet` to place audio controls, accessibility toggles, and web backup controls inside a vertical `ScrollContainer` bounded within a 550×500 panel. At 1.0×, the panel fits without scroll clipping; at 1.5×, the scroll container absorbs content expansion, keeping the panel within `Rect2(0, 0, 960, 540)`.
+3. **CharacterSheet Layout Correction.** Remedied the 551px vertical overflow discovered during the initial audit. Replaced the unscrollable VBox with a 550×510 panel containing a vertical `ScrollContainer` for attribute allocation and Kurei talent trees. Bounded margins ensure `vbar.page >= vbar.max_value` at 1.0× (no clipping) and full viewport containment at 1.5×.
+4. **InventorySheet Equipment Column Scrolling.** Added a `ScrollContainer` for equipment slot rows (`WeaponRow`, `ArmorRow`, `Relic1Row`, `Relic2Row`) inside `EquipCol`.
+5. **AcademicCompletionModal & EndingModal Protection.** Wrapped the variable-length assessment competency summaries and epilogue narratives in `ScrollContainer`s with fixed action button anchors.
+6. **ChapterActivityDialog Guard.** Hardened `ChapterActivityDialog.setup_focus()` to guard against pre-tree invocation (`is_inside_tree()`).
+7. **Resilient Node Resolution.** Implemented safe node lookup (`_find_node()`) across all affected sheet controllers, ensuring backward-compatible binding across both flat and scroll-nested node hierarchies.
+
+### Verification Table
+
+| Test Suite / Scope | Result | Evidence |
+|---|---|---|
+| `tests/headless/layout_audit_test.gd` (Phase 1: 1.0×) | Exit 0 | All 6 panels confirmed inside `Rect2(0, 0, 960, 540)`. All scroll containers report zero clipped content at 1.0× (`page >= max_value` or `max <= size.y`). |
+| `tests/headless/layout_audit_test.gd` (Phase 2: 1.5×) | Exit 0 | All 6 panels confirmed inside `Rect2(0, 0, 960, 540)` at 1.5× text scaling. Content growth fully absorbed by scroll containers. |
+| `tests/headless/settings_accessibility_test.gd` | Exit 0 | 100% regression pass on live audio, contrast, text scaling, and clipboard-free backup text transfer. |
+| `tests/headless/ui_sheets_test.gd` | Exit 0 | 100% regression pass on hotkey toggles, mutual exclusivity, attribute allocation, and gear equip/unequip. |
+
+
 
 
 

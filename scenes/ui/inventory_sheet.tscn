@@ -116,102 +116,112 @@ theme_override_colors/font_color = Color(0.65, 0.8, 1, 1)
 theme_override_font_sizes/font_size = 13
 text = "Equipped Gear"
 
-[node name="WeaponRow" type="HBoxContainer" parent="Panel/Margin/VBox/Columns/EquipCol"]
+[node name="Scroll" type="ScrollContainer" parent="Panel/Margin/VBox/Columns/EquipCol"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Rows" type="VBoxContainer" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="WeaponRow" type="HBoxContainer" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows"]
 layout_mode = 2
 
-[node name="Slot" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/WeaponRow"]
+[node name="Slot" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/WeaponRow"]
 custom_minimum_size = Vector2(55, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "Weapon:"
 
-[node name="Value" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/WeaponRow"]
+[node name="Value" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/WeaponRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
 text = "(Empty)"
 
-[node name="EquipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/WeaponRow"]
+[node name="EquipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/WeaponRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 10
 text = "Equip"
 
-[node name="UnequipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/WeaponRow"]
+[node name="UnequipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/WeaponRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 10
 text = "Unequip"
 
-[node name="ArmorRow" type="HBoxContainer" parent="Panel/Margin/VBox/Columns/EquipCol"]
+[node name="ArmorRow" type="HBoxContainer" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows"]
 layout_mode = 2
 
-[node name="Slot" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/ArmorRow"]
+[node name="Slot" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/ArmorRow"]
 custom_minimum_size = Vector2(55, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "Armor:"
 
-[node name="Value" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/ArmorRow"]
+[node name="Value" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/ArmorRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
 text = "(Empty)"
 
-[node name="EquipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/ArmorRow"]
+[node name="EquipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/ArmorRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 10
 text = "Equip"
 
-[node name="UnequipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/ArmorRow"]
+[node name="UnequipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/ArmorRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 10
 text = "Unequip"
 
-[node name="Relic1Row" type="HBoxContainer" parent="Panel/Margin/VBox/Columns/EquipCol"]
+[node name="Relic1Row" type="HBoxContainer" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows"]
 layout_mode = 2
 
-[node name="Slot" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/Relic1Row"]
+[node name="Slot" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/Relic1Row"]
 custom_minimum_size = Vector2(55, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "Relic 1:"
 
-[node name="Value" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/Relic1Row"]
+[node name="Value" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/Relic1Row"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
 text = "(Empty)"
 
-[node name="EquipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/Relic1Row"]
+[node name="EquipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/Relic1Row"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 10
 text = "Equip"
 
-[node name="UnequipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/Relic1Row"]
+[node name="UnequipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/Relic1Row"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 10
 text = "Unequip"
 
-[node name="Relic2Row" type="HBoxContainer" parent="Panel/Margin/VBox/Columns/EquipCol"]
+[node name="Relic2Row" type="HBoxContainer" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows"]
 layout_mode = 2
 
-[node name="Slot" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/Relic2Row"]
+[node name="Slot" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/Relic2Row"]
 custom_minimum_size = Vector2(55, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "Relic 2:"
 
-[node name="Value" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/Relic2Row"]
+[node name="Value" type="Label" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/Relic2Row"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
 text = "(Empty)"
 
-[node name="EquipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/Relic2Row"]
+[node name="EquipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/Relic2Row"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 10
 text = "Equip"
 
-[node name="UnequipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/Relic2Row"]
+[node name="UnequipBtn" type="Button" parent="Panel/Margin/VBox/Columns/EquipCol/Scroll/Rows/Relic2Row"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 10
 text = "Unequip"

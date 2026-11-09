@@ -27,23 +27,23 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -260.0
-offset_top = -260.0
-offset_right = 260.0
-offset_bottom = 260.0
+offset_left = -275.0
+offset_top = -250.0
+offset_right = 275.0
+offset_bottom = 250.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Margin" type="MarginContainer" parent="Panel"]
 layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 18
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 18
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 14
 
 [node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 
 [node name="Title" type="Label" parent="Panel/Margin/VBox"]
 layout_mode = 2
@@ -52,163 +52,173 @@ theme_override_font_sizes/font_size = 18
 text = "Audio & Accessibility Settings"
 horizontal_alignment = 1
 
-[node name="AudioHeader" type="Label" parent="Panel/Margin/VBox"]
+[node name="Scroll" type="ScrollContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ContentBox" type="VBoxContainer" parent="Panel/Margin/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="AudioHeader" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.65, 0.8, 1, 1)
 theme_override_font_sizes/font_size = 12
 text = "AUDIO CONTROLS"
 
-[node name="AudioBox" type="VBoxContainer" parent="Panel/Margin/VBox"]
+[node name="AudioBox" type="VBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="MasterRow" type="HBoxContainer" parent="Panel/Margin/VBox/AudioBox"]
+[node name="MasterRow" type="HBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/AudioBox"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="Panel/Margin/VBox/AudioBox/MasterRow"]
+[node name="Label" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/AudioBox/MasterRow"]
 custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "Master Volume:"
 
-[node name="MasterSlider" type="HSlider" parent="Panel/Margin/VBox/AudioBox/MasterRow"]
+[node name="MasterSlider" type="HSlider" parent="Panel/Margin/VBox/Scroll/ContentBox/AudioBox/MasterRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 value = 100.0
 
-[node name="ValLabel" type="Label" parent="Panel/Margin/VBox/AudioBox/MasterRow"]
+[node name="ValLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/AudioBox/MasterRow"]
 custom_minimum_size = Vector2(45, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "100%"
 horizontal_alignment = 2
 
-[node name="MusicRow" type="HBoxContainer" parent="Panel/Margin/VBox/AudioBox"]
+[node name="MusicRow" type="HBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/AudioBox"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="Panel/Margin/VBox/AudioBox/MusicRow"]
+[node name="Label" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/AudioBox/MusicRow"]
 custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "Music Volume:"
 
-[node name="MusicSlider" type="HSlider" parent="Panel/Margin/VBox/AudioBox/MusicRow"]
+[node name="MusicSlider" type="HSlider" parent="Panel/Margin/VBox/Scroll/ContentBox/AudioBox/MusicRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 value = 80.0
 
-[node name="ValLabel" type="Label" parent="Panel/Margin/VBox/AudioBox/MusicRow"]
+[node name="ValLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/AudioBox/MusicRow"]
 custom_minimum_size = Vector2(45, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "80%"
 horizontal_alignment = 2
 
-[node name="SfxRow" type="HBoxContainer" parent="Panel/Margin/VBox/AudioBox"]
+[node name="SfxRow" type="HBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/AudioBox"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="Panel/Margin/VBox/AudioBox/SfxRow"]
+[node name="Label" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/AudioBox/SfxRow"]
 custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "SFX Volume:"
 
-[node name="SfxSlider" type="HSlider" parent="Panel/Margin/VBox/AudioBox/SfxRow"]
+[node name="SfxSlider" type="HSlider" parent="Panel/Margin/VBox/Scroll/ContentBox/AudioBox/SfxRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 value = 90.0
 
-[node name="ValLabel" type="Label" parent="Panel/Margin/VBox/AudioBox/SfxRow"]
+[node name="ValLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/AudioBox/SfxRow"]
 custom_minimum_size = Vector2(45, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "90%"
 horizontal_alignment = 2
 
-[node name="HSeparator1" type="HSeparator" parent="Panel/Margin/VBox"]
+[node name="HSeparator1" type="HSeparator" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
 
-[node name="AccessHeader" type="Label" parent="Panel/Margin/VBox"]
+[node name="AccessHeader" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.85, 0.6, 1)
 theme_override_font_sizes/font_size = 12
 text = "ACCESSIBILITY (TC-ACC-001)"
 
-[node name="AccessBox" type="VBoxContainer" parent="Panel/Margin/VBox"]
+[node name="AccessBox" type="VBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="ReducedMotionCheck" type="CheckBox" parent="Panel/Margin/VBox/AccessBox"]
+[node name="ReducedMotionCheck" type="CheckBox" parent="Panel/Margin/VBox/Scroll/ContentBox/AccessBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "Enable Reduced Motion (Disable Camera Bob/Shake)"
 
-[node name="HighContrastCheck" type="CheckBox" parent="Panel/Margin/VBox/AccessBox"]
+[node name="HighContrastCheck" type="CheckBox" parent="Panel/Margin/VBox/Scroll/ContentBox/AccessBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "High Contrast Mode"
 
-[node name="TextScaleRow" type="HBoxContainer" parent="Panel/Margin/VBox/AccessBox"]
+[node name="TextScaleRow" type="HBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/AccessBox"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="Panel/Margin/VBox/AccessBox/TextScaleRow"]
+[node name="Label" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/AccessBox/TextScaleRow"]
 custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "Text Scale:"
 
-[node name="ScaleSlider" type="HSlider" parent="Panel/Margin/VBox/AccessBox/TextScaleRow"]
+[node name="ScaleSlider" type="HSlider" parent="Panel/Margin/VBox/Scroll/ContentBox/AccessBox/TextScaleRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 80.0
 max_value = 150.0
 value = 100.0
 
-[node name="ValLabel" type="Label" parent="Panel/Margin/VBox/AccessBox/TextScaleRow"]
+[node name="ValLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/AccessBox/TextScaleRow"]
 custom_minimum_size = Vector2(45, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "100%"
 horizontal_alignment = 2
 
-[node name="HSeparator2" type="HSeparator" parent="Panel/Margin/VBox"]
+[node name="HSeparator2" type="HSeparator" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
 
-[node name="BackupHeader" type="Label" parent="Panel/Margin/VBox"]
+[node name="BackupHeader" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.7, 0.3, 1)
 theme_override_font_sizes/font_size = 12
 text = "WEB PROFILE BACKUP (AGENTS.md INVARIANT)"
 
-[node name="BackupRow" type="HBoxContainer" parent="Panel/Margin/VBox"]
+[node name="BackupRow" type="HBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="ExportBackupBtn" type="Button" parent="Panel/Margin/VBox/BackupRow"]
+[node name="ExportBackupBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/BackupRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
 text = "Export Backup String"
 
-[node name="ImportBackupBtn" type="Button" parent="Panel/Margin/VBox/BackupRow"]
+[node name="ImportBackupBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/BackupRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
 text = "Import Backup String"
 
-[node name="ImportTextBtn" type="Button" parent="Panel/Margin/VBox/BackupRow"]
+[node name="ImportTextBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/BackupRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
 text = "Import From Text"
 
-[node name="BackupTextField" type="TextEdit" parent="Panel/Margin/VBox"]
-custom_minimum_size = Vector2(0, 64)
+[node name="BackupTextField" type="TextEdit" parent="Panel/Margin/VBox/Scroll/ContentBox"]
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 placeholder_text = "Paste a backup JSON string here (no clipboard access required)..."
 wrap_mode = 1
 
-[node name="BackupStatusLabel" type="Label" parent="Panel/Margin/VBox"]
+[node name="BackupStatusLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 0.8)
 theme_override_font_sizes/font_size = 10

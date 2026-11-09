@@ -27,23 +27,23 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -250.0
-offset_top = -240.0
-offset_right = 250.0
-offset_bottom = 240.0
+offset_left = -275.0
+offset_top = -255.0
+offset_right = 275.0
+offset_bottom = 255.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Margin" type="MarginContainer" parent="Panel"]
 layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 16
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 10
 
 [node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 8
 
 [node name="Title" type="Label" parent="Panel/Margin/VBox"]
 layout_mode = 2
@@ -52,169 +52,179 @@ theme_override_font_sizes/font_size = 18
 text = "Ren — Character Sheet"
 horizontal_alignment = 1
 
-[node name="HeaderBox" type="VBoxContainer" parent="Panel/Margin/VBox"]
+[node name="Scroll" type="ScrollContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ContentBox" type="VBoxContainer" parent="Panel/Margin/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="HeaderBox" type="VBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="LevelLabel" type="Label" parent="Panel/Margin/VBox/HeaderBox"]
+[node name="LevelLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/HeaderBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Level 1"
 
-[node name="XpLabel" type="Label" parent="Panel/Margin/VBox/HeaderBox"]
+[node name="XpLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/HeaderBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "XP: 0 / 100"
 
-[node name="UnspentLabel" type="Label" parent="Panel/Margin/VBox/HeaderBox"]
+[node name="UnspentLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/HeaderBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.85, 0.6, 1)
 theme_override_font_sizes/font_size = 13
 text = "Available Attribute Points: 0"
 
-[node name="HSeparator" type="HSeparator" parent="Panel/Margin/VBox"]
+[node name="HSeparator" type="HSeparator" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
 
-[node name="Grid" type="VBoxContainer" parent="Panel/Margin/VBox"]
+[node name="Grid" type="VBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
-[node name="VitRow" type="HBoxContainer" parent="Panel/Margin/VBox/Grid"]
+[node name="VitRow" type="HBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid"]
 layout_mode = 2
 
-[node name="NameLabel" type="Label" parent="Panel/Margin/VBox/Grid/VitRow"]
+[node name="NameLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid/VitRow"]
 custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "Vitality (Max HP)"
 
-[node name="ValueLabel" type="Label" parent="Panel/Margin/VBox/Grid/VitRow"]
+[node name="ValueLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid/VitRow"]
 custom_minimum_size = Vector2(50, 0)
 layout_mode = 2
 text = "10"
 horizontal_alignment = 1
 
-[node name="AddButton" type="Button" parent="Panel/Margin/VBox/Grid/VitRow"]
+[node name="AddButton" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid/VitRow"]
 custom_minimum_size = Vector2(32, 28)
 layout_mode = 2
 text = "+"
 
-[node name="ResRow" type="HBoxContainer" parent="Panel/Margin/VBox/Grid"]
+[node name="ResRow" type="HBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid"]
 layout_mode = 2
 
-[node name="NameLabel" type="Label" parent="Panel/Margin/VBox/Grid/ResRow"]
+[node name="NameLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid/ResRow"]
 custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "Resonance (Magic)"
 
-[node name="ValueLabel" type="Label" parent="Panel/Margin/VBox/Grid/ResRow"]
+[node name="ValueLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid/ResRow"]
 custom_minimum_size = Vector2(50, 0)
 layout_mode = 2
 text = "10"
 horizontal_alignment = 1
 
-[node name="AddButton" type="Button" parent="Panel/Margin/VBox/Grid/ResRow"]
+[node name="AddButton" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid/ResRow"]
 custom_minimum_size = Vector2(32, 28)
 layout_mode = 2
 text = "+"
 
-[node name="AgiRow" type="HBoxContainer" parent="Panel/Margin/VBox/Grid"]
+[node name="AgiRow" type="HBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid"]
 layout_mode = 2
 
-[node name="NameLabel" type="Label" parent="Panel/Margin/VBox/Grid/AgiRow"]
+[node name="NameLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid/AgiRow"]
 custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "Agility (Speed)"
 
-[node name="ValueLabel" type="Label" parent="Panel/Margin/VBox/Grid/AgiRow"]
+[node name="ValueLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid/AgiRow"]
 custom_minimum_size = Vector2(50, 0)
 layout_mode = 2
 text = "10"
 horizontal_alignment = 1
 
-[node name="AddButton" type="Button" parent="Panel/Margin/VBox/Grid/AgiRow"]
+[node name="AddButton" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid/AgiRow"]
 custom_minimum_size = Vector2(32, 28)
 layout_mode = 2
 text = "+"
 
-[node name="FocRow" type="HBoxContainer" parent="Panel/Margin/VBox/Grid"]
+[node name="FocRow" type="HBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid"]
 layout_mode = 2
 
-[node name="NameLabel" type="Label" parent="Panel/Margin/VBox/Grid/FocRow"]
+[node name="NameLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid/FocRow"]
 custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "Focus (Pips/Crit)"
 
-[node name="ValueLabel" type="Label" parent="Panel/Margin/VBox/Grid/FocRow"]
+[node name="ValueLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid/FocRow"]
 custom_minimum_size = Vector2(50, 0)
 layout_mode = 2
 text = "10"
 horizontal_alignment = 1
 
-[node name="AddButton" type="Button" parent="Panel/Margin/VBox/Grid/FocRow"]
+[node name="AddButton" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid/FocRow"]
 custom_override_constants/outline_size = 0
 custom_minimum_size = Vector2(32, 28)
 layout_mode = 2
 text = "+"
 
-[node name="HSeparator2" type="HSeparator" parent="Panel/Margin/VBox"]
+[node name="HSeparator2" type="HSeparator" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
 
-[node name="CombatStatsLabel" type="Label" parent="Panel/Margin/VBox"]
+[node name="CombatStatsLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.75, 0.85, 0.95, 1)
 theme_override_font_sizes/font_size = 12
 text = "Max HP: 100   |   Spirit Power: 50"
 horizontal_alignment = 1
 
-[node name="HSeparator3" type="HSeparator" parent="Panel/Margin/VBox"]
+[node name="HSeparator3" type="HSeparator" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
 
-[node name="KureiSection" type="VBoxContainer" parent="Panel/Margin/VBox"]
+[node name="KureiSection" type="VBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="KureiHeader" type="Label" parent="Panel/Margin/VBox/KureiSection"]
+[node name="KureiHeader" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/KureiSection"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.95, 0.8, 0.3, 1)
 theme_override_font_sizes/font_size = 12
 text = "Kurei Art Skill Tree (Talent Points: 0)"
 horizontal_alignment = 1
 
-[node name="SkillGrid" type="GridContainer" parent="Panel/Margin/VBox/KureiSection"]
+[node name="SkillGrid" type="GridContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/KureiSection"]
 layout_mode = 2
 columns = 2
 
-[node name="BtnSolarFlare" type="Button" parent="Panel/Margin/VBox/KureiSection/SkillGrid"]
+[node name="BtnSolarFlare" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/KureiSection/SkillGrid"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 10
 text = "Solar Flare (Flame T2)"
 
-[node name="BtnCelestialPrism" type="Button" parent="Panel/Margin/VBox/KureiSection/SkillGrid"]
+[node name="BtnCelestialPrism" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/KureiSection/SkillGrid"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 10
 text = "Celestial Prism (Lumina T2)"
 
-[node name="BtnGlacialAegis" type="Button" parent="Panel/Margin/VBox/KureiSection/SkillGrid"]
+[node name="BtnGlacialAegis" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/KureiSection/SkillGrid"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 10
 text = "Glacial Aegis (Torrent T2)"
 
-[node name="BtnVoidShift" type="Button" parent="Panel/Margin/VBox/KureiSection/SkillGrid"]
+[node name="BtnVoidShift" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/KureiSection/SkillGrid"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 10
 text = "Void Shift (Void T1)"
 
-[node name="BtnPhaseMastery" type="Button" parent="Panel/Margin/VBox/KureiSection/SkillGrid"]
+[node name="BtnPhaseMastery" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/KureiSection/SkillGrid"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 10
 text = "Phase Mastery (Void T2)"
 
-[node name="RespecButton" type="Button" parent="Panel/Margin/VBox/KureiSection"]
+[node name="RespecButton" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/KureiSection"]
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 10
