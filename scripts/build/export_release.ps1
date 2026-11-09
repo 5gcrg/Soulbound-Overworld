@@ -6,7 +6,9 @@ param (
     [string]$GodotPath = "C:\Users\ALCOHOL\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe",
     [ValidateSet("academic_mvp", "full_release", "both", "all")]
     [string]$Tier = "full_release",
-    [switch]$SkipZip = $false
+    [switch]$SkipZip = $false,
+    [switch]$FailAfterMutation = $false,
+    [switch]$SimulateFailureAfterMutation = $false
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,16 +22,22 @@ Write-Host "=========================================" -ForegroundColor Cyan
 Write-Host "Target Release Tier: $Tier" -ForegroundColor Gray
 
 # Locate Godot
-if (-not (Test-Path $GodotPath)) {
-    $fallbackGui = "C:\Users\ALCOHOL\Downloads\Godot_v4.7.2-stable_win64.exe\godot.exe"
-    if (Test-Path $fallbackGui) {
-        $GodotPath = $fallbackGui
-    } else {
-        $GodotCommand = Get-Command "godot" -ErrorAction SilentlyContinue
-        if ($GodotCommand) {
-            $GodotPath = $GodotCommand.Source
+if ($PSBoundParameters.ContainsKey('GodotPath')) {
+    if (-not (Test-Path $GodotPath)) {
+        throw "Specified Godot executable not found at '$GodotPath'."
+    }
+} else {
+    if (-not (Test-Path $GodotPath)) {
+        $fallbackGui = "C:\Users\ALCOHOL\Downloads\Godot_v4.7.2-stable_win64.exe\godot.exe"
+        if (Test-Path $fallbackGui) {
+            $GodotPath = $fallbackGui
         } else {
-            throw "Godot executable not found at '$GodotPath' and not in system PATH."
+            $GodotCommand = Get-Command "godot" -ErrorAction SilentlyContinue
+            if ($GodotCommand) {
+                $GodotPath = $GodotCommand.Source
+            } else {
+                throw "Godot executable not found at '$GodotPath' and not in system PATH."
+            }
         }
     }
 }
@@ -87,6 +95,12 @@ function Export-TierPackage {
 
     # 2. Write root marker res://build_tier.txt so it gets packed into .pck via include_filter
     [System.IO.File]::WriteAllText($origMarkerPath, "$TargetTier`n", [System.Text.Encoding]::UTF8)
+
+    Write-Host "  [MUTATION_APPLIED] Tier '$TargetTier' applied to project.godot and build_tier.txt written." -ForegroundColor Magenta
+
+    if ($FailAfterMutation -or $SimulateFailureAfterMutation) {
+        throw "SIMULATED_EXPORT_FAILURE: Injected failure immediately after tree mutation for tier '$TargetTier'."
+    }
 
     # 3. Export Web Build
     if ($ExportWeb) {

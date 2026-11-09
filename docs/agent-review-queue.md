@@ -1311,3 +1311,64 @@ The `SliceProgress: Invalid data` warning seen when mounting a packed build came
 | `scripts/build/test_export_failure_restoration.ps1` | Exit 0 in the current form, but the failure point is uncontrolled, which is the open finding. |
 | MCP harness re-run | Exit 0; tracked reference scene untouched; `git status` clean. |
 | MCP harness with a bad Godot path | Exit 1; the harness fails instead of printing a false PASS. |
+
+---
+
+## SBL-BLD-004 — Deterministic Export-Failure Injection & Non-Vacuous Tree Restoration
+
+- **Milestone** Build Integrity & Infrastructure Governance (Review Finding Remediation).
+- **Requirements** GDD-041, GDD-113, GDD-116, AGENTS.md Engineering Invariants ("Keep the 3-chapter academic MVP separate from the 5-chapter 2-ending full release", "Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer").
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Build automation: `scripts/build/export_release.ps1`.
+  - Regression test: `scripts/build/test_export_failure_restoration.ps1`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None (PowerShell build scripts and test harnesses; zero image or audio assets).
+- **Review** REVIEW_PENDING_CODEX. Work submitted for Codex CLI review per AGENTS.md.
+- **Open questions** `OD-017`: Default shipping release tier remains deferred to human release authority sign-off; checked-in `project.godot` maintains `release_tier="full_release"`.
+
+### Changes
+
+1. **Deterministic Post-Mutation Failure Switch (`export_release.ps1`)**:
+   - Added `[switch]$FailAfterMutation` and `[switch]$SimulateFailureAfterMutation` parameters to `export_release.ps1`.
+   - In `Export-TierPackage`, failure injection occurs strictly **after** `project.godot` is modified to the target release tier and `build_tier.txt` is written to the project root.
+   - The exporter emits an explicit log sentinel `[MUTATION_APPLIED] Tier '<tier>' applied to project.godot and build_tier.txt written.` immediately followed by throwing `SIMULATED_EXPORT_FAILURE`, ensuring no Godot child process is spawned and no reliance on ambient fallbacks.
+2. **Explicit `-GodotPath` Validation (`export_release.ps1`)**:
+   - Hardened `export_release.ps1` binary discovery: if `-GodotPath` is explicitly provided by the caller (`$PSBoundParameters.ContainsKey('GodotPath')`), it strictly requires the path to exist and throws `Specified Godot executable not found at '$GodotPath'` if missing. It never falls back silently to ambient or GUI Godot binaries when the caller provided an explicit path.
+3. **Hardened Failure Recovery Test (`scripts/build/test_export_failure_restoration.ps1`)**:
+   - Executes `export_release.ps1` with `-Tier academic_mvp -FailAfterMutation`.
+   - Captures process stdout and stderr and explicitly asserts:
+     - Non-zero exit code (`$proc.ExitCode -ne 0`).
+     - Configuration mutation occurred before failure (`[MUTATION_APPLIED]` observed).
+     - Simulated failure triggered (`SIMULATED_EXPORT_FAILURE` observed).
+     - `project.godot` restored byte-identically (sequence equality and SHA-256 match).
+     - `build_tier.txt` deleted and absent from repository root.
+4. **Empirical Non-Vacuous Proof Mode (`-DisableRestore`)**:
+   - Added `-DisableRestore` flag and `-ExportScript` parameter to `test_export_failure_restoration.ps1`.
+   - When executed with `-DisableRestore`, the harness executes against an exporter copy where the `finally` restoration logic (`WriteAllBytes` for `project.godot` and `Remove-Item` for `build_tier.txt`) is disabled.
+   - The harness verifies that with restore disabled, the failure leaves the tree dirty (`bytesIdentical=False`, `markerRemained=True`), and exits 1 as required by the test contract.
+   - A robust `finally` cleanup block in `test_export_failure_restoration.ps1` guarantees the working tree is restored to pre-test bytes even if a broken exporter or negative test fails.
+
+### Verification Table
+
+| Invocation / Scope | Expected Exit | Observed Exit | Evidence |
+|---|---|---|---|
+| Standard test: `test_export_failure_restoration.ps1` | Exit 0 | Exit 0 | Mutation observed (`academic_mvp`), `SIMULATED_EXPORT_FAILURE` caught, `project.godot` byte-identical (`5C65BBCD...`), `build_tier.txt` absent. |
+| Non-vacuous proof: `test_export_failure_restoration.ps1 -DisableRestore` | Exit 1 | Exit 1 | Confirmed failure with restore disabled: `bytesIdentical=False`, `build_tier.txt` remained `True`, harness caught omission and exited 1; safety cleanup restored tree. |
+| Bad Godot path guard: `export_release.ps1 -GodotPath C:\nonexistent\godot.exe` | Exit 1 | Exit 1 | Caught immediately: `Specified Godot executable not found at 'C:\nonexistent\godot.exe'` without silent GUI fallback. |
+| Headless test runner + chained export: `run_headless_tests.ps1 -Export` | Exit 0 | Exit 0 | All 29 test suites passed (0 failures). Chained export built and validated 3 packages (`AcademicMVP-Web`, `FullRelease-Web`, `FullRelease-Windows`), verified live `.pck` tier gates, restored tree byte-identically. |
+
+### Artifact Size Report (from `run_headless_tests.ps1 -Export`)
+
+| Package / Artifact | Size (Bytes) | Size (MB) |
+|---|---|---|
+| `dist/Soulbound-AcademicMVP-Web.zip` | 10,646,507 B | ~10.15 MB |
+| `dist/Soulbound-Web.zip` | 10,646,509 B | ~10.15 MB |
+| `dist/Soulbound-Windows-Portable.zip` | 86,520,606 B | ~82.51 MB |
+| `builds/web-academic_mvp/index.pck` | 516,992 B | ~504 KB |
+| `builds/web-academic_mvp/index.wasm` | 39,514,754 B | ~37.68 MB |
+| `builds/web/index.pck` | 516,992 B | ~504 KB |
+| `builds/web/index.wasm` | 39,514,754 B | ~37.68 MB |
+| `builds/windows/Soulbound.pck` | 516,992 B | ~504 KB |
+| `builds/windows/Soulbound.exe` | 180,717,576 B | ~172.35 MB |
