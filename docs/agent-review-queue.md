@@ -450,7 +450,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Tests: `tests/headless/{dimension_test,dungeon_scene_test,settings_accessibility_test}.gd`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure code, Godot UI primitives; no image, audio, or text asset generation in this slice).
-- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex CLI review is halted; no review has occurred.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
 - **Open questions** None for this slice. The dimension player mask assumes layer 1 = physical obstacles and layer 2 = spirit obstacles; region scenes must keep authored collision layers on those two bits.
 
 ### Changes
@@ -483,7 +483,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Tests: `tests/headless/vertical_slice_loop_test.gd`, `tests/headless/chapter_progression_test.gd`, `tests/headless/dungeon_scene_test.gd`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure GDScript headless regression assertions only).
-- **Review** REVIEW_PENDING_CODEX.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
 - **Open questions** None.
 
 ### Probe to Test Mapping & Evidence
@@ -518,7 +518,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Tests: `tests/headless/dungeon_scene_test.gd`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure code and UI controls only).
-- **Review** REVIEW_PENDING_CODEX.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
 - **Open questions** None.
 
 ### Changes
@@ -547,7 +547,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Tests: `tests/headless/evaluator_debug_bar_test.gd`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure code and UI input management only).
-- **Review** REVIEW_PENDING_CODEX.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
 - **Open questions** None.
 
 ### Changes
@@ -575,7 +575,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Tests: `tests/headless/settings_accessibility_test.gd`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure code and UI accessibility styling).
-- **Review** REVIEW_PENDING_CODEX.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
 - **Open questions** None.
 
 ### Changes
@@ -610,7 +610,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Documentation: `docs/traceability-matrix.md`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (documentation reconciliation only).
-- **Review** REVIEW_PENDING_CODEX.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
 - **Open questions** None.
 
 ### Changes
@@ -639,7 +639,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Config: `export_presets.cfg`, `project.godot`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (configuration audit and documentation checklist).
-- **Review** REVIEW_PENDING_CODEX.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
 - **Open questions** None.
 
 ### Audit Findings
@@ -670,7 +670,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Documentation / Audit: `docs/godot-mcp-evaluation.md`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None.
-- **Review** REVIEW_PENDING_CODEX.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
 - **Open questions** None. Integration marked PENDING per AGENTS.md instructions.
 
 ### Investigation Summary
@@ -698,7 +698,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Documentation / Ledger: `docs/open-decisions-ledger.md`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None.
-- **Review** REVIEW_PENDING_CODEX.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
 - **Open questions** None. All 16 open decisions mapped to their resolution owner / gate.
 
 ### Ledger Summary
@@ -727,7 +727,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Documentation / Specs: `docs/audio-spec.md`, `docs/educational_copy_review.md`, `docs/asset-register.md`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** Non-image assets routed to Gemini Flash. Zero image assets (Codex-exclusive, blocked). Zero binary audio dependencies (procedural in-engine fallback active).
-- **Review** REVIEW_PENDING_CODEX.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
 - **Open questions** None. Binary audio pending Gemini Flash audio modality. Formal educational certification gated under `OD-012`.
 
 ### Asset Queue Summary
@@ -761,7 +761,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Tests: `tests/headless/release_tier_test.gd`, `tests/headless/ending_chapter5_test.gd`.
   - Decisions: `docs/open-decisions-ledger.md` (`OD-017`), `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure code and configuration only; zero generated images or external audio).
-- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
 - **Open questions** Recorded `OD-017`: Choice of shipping default release tier (`academic_mvp` vs. `full_release`) for public release builds is deferred to human release authority sign-off; checked-in project setting defaults to `full_release` to maintain unbroken evaluator and developer workflows.
 
 ### Changes
@@ -793,7 +793,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Documentation: `docs/testing.md`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (PowerShell build script and documentation).
-- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
 - **Open questions** None.
 
 ### Changes
@@ -830,7 +830,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Tests: `tests/headless/layout_audit_test.gd`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure GDScript and Godot UI primitives; zero generated art).
-- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
 - **Open questions** None.
 
 ### Changes
@@ -866,7 +866,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Tests: `tests/headless/save_compatibility_recovery_test.gd`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (pure GDScript and Godot UI primitives; zero generated art).
-- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
 - **Open questions** None.
 
 ### Changes
@@ -902,7 +902,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Export script: `scripts/build/export_release.ps1`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (PowerShell validation and build scripts).
-- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
 - **Open questions** None.
 
 ### Changes
@@ -948,7 +948,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Documentation: `docs/godot-mcp-evaluation.md`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (tooling evaluation, documentation, and disposable scratch scripts).
-- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
 - **Open questions** None.
 
 ### Changes
@@ -990,7 +990,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Ledger update: `docs/open-decisions-ledger.md`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (system design briefs and documentation).
-- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
 - **Open questions** OD-002 (Initiative paradigm), OD-003 (Elemental affinity & SP model), OD-004 (Status stacking & boss tenacity).
 
 ### Changes
@@ -1032,7 +1032,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Tests: `tests/headless/build_tier_test.gd`, `tests/headless/verify_exported_tier.gd`, tracked UIDs.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (PowerShell build automation, typed GDScript test harnesses, and configuration).
-- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
 - **Open questions** `OD-017`: Choice of shipping default release tier (`academic_mvp` vs. `full_release`) for public distribution remains deferred to human release authority sign-off; checked-in `project.godot` maintains `release_tier="full_release"`.
 
 ### Changes
@@ -1072,7 +1072,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
   - Documentation: `tools/mcp-proof/README.md`, `docs/godot-mcp-evaluation.md`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (tooling verification harness, documentation, and external test artifacts; zero generated images or runtime assets).
-- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1be9a-5583-7252-b082-ebd436372c80` reviewed `e25491d..5e81a04`; see the [batch verdict](#codex-cli-review-of-the-batch-1-3-remediation-range).
 - **Open questions** None. Production toolchain remains isolated to native GDScript and headless CLI.
 
 ### Changes
@@ -1100,18 +1100,36 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | Repository hygiene audit | PASSED | Zero `node_modules`, credentials, or temporary files tracked. Disposable project created in `$env:TEMP`. |
 
 
+---
 
+## Codex CLI review of the batch 1-3 remediation range
 
+- **Snapshot** `feature/w4-5-vertical-slice`, `e25491d..5e81a04`, 26 commits (SBL-FIX-006 through SBL-MCP-003).
+- **Review** CHANGES_REQUESTED. Codex CLI `0.167.0`, model `gpt-6.1-sol`, session `01a1be9a-5583-7252-b082-ebd436372c80`, exit 0, 9 November 2026.
+- **Verdict** No P0 or P1 findings. Three P2 findings. The reviewer did not fault the save invariants, the release-tier gates, or the no-invented-numerics rule.
+- **Status rule** Every entry in this range is `CHANGES_REQUESTED` until the three fixes below land and are re-reviewed. Nothing in the range may be represented as `REVIEWED` yet.
 
+### Findings
 
+| # | Task | Location | Required fix |
+| --- | --- | --- | --- |
+| 1 | SBL-FIX-011 | `scenes/ui/character_sheet.tscn:55-58` (and the settings scroll container) | Keyboard focus can move below the scroll viewport at 150% text scale because `follow_focus` is false; enable focus-following so focused controls are revealed. |
+| 2 | SBL-VER-003 / SBL-BLD-002 | `scripts/build/validate_release.ps1:258-266` | The live tier gate mounts hardcoded `builds\web*` PCKs instead of the PCKs inside the archives being validated, so a mislabeled archive can pass against an unrelated local build and the Windows PCK is never exercised; extract and verify each archive's own PCK. |
+| 3 | SBL-MCP-003 | `tools/mcp-proof/run_adapter_proof.js:117-120` | JSON-RPC success responses with `result.isError: true` are resolved and printed as PASS; a reused disposable project with a stale valid scene can therefore produce a false proof. Reject error-bearing tool results. |
 
+### Independent verification performed with the review
 
+| Check | Result |
+| --- | --- |
+| `scripts/build/run_headless_tests.ps1` | 29/29 suites PASS, exit 0 (adds `build_tier_test.gd` and `verify_exported_tier.gd`). |
+| Tier markers read from the zips | `Soulbound-AcademicMVP-Web.zip` = `academic_mvp`; `Soulbound-Web.zip` = `full_release`; `Soulbound-Windows-Portable.zip` = `full_release`. |
+| `verify_exported_tier.gd` on `builds/web-academic_mvp/index.pck` | Exit 0: Void Citadel unavailable, portal hidden and unmonitored, warp refused, both ending modals no-op, capstone and Chapter 5 questions gated. |
+| `verify_exported_tier.gd` on `builds/web/index.pck` | Exit 0: Void Citadel available, ending modal opens, capstone question accessible. |
+| Working-tree invariant after export | `project.godot` restored byte-identically; `git status` clean. |
+| MCP proof re-run from the committed harness | Driver exit 0 against `@coding-solo/godot-mcp`; generated scene verified headless, exit 0. The driver rewrites the tracked reference scene with new random `unique_id` values, which was reverted to keep the tree clean. |
 
+The `SliceProgress: Invalid data` warning seen when mounting a packed build came from the stale local profile `%APPDATA%\Godot\app_userdata\Soulbound\profiles\profile_01` (`vertical_slice.stage = "complete"` with no matching education record). Re-running the same verifier with a clean user-data root produced no such warning, so it is local test pollution rather than a product defect.
 
+### Out of scope
 
-
-
-
-
-
-
+`SBL-FIX-001` through `SBL-FIX-005` predate `e25491d` and were not part of this review; they remain `REVIEW_PENDING_CODEX`.

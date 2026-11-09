@@ -25,3 +25,5 @@ report/*.log
 report/*.log.err
 report/*.err
 report/*.prompt.txt
+report/*.gd
+report/sandbox-appdata/

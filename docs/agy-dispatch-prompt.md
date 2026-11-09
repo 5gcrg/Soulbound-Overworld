@@ -32,14 +32,15 @@ Test harness on this Windows machine: the GUI-subsystem Godot binary detaches un
   $exe = "C:\Users\ALCOHOL\Downloads\Godot_v4.7.2-stable_win64.exe\godot.exe"
   Start-Process -FilePath $exe -ArgumentList @("--headless","--path",".","--fixed-fps","60","--script","res://tests/headless/<suite>.gd","--quit-after","600") -NoNewWindow -Wait -PassThru -RedirectStandardOutput <log> -RedirectStandardError <err>
 
-Run `--import` first, then the full tests/headless directory (24 suites at the time of writing), then scripts/build/export_release.ps1 when code changes affect the build.
+Run `--import` first, then the full tests/headless directory (29 suites at the time of writing), then scripts/build/export_release.ps1 when code changes affect the build.
 
 Definition of done per task: relevant suites green with real assertion evidence, docs updated, commit marked [REVIEW_PENDING_CODEX], working tree clean. If a task is genuinely blocked (no browser automation, no Godot-compatible MCP adapter, no audio-output mode), record it as PENDING with the attempted options named — do not fake a pass.
 ```
 
 ## Dispatch status
 
-- **Batch 1 complete** (`e5f93e8..e2a68bd`) and **batch 2 complete** (`f263001..6f6efa5`): 16 tasks implemented, 27/27 suites green, export chain validated, all `REVIEW_PENDING_CODEX`.
-- **Batch 3 dispatched:** `docs/agy-next-queue.md` now lists SBL-BLD-002 (build-time tier injection) and SBL-MCP-003 (reproducible MCP proof).
+- **Batch 1 complete** (`e5f93e8..e2a68bd`), **batch 2 complete** (`f263001..6f6efa5`), and **batch 3 complete** (`9040561..5e81a04`): 18 tasks implemented, 29/29 suites green, export chain validated.
+- **Codex CLI review of `e25491d..5e81a04` ran on 9 November 2026** (session `01a1be9a-5583-7252-b082-ebd436372c80`): **CHANGES_REQUESTED**, three P2 findings (focus-following, archive-contained PCK validation, MCP error results).
+- **Batch 4 staged, not yet dispatched:** `docs/agy-next-queue.md` lists SBL-FIX-013, SBL-VER-004, SBL-MCP-004, SBL-BLD-003 as the review fixes.
 - Runner pins `--model gemini-3.8-flash-high --effort high` because Gemini 4 Argon is quota-blocked until ~14 Nov 09:21.
-- No Codex CLI review has occurred on any queued commit.
+- Every batch 1-3 entry is `CHANGES_REQUESTED`; nothing in that range is `REVIEWED`.
