@@ -39,7 +39,7 @@ Definition of done per task: relevant suites green with real assertion evidence,
 
 ## Dispatch status
 
-- **Batch 1 complete** (`e5f93e8..e2a68bd`): 9 tasks implemented, 24/24 suites green, export rebuilt, all `REVIEW_PENDING_CODEX`.
-- **Batch 2 dispatched:** `docs/agy-next-queue.md` now lists SBL-FIX-010, SBL-BLD-001, SBL-FIX-011, SBL-FIX-012, SBL-VER-003, SBL-MCP-002, SBL-DATA-003.
-- Runner pins `--model gemini-3.8-flash-high --effort high` because Gemini 4 Argon is quota-blocked.
+- **Batch 1 complete** (`e5f93e8..e2a68bd`) and **batch 2 complete** (`f263001..6f6efa5`): 16 tasks implemented, 27/27 suites green, export chain validated, all `REVIEW_PENDING_CODEX`.
+- **Batch 3 dispatched:** `docs/agy-next-queue.md` now lists SBL-BLD-002 (build-time tier injection) and SBL-MCP-003 (reproducible MCP proof).
+- Runner pins `--model gemini-3.8-flash-high --effort high` because Gemini 4 Argon is quota-blocked until ~14 Nov 09:21.
 - No Codex CLI review has occurred on any queued commit.
