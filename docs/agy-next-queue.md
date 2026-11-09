@@ -74,3 +74,28 @@ Text scale up to 1.5× and high contrast are now applied live, but the logical r
 Godot 4.7.2 Stable, Compatibility, GDScript, Windows portable + single-threaded Web; no invented numbers or story; save invariants preserved; per-task report block; commit suffix `[REVIEW_PENDING_CODEX]`; queue entry per task; no `REVIEWED` without a Codex session ID.
 
 Use `scripts/agy/run_next_queue.ps1` (it reads `docs/agy-dispatch-prompt.md`).
+
+## Batch 3 (draft, found during verification of batch 2)
+
+### A. SBL-BLD-002 — Wire the release tier into the build
+
+Batch 2 gated Chapter V in code, but nothing sets the tier at build time: `project.godot` ships `release_tier="full_release"`, and `export_presets.cfg` has only Windows/Web presets with no tier switch. So a build labelled "academic MVP" would still contain an unlocked Void Citadel.
+
+- Add a build parameter (for example `export_release.ps1 -Tier academic_mvp|full_release`) that writes the tier into the exported build only — do not leave the working tree modified afterwards.
+- Emit a tier marker into each artifact (for example a `build_tier.txt` inside the zip) and have `validate_release.ps1` assert the marker matches the requested tier.
+- Produce `dist/Soulbound-AcademicMVP-Web.zip` with tier `academic_mvp`; keep the full-release artifacts as they are.
+- Test: launch the MVP artifact headless (or assert the marker plus a `ReleaseTier` unit check) and confirm `void_citadel` is unavailable in that build.
+- Shipping default stays `OD-017`; do not decide it.
+
+### B. SBL-MCP-003 — Keep the MCP proof reproducible
+
+`SBL-MCP-002` passed with `@coding-solo/godot-mcp` on a disposable project, but `scratch/` was deleted, so only the prose report remains.
+
+- Commit the tiny harness (`scratch/run_adapter_test.js` equivalent) plus the generated `mcp_generated_scene.tscn` and `verify_mcp_scene.gd` under a documented `tools/mcp-proof/` path with a README.
+- No `node_modules`, no vendored binaries. If the adapter is needed again, the README states the exact `npx` invocation.
+- This stays evidence only: production work remains Godot-native files + headless CLI.
+
+### C. Still human-gated (not agy)
+
+Browser smoke execution, image assets (Codex-only), binary audio (Gemini), educator sign-off (`OD-012`), shipping tier (`OD-017`), and Codex CLI review of `e25491d..6f6efa5`.
+
