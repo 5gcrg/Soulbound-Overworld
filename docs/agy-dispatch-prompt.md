@@ -44,7 +44,9 @@ Definition of done per task: relevant suites green with real assertion evidence,
 - **Codex CLI re-review of `b2ddee1..b2b45a4`** (session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`): the three findings cleared; one new P2 in the failure-restoration test.
 - **Codex CLI re-review of `81d613e..e0ed0b5`** (session `01a1becc-d949-7cc3-867d-a0a8ede9510b`): APPROVED for the patch, no actionable defects. The failure-injection P2 is fixed.
 - **Every implementation entry from `e25491d..e0ed0b5` is `REVIEWED`.**
-- **Codex CLI review of `SBL-FIX-001..005`** (`0b66fdb..f26f2d1`, session `01a1bee0-6c04-72b0-b38d-6bce20925f2f`): CHANGES_REQUESTED, 7 defects (1 P1 lost/cross-profile suspended expedition, 6 P2 title-menu actions, new-journey flow, profile location reset, purchased skills, Phase Mastery SP, SFX bus). These five entries are now `CHANGES_REQUESTED`.
-- **Batch 1 staged:** `docs/agy-next-queue.md` now contains only `SBL-UX-001` (persistent keyboard/mouse rebinding). Batches 2 and 3 follow after review.
+- **Codex CLI review of `SBL-FIX-001..005`** (`0b66fdb..f26f2d1`, session `01a1bee0-6c04-72b0-b38d-6bce20925f2f`): CHANGES_REQUESTED, 7 defects (1 P1, 6 P2). Finding 1 is already fixed at HEAD by reviewed `e25491d`; the remaining gaps are commit-first suspend, callback ownership and cross-profile isolation tests.
+- **Remediation plan (Codex, session `01a1bed9-3c6b-7420-b620-875ba8032576`):** three batches — A `SBL-REV-001..003` (persistence, title overlay, activation), B `SBL-REV-004` (SFX bus), C `SBL-REV-005/006` (Phase Mastery, purchased skills; boss effect mapping blocked by OD-003/004).
+- **Batch A dispatched:** `docs/agy-next-queue.md` now contains `SBL-REV-001..003` only. Batches B and C follow after review.
+- **`SBL-UX-001` remains staged but paused** until the remediation is reviewed and the finding-5 boss boundary is dispositioned.
 - **Next gate is human**: milestone/release acceptance, `OD-017` shipping tier, browser smoke, educator sign-off (`OD-012`), audio binaries, and Codex-only image assets.
 - Runner pins `--model gemini-3.8-flash-high --effort high` because Gemini 4 Argon is quota-blocked until ~14 Nov 09:21.
