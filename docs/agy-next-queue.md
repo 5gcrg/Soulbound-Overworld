@@ -1,69 +1,97 @@
-# agy Next Work Queue — Batch A Review Fix
+# agy Next Work Queue — Remediation Batch B (SBL-REV-004)
 
 Plan owner: Codex. Implementation owner: agy. **agy never reviews.**
 
 ## Position
 
-- Batch A implementation (`SBL-REV-001..003`) is complete and independently verified: 30/30 suites PASS.
-- Codex CLI review session `01a1bfe5-fd15-7463-b4b1-c55215e0c3f0` found one P2 in `SBL-REV-003`.
-- Batch B (`SBL-REV-004`) and Batch C (`SBL-REV-005/006`) are paused until this fix is reviewed.
+- Remediation Batch A (`SBL-REV-001..003`) is **REVIEWED**.
+- Batch A implementation and fix evidence are recorded in `report/implementation-review-ledger.md`.
+- Codex review sessions: `01a1bfe5-fd15-7463-b4b1-c55215e0c3f0` and `01a1bff5-713f-73e2-bb28-9a9dd10f37f3`.
+- Batch C (`SBL-REV-005/006`) follows only after this batch is independently verified and Codex-reviewed.
 - Do not resume `SBL-UX-001` yet.
 
-## SBL-REV-003-FIX — Defense Demo must activate the selected profile
+## SBL-REV-004 — Effective SFX bus routing and mute
 
-### Finding
-
-After the title selects another slot while the title remains open, Defense Demo still applies persistent progression, inventory, and stat changes through the previously active `GameRoot._profile_slot`. Selecting `profile_02` can therefore mutate `profile_01`.
-
-Codex source: review session `01a1bfe5-fd15-7463-b4b1-c55215e0c3f0`, range `2596420..HEAD`, `report/codex_review_batchA.log`.
+**Finding:** 7, P2 from Codex review session `01a1bee0-6c04-72b0-b38d-6bce20925f2f`.
 
 ### Requirements
 
-- GDD-015, GDD-098.
-- FR-SAV-001, FR-WLD-001/002.
-- TC-SAV-001/002, TC-WLD-001, TC-DIM-001.
-- Preserve profile ownership and save invariants from AGENTS.md.
+- GDD-087.
+- FR-SET-001.
+- TC-ACC-001 audio-controls portion.
+- Supporting GDD-096.
 
-### Allowed scope
+### Dependencies
 
-- Route Defense Demo through the existing validated profile-activation path for the title-selected slot before any persistent demo mutation.
-- If activation fails, leave the title open, do not mutate either profile, and show actionable failure feedback.
-- Preserve the existing demo behavior and authored values after activation.
-- Add regression coverage proving the selected slot receives the changes and the previously active slot remains byte-identical.
-- No new story, balance, combat values, profile schema, overwrite behavior, or image/audio assets.
+- Batch A reviewed.
+- No asset-generation capability required.
 
 ### Files
 
 Change only the necessary files among:
 
-- `scenes/ui/title_screen.gd`
+- `scripts/audio/audio_manager.gd`
+- `scripts/settings/settings_manager.gd`
 - `scenes/main/game_root.gd`
-- `tests/headless/profile_activation_test.gd`
 - `tests/headless/title_screen_audio_test.gd`
+- `tests/headless/settings_accessibility_test.gd`
 - `docs/agent-review-queue.md`
 - `docs/traceability-matrix.md`
 - `docs/testing.md`
 
+### Data model
+
+- No settings schema change.
+- Reuse existing `master_volume`, `music_volume`, and `sfx_volume`.
+- Bus creation is runtime configuration, not a generated audio asset.
+- Do not change procedural cue synthesis, gain constants, stream cache behavior, or acquire binary audio.
+
+### Implementation
+
+1. Add an idempotent bus-initialization helper callable before player creation and before settings application.
+2. Ensure `Music` and `SFX` buses exist and route to `Master`.
+   - Reuse existing buses by name.
+   - Do not duplicate, reorder, or overwrite unrelated buses.
+3. Invoke initialization before `AudioManager` creates players.
+4. Assign every cue player to `SFX` and verify that the bus exists; never silently fall back to `Master`.
+5. Apply loaded settings after buses exist and before user-triggered playback.
+6. For zero volume, use the bus mute flag as well as existing gain handling. Positive volume clears the settings-controlled mute flag.
+7. Master affects all output; Music and SFX remain independent.
+
 ### Acceptance tests
 
-- Select profile B from the title while gameplay A is loaded, activate Defense Demo, and assert:
-  - B is the active/modified profile;
-  - A's profile bytes, inventory, progression, and education records are unchanged;
-  - the demo does not run against stale `_profile_slot` state.
-- Run the failure-path test: activation failure leaves the title visible and both profile files unchanged.
-- Existing title Settings/Backup and profile activation tests remain green.
+- Remove test `Music`/`SFX` buses, initialize, and assert exactly one of each exists, both route to `Master`, and every cue player reports `SFX`.
+- Reinitialize and assert no duplicate buses.
+- Set SFX volume to zero and assert SFX is muted while Master/Music remain unchanged; restore a positive value and assert SFX unmutes.
+- Set Master to zero and assert all output remains muted through Master.
+- Reload settings and assert values apply to existing buses.
+- Existing title audio and settings accessibility behavior remains green.
 - Run `scripts/build/run_headless_tests.ps1`; record the actual suite count.
-- Run negative control in a disposable copy: bypass selected-slot activation and assert the regression test exits nonzero.
+- Preserve Batch A profile/title tests and save invariants.
 
-### Out of scope
+### Negative controls
 
-- Batch B SFX routing.
-- Batch C Phase Mastery or purchased skills.
+Run only against disposable test state:
+
+- Omit SFX initialization or route a player to Master; routing assertions must exit nonzero.
+- Initialize buses after players; player-routing assertion must exit nonzero.
+- Remove the SFX mute update; zero-volume assertion must exit nonzero.
+
+Record expected and observed failure evidence in `report/`.
+
+### Out of scope and blocked
+
+- New cues, music, synthesis changes, mixing balance, or binary audio; `OD-015` remains pending.
+- Browser audio-unlock certification.
+- Combat integration (`SBL-REV-005/006`).
 - Rebinding (`SBL-UX-001`).
-- Human-gated ODs, browser smoke, image generation, binary audio, or release acceptance.
+- Image generation.
 
-### Reporting
+### Review and reporting
 
-Commit suffix `[REVIEW_PENDING_CODEX]`. Add a queue entry with the Codex finding, files, tests, asset provenance `none`, open questions, and `REVIEW: REVIEW_PENDING_CODEX`. Do not mark any task `REVIEWED`.
+- Perform a native listening check using existing procedural cues; headless routing is not proof of audible output.
+- Add a queue entry with requirements, files, tests, asset provenance `none`, review status, and open questions.
+- Commit suffix `[REVIEW_PENDING_CODEX]`.
+- Codex CLI reviews the diff, bus initialization order, mute behavior, and confirms no asset-generation changes.
 
 Use `scripts/agy/run_next_queue.ps1`.

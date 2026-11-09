@@ -87,6 +87,15 @@ entries:
 - **Finding:** P2 in `scenes/ui/title_screen.gd`: after selecting a different slot while the title remains open, Defense Demo still applies its persistent progression/inventory/stat changes through the previously active `GameRoot._profile_slot`. The selected slot must be successfully activated before the demo mutates persistent state.
 - **Disposition:** `SBL-REV-001` and `SBL-REV-002` have no actionable findings from this review. `SBL-REV-003` remains `CHANGES_REQUESTED`; Batch B and Batch C are paused until the fix and re-review.
 
+## Batch A review-fix re-review
+
+- **Evidence:** `report/codex_review_rev003_fix.log`.
+- **Session:** `01a1bff5-713f-73e2-bb28-9a9dd10f37f3`.
+- **Range:** `dff0abc..5456d7a`.
+- **Verdict:** `APPROVED`; no actionable regressions.
+- **Resolved:** Defense Demo now activates the title-selected profile before applying persistent changes and safely rejects corrupt profiles. The targeted profile activation and title/audio suites passed.
+- **Disposition:** Batch A is now `REVIEWED`. Batch B may proceed; Batch C remains ordered after Batch B review.
+
 ## Rule
 
 Every future implementation, review, finding, negative control, and disposition

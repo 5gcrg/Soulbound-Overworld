@@ -1529,7 +1529,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
   - Headless test suites: `tests/headless/profile_activation_test.gd`, `tests/headless/title_screen_audio_test.gd`, `tests/headless/transition_test.gd`, `tests/headless/dimension_test.gd`.
   - Process: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
 - **Asset provenance** None (pure code and UI scene hierarchy; zero image or audio generation).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1bfe5-fd15-7463-b4b1-c55215e0c3f0` found one P2: Defense Demo can mutate the previously active profile after the title selects another slot. Activate the selected slot successfully before applying persistent demo changes.
+- **Review** REVIEWED by Codex CLI session `01a1bff5-713f-73e2-bb28-9a9dd10f37f3`; the Defense Demo profile-ownership finding was fixed and no actionable regressions remain.
 - **Open questions** None.
 
 ### Changes
@@ -1576,7 +1576,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 
 ---
 
-## SBL-REV-003-FIX — Defense Demo Activates Title-Selected Profile
+## SBL-REV-003-FIX - Defense Demo Activates Title-Selected Profile
 
 - **Milestone** Remediation Batch A (M1, M2 & M6 Hardening).
 - **Requirements** GDD-015, GDD-098, FR-SAV-001, FR-WLD-001/002, TC-SAV-001/002, TC-WLD-001, TC-DIM-001, AGENTS.md Invariants ("Preserve secured gear, level/skills, story and educational records after expedition defeat; lose only approved unbanked items and temporary upgrades", profile ownership and save invariants).
