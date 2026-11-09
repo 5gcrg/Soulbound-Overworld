@@ -657,6 +657,35 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | Chromium Smoke Test | Chrome / Edge | PENDING human execution | Manual test procedure documented in `docs/browser_verification_checklist.md`. |
 | Firefox Smoke Test | Firefox | PENDING human execution | Manual test procedure documented in `docs/browser_verification_checklist.md`. |
 
+---
+
+## SBL-MCP-001 — Godot-Compatible MCP Adapter Evaluation
+
+- **Milestone** Tooling & Workflow Validation.
+- **Requirements** AGENTS.md Operating Contract § AI Game Developer MCP caution.
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Documentation / Audit: `docs/godot-mcp-evaluation.md`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None.
+- **Review** REVIEW_PENDING_CODEX.
+- **Open questions** None. Integration marked PENDING per AGENTS.md instructions.
+
+### Investigation Summary
+
+1. **Attempted Adapter Evaluation.** Evaluated `ai-game-developer` configured in `~/.gemini/config/mcp_config.json` targeting `http://localhost:26269/p/2d78f1e9`. Reference implementation is `ivanmurzak/unity-mcp`, designed strictly for Unity Editor C# GameObject manipulation and packages. Port 26269 is inactive and the tool is incompatible with Godot 4.
+2. **Adherence to Invariants.** In accordance with AGENTS.md ("Never install a Unity package into Godot or invent equivalent Godot tools. If unsupported, use Godot-native files/headless CLI and record the integration as pending"), no unsupported Unity packages were installed into Godot.
+3. **Workflow Retained.** Godot-native declarative `.tscn` scenes and typed GDScript files remain the authoritative workflow, verified using Godot 4.7.2 headless execution via detached PowerShell process management. Integration status recorded as `PENDING`.
+
+### Verification Table
+
+| Adapter / Tool | Target Engine | Connectivity / Audit | Result / Status | Operational Action |
+|---|---|---|---|---|
+| `ai-game-developer` (`ivanmurzak/unity-mcp`) | Unity Editor | Incompatible with Godot 4 (`res://`, GDScript, `.tscn`). Port 26269 inactive. | Incompatible | Reject for Godot. Do not install. |
+| Godot-native MCP Adapter | Godot 4.7.2 | None provisioned or discovered in workspace. | **PENDING** | Retain Godot-native files + headless CLI test harness. |
+
+
 
 
 
