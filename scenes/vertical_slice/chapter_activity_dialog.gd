@@ -185,6 +185,7 @@ func _build_ui() -> void:
 
 	var scroll := ScrollContainer.new()
 	scroll.custom_minimum_size = PANEL_MIN_SIZE - Vector2(40, 40)
+	scroll.follow_focus = true
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	margin.add_child(scroll)
 

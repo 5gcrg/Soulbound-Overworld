@@ -1133,3 +1133,42 @@ The `SliceProgress: Invalid data` warning seen when mounting a packed build came
 ### Out of scope
 
 `SBL-FIX-001` through `SBL-FIX-005` predate `e25491d` and were not part of this review; they remain `REVIEW_PENDING_CODEX`.
+
+---
+
+## SBL-FIX-013 — Keyboard Focus Auto-Scrolls Into View (Review Finding 1)
+
+- **Milestone** M4 & M6 Hardening (Accessibility & UI Navigation).
+- **Requirements** GDD-103, TC-ACC-001, AGENTS.md Engineering Invariants.
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Scenes: `scenes/ui/character_sheet.tscn`, `scenes/ui/settings_sheet.tscn`, `scenes/ui/inventory_sheet.tscn`, `scenes/ui/academic_completion_modal.tscn`, `scenes/ui/ending_modal.tscn`.
+  - Scripts: `scenes/vertical_slice/chapter_activity_dialog.gd`.
+  - Tests: `tests/headless/layout_audit_test.gd`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None (Godot scene properties and test code; zero art assets).
+- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5; Codex CLI will review after batch completion.
+- **Open questions** None.
+
+### Changes
+
+1. **Enabled `follow_focus = true` on all ScrollContainers**:
+   - `scenes/ui/character_sheet.tscn`: enabled `follow_focus = true` on `Scroll`.
+   - `scenes/ui/settings_sheet.tscn`: enabled `follow_focus = true` on `Scroll`.
+   - `scenes/ui/inventory_sheet.tscn`: enabled `follow_focus = true` across `BankCol/Scroll`, `SatchelCol/Scroll`, and `EquipCol/Scroll`.
+   - `scenes/ui/academic_completion_modal.tscn`: enabled `follow_focus = true` on `Scroll`.
+   - `scenes/ui/ending_modal.tscn`: enabled `follow_focus = true` on `Scroll`.
+   - `scenes/vertical_slice/chapter_activity_dialog.gd`: set `scroll.follow_focus = true` on the dynamically constructed activity modal scroll container.
+2. **Preserved Base Sizing & Scaling Invariants**:
+   - Existing minimum size and layout bounds preserved intact without font shrinkage below authored bases.
+3. **Automated Focus Scroll Regression Coverage**:
+   - Extended `tests/headless/layout_audit_test.gd` Phase 2 (text_scale 1.5x) to assert `s.follow_focus == true` across every scroll container.
+   - Asserted that focusing below-the-fold controls automatically produces a non-zero `scroll_vertical` offset (e.g. `BackupTextField` scrolled to 39, `BtnSolarFlare` scrolled to 31, activity modal buttons scrolled to 43).
+   - Explicitly pinned the Codex review finding probe on `CharacterSheet`: asserted that focusing `RespecButton` below the fold produces a non-zero scroll offset (`scroll_vertical = 135`).
+
+### Verification Table
+
+| Test Scope / Invocation | Result | Evidence |
+|---|---|---|
+| `run_headless_tests.ps1 -Suite layout_audit_test` | Exit 0 | Verified `follow_focus == true` across all scroll containers; verified below-the-fold focus scrolls `BackupTextField` (offset 39), `BtnSolarFlare` (offset 31), activity option button (offset 43), and pinned `RespecButton` (offset 135). |

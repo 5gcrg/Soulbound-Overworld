@@ -46,6 +46,14 @@ func _get_scroll_containers(node: Node) -> Array[ScrollContainer]:
 	_collect_scroll_containers(node, list)
 	return list
 
+func _collect_focusable_controls(node: Node, out_list: Array[Control]) -> void:
+	if node is Control:
+		var ctrl := node as Control
+		if ctrl.focus_mode != Control.FOCUS_NONE and ctrl.is_visible_in_tree():
+			out_list.append(ctrl)
+	for child in node.get_children():
+		_collect_focusable_controls(child, out_list)
+
 func _collect_scroll_containers(node: Node, out_list: Array[ScrollContainer]) -> void:
 	if node is ScrollContainer:
 		out_list.append(node as ScrollContainer)
@@ -164,6 +172,46 @@ func _run_tests() -> void:
 			var rect: Rect2 = panel.get_global_rect()
 			var inside := (rect.position.x >= 0 and rect.position.y >= 0 and rect.end.x <= 960 and rect.end.y <= 540)
 			_check(inside, "%s @ 1.5x: Panel rect %s stays inside 960x540 viewport" % [name, rect])
+
+			var scrolls := _get_scroll_containers(panel)
+			for s in scrolls:
+				_check(s.follow_focus, "%s: ScrollContainer '%s' has follow_focus == true" % [name, s.name])
+
+				var focusables: Array[Control] = []
+				_collect_focusable_controls(s, focusables)
+
+				if focusables.size() > 0:
+					s.scroll_vertical = 0
+					await process_frame
+					await process_frame
+
+					var below_fold: Control = null
+					var s_bottom: float = s.get_global_rect().end.y
+					for ctrl in focusables:
+						if ctrl.get_global_rect().end.y > s_bottom + 1.0:
+							below_fold = ctrl
+							break
+
+					if below_fold != null:
+						below_fold.grab_focus()
+						await process_frame
+						await process_frame
+						_check(s.scroll_vertical > 0, "%s: Focusing below-the-fold control '%s' produced non-zero scroll offset (scroll_vertical=%d)" % [
+							name, below_fold.name, s.scroll_vertical
+						])
+					else:
+						print("  INFO: %s: All %d focusable control(s) in '%s' fit within scroll viewport" % [name, focusables.size(), s.name])
+
+					if inst is CharacterSheet:
+						var cs := inst as CharacterSheet
+						if cs.btn_respec != null:
+							s.scroll_vertical = 0
+							await process_frame
+							await process_frame
+							cs.btn_respec.grab_focus()
+							await process_frame
+							await process_frame
+							_check(s.scroll_vertical > 0, "CharacterSheet @ 1.5x: Focusing RespecButton pinned non-zero scroll offset (scroll_vertical=%d)" % s.scroll_vertical)
 
 		inst.queue_free()
 		await process_frame
