@@ -685,6 +685,36 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | `ai-game-developer` (`ivanmurzak/unity-mcp`) | Unity Editor | Incompatible with Godot 4 (`res://`, GDScript, `.tscn`). Port 26269 inactive. | Incompatible | Reject for Godot. Do not install. |
 | Godot-native MCP Adapter | Godot 4.7.2 | None provisioned or discovered in workspace. | **PENDING** | Retain Godot-native files + headless CLI test harness. |
 
+---
+
+## SBL-DATA-001 — Open Decisions Ledger (`OD-001` through `OD-016`)
+
+- **Milestone** Release Hardening & Scope Boundary Management.
+- **Requirements** All requirements GDD-001..132, Soulbound_GDD_SRS.md §16.1, AGENTS.md Invariants ("Do not invent numerical stats, formula coefficients, drop probabilities, story revelations, or unsupported integrations. Mark such items `TBD` and seek change approval").
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Documentation / Ledger: `docs/open-decisions-ledger.md`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None.
+- **Review** REVIEW_PENDING_CODEX.
+- **Open questions** None. All 16 open decisions mapped to their resolution owner / gate.
+
+### Ledger Summary
+
+1. **Complete Coverage.** Mapped all 16 unresolved design choices (`OD-001` through `OD-016`) from GDD/SRS §16.1 with decision needed, affected requirement IDs, current code placeholder (`TBD`), resolution owner / gate, and current impact / what stays blocked.
+2. **Zero Invented Values.** Verified that neither agy nor Codex invented numerical stats, formulas, damage multipliers, or drop tables. All open decisions remain explicitly gated.
+3. **Critical Gates Highlighted.** Specifically tracked Speed initiative rule (`OD-002`), elemental damage formulas (`OD-003`), status stacking (`OD-004`), save boundaries (`OD-009`), procedural dungeon budgets (`OD-011`), and the educator review sign-off gate (`OD-012`).
+
+### Verification Table
+
+| Audit / Check | Scope | Result | Notes |
+|---|---|---|---|
+| Open Decision Mapping | `OD-001` .. `OD-016` | Pass | All 16 items documented in `docs/open-decisions-ledger.md`. |
+| Zero Invented Numbers Audit | Codebase & Docs | Pass | No invented stats or formulas; all placeholders explicitly mapped to `OD-###`. |
+| Invariant Alignment | Save & Progression | Pass | Retains secured gear/level invariants, completion-gating, and single-thread web invariants. |
+
+
 
 
 
