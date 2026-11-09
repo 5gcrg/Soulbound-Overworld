@@ -1593,7 +1593,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
   - `docs/traceability-matrix.md`
   - `docs/testing.md`
 - **Asset provenance** None (pure GDScript and state machine routing; zero generated image or audio assets).
-- **Review** REVIEW_PENDING_CODEX.
+- **Review** REVIEWED by Codex CLI session `01a1bff5-713f-73e2-bb28-9a9dd10f37f3`; no actionable regressions. Defense Demo now targets the title-selected profile.
 - **Open questions** None.
 
 ### Changes
@@ -1634,7 +1634,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 
 ---
 
-## SBL-REV-004 — Effective SFX Bus Routing and Mute
+## SBL-REV-004 - Effective SFX Bus Routing and Mute
 
 - **Milestone** Remediation Batch B (Audio Routing & Settings Hardening).
 - **Requirements** GDD-087, FR-SET-001, TC-ACC-001 (audio-controls portion), GDD-096.
@@ -1652,7 +1652,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
   - `docs/traceability-matrix.md`
   - `docs/testing.md`
 - **Asset provenance** None (pure GDScript runtime bus configuration, AudioServer routing, and procedural AudioStreamWAV synthesis; zero image generation and zero binary audio assets).
-- **Review** REVIEW_PENDING_CODEX.
+- **Review** REVIEWED by Codex CLI session `01a1c001-361d-7250-98d6-bc547c380822`; no actionable regressions. Both modified suites passed; the reviewer used a writable temporary APPDATA path in its sandbox.
 - **Open questions** `OD-015`: binary audio asset specification remains pending human/Gemini Flash audio spec approval; procedural audio cues remain active runtime fallback.
 
 ### Changes

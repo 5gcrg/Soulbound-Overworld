@@ -96,6 +96,15 @@ entries:
 - **Resolved:** Defense Demo now activates the title-selected profile before applying persistent changes and safely rejects corrupt profiles. The targeted profile activation and title/audio suites passed.
 - **Disposition:** Batch A is now `REVIEWED`. Batch B may proceed; Batch C remains ordered after Batch B review.
 
+## Batch B review
+
+- **Evidence:** `report/codex_review_rev004.log`.
+- **Session:** `01a1c001-361d-7250-98d6-bc547c380822`.
+- **Range:** `80056ed..979c432`.
+- **Independent verification:** `title_screen_audio_test.gd` and `settings_accessibility_test.gd` passed; full implementation evidence records 30/30 suites and export success.
+- **Verdict:** `APPROVED`; no actionable regressions. Codex noted only that its sandbox needed a writable temporary APPDATA path for the settings suite.
+- **Disposition:** Batch B is `REVIEWED`. Batch C may proceed. `OD-015` remains open; no binary audio was generated.
+
 ## Rule
 
 Every future implementation, review, finding, negative control, and disposition
