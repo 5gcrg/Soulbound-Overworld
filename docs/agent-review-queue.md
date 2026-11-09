@@ -1415,3 +1415,52 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 - The findings are separate scoped remediation work; they do not retroactively change the approvals already recorded for `e25491d..e0ed0b5`.
 - Batch 1 (`SBL-UX-001`) remains staged in `docs/agy-next-queue.md`. Finding 2 touches the settings entry path and should be accounted for when the rebinding UI is reviewed.
 - Human release acceptance remains pending.
+
+---
+
+## SBL-REV-001 — Profile-Owned Expedition Suspension and Terminal Commits
+
+- **Milestone** Remediation Batch A (M3 & M6 Hardening).
+- **Requirements** GDD-004, GDD-037, GDD-098..101, FR-DNG-002/003, FR-SAV-001, TC-DNG-002/003/004, TC-SAV-001/002, AGENTS.md Persistence Invariants ("Preserve secured gear, level/skills, story and educational records after expedition defeat; lose only approved unbanked items and temporary upgrades", "Suspend/resume an expedition does not count as extraction; validate exactly-once reward transfer").
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Scene scripts: `scenes/main/game_root.gd`, `scenes/dungeon/dungeon_expedition.gd`.
+  - Persistence validation: `scripts/persistence/gameplay_profile_validator.gd`.
+  - Headless test suites: `tests/headless/dungeon_scene_test.gd`, `tests/headless/web_backup_test.gd`, `tests/headless/save_compatibility_recovery_test.gd`.
+  - Process: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
+- **Asset provenance** None (pure code and test harnesses; zero image or audio generation).
+- **Review** REVIEW_PENDING_CODEX (Codex Finding 1, P1).
+- **Open questions** None.
+
+### Changes
+
+1. **Commit-First Expedition Suspension (`dungeon_expedition.gd` & `game_root.gd`)**:
+   - Added `commit_suspend: Callable` and `signal suspend_save_failed(error: Error)` to `DungeonExpedition`.
+   - Made suspension commit-first: `suspend_expedition()` builds a snapshot while active and calls `commit_suspend(state)` before setting `is_active = false` or closing.
+   - On commit failure, the expedition remains open and active, satchel items and bank remain intact, `suspend_btn` displays "Retry Suspend", and `suspend_save_failed` is emitted without overworld transition or close-on-failed-save.
+   - Removed close-on-failed-save behavior from `_on_expedition_suspended`.
+2. **Session Generation & Callback Ownership Guarding (`game_root.gd`)**:
+   - Added `_session_generation: int` to `GameRoot`, incremented on each session init / profile switch.
+   - Added `_is_expedition_callback_valid(origin_id, bound_slot, bound_gen)` verifying slot match, generation match, and node instance validity.
+   - Guarded `commit_extraction`, `commit_defeat`, and `commit_suspend` against stale session, slot mismatch, or closed scene invocations, returning `ERR_UNAUTHORIZED` without reading or modifying disk profiles.
+3. **Strict Non-Clamping Snapshot Validation (`dungeon_expedition.gd` & `gameplay_profile_validator.gd`)**:
+   - Updated `restore_expedition(data)` to preflight seed generation and path calculation before applying mutations. Out-of-bounds `current_step` or mismatched `expedition_path` strictly return `false` without silent clamping into an invalid run.
+   - Updated `GameplayProfileValidator._validate_active_expedition` to enforce non-empty path and `0 <= current_step < path.size()`.
+4. **Cross-Profile Snapshot Isolation (`game_root.gd`)**:
+   - Refused profile switching while an expedition is actively running.
+   - Cleared runtime `_suspended_expedition` and invalidated callbacks before switching slots.
+   - Loaded and validated the target slot's snapshot into a deep copy, ensuring unresumed slots never inherit snapshots from prior slots.
+5. **Preserved Save & Recovery Invariants**:
+   - Retained envelope schema 1 and `world.active_expedition` storage location.
+   - Verified defeat preserves secured gear, character level, stats, chapter progress, and education records while applying only approved satchel wipe.
+
+### Verification Table
+
+| Test Scope / Invocation | Result | Evidence |
+|---|---|---|
+| `dungeon_scene_test.gd` (full suite + REV-001 lifecycle) | Exit 0 | Verified UI suspend -> destroy GameRoot -> fresh session restore; cross-profile isolation; stale callback rejection (`ERR_UNAUTHORIZED`); injected suspend failure + Retry Suspend; resume -> extraction -> restart exact-once transfer; defeat state preservation. |
+| `web_backup_test.gd` | Exit 0 | Verified suspended run backup round-trip into fresh slot; verified malformed snapshot import rejected and active profile bytes remain unmodified. |
+| `save_compatibility_recovery_test.gd` | Exit 0 | Verified legacy profile without snapshot loads; verified invalid step, negative step, empty path, zero count, and mismatched path rejected without silent clamping. |
+| Negative control: disable snapshot persistence | Exit 1 | Verified fresh session failed to find snapshot on disk when persistence write was omitted. |
+| Negative control: disable callback ownership | Exit 1 | Verified stale callback caught when ownership checks bypassed. |

@@ -101,6 +101,78 @@ func _run_tests() -> void:
 	_check(not loaded_p.get("world", {}).has("active_expedition"), "Loaded profile preserves absent active_expedition")
 
 	# --------------------------------------------------------------------------
+	# 1b. SBL-REV-001 Active expedition validation and non-clamping
+	# --------------------------------------------------------------------------
+	print("\n[Test 1b] Active expedition snapshot validation and non-clamping...")
+	var valid_snapshot: Dictionary = {
+		"is_active": true,
+		"seed": 1337,
+		"room_count": 6,
+		"current_step": 1,
+		"expedition_path": [0, 1, 2, 3],
+		"satchel_items": {"ancient_relic_fragment": 2}
+	}
+	var snap_profile: Dictionary = legacy_profile.duplicate(true)
+	snap_profile["world"]["active_expedition"] = valid_snapshot
+	_check(GameplayProfileValidator.validate(snap_profile) == OK, "Valid active_expedition passes GameplayProfileValidator")
+
+	# Out-of-range step (current_step >= expedition_path.size())
+	var bad_step_profile: Dictionary = legacy_profile.duplicate(true)
+	var bad_step_snap: Dictionary = valid_snapshot.duplicate(true)
+	bad_step_snap["current_step"] = 4 # path size is 4, valid steps are 0..3
+	bad_step_profile["world"]["active_expedition"] = bad_step_snap
+	_check(GameplayProfileValidator.validate(bad_step_profile) == ERR_INVALID_DATA, "Out-of-range step (4 >= 4) rejected by validator")
+
+	# Negative step
+	var neg_step_profile: Dictionary = legacy_profile.duplicate(true)
+	var neg_step_snap: Dictionary = valid_snapshot.duplicate(true)
+	neg_step_snap["current_step"] = -1
+	neg_step_profile["world"]["active_expedition"] = neg_step_snap
+	_check(GameplayProfileValidator.validate(neg_step_profile) == ERR_INVALID_DATA, "Negative current_step rejected by validator")
+
+	# Empty expedition_path
+	var empty_path_profile: Dictionary = legacy_profile.duplicate(true)
+	var empty_path_snap: Dictionary = valid_snapshot.duplicate(true)
+	empty_path_snap["expedition_path"] = []
+	empty_path_profile["world"]["active_expedition"] = empty_path_snap
+	_check(GameplayProfileValidator.validate(empty_path_profile) == ERR_INVALID_DATA, "Empty expedition_path rejected by validator")
+
+	# Invalid room_count
+	var bad_count_profile: Dictionary = legacy_profile.duplicate(true)
+	var bad_count_snap: Dictionary = valid_snapshot.duplicate(true)
+	bad_count_snap["room_count"] = 0
+	bad_count_profile["world"]["active_expedition"] = bad_count_snap
+	_check(GameplayProfileValidator.validate(bad_count_profile) == ERR_INVALID_DATA, "Zero room_count rejected by validator")
+
+	# DungeonExpedition.restore_expedition rejects invalid step without silent clamping
+	var test_exp := DungeonExpedition.new()
+	var pre_active: bool = test_exp.is_active
+	var clamp_test_snap: Dictionary = {
+		"is_active": true,
+		"seed": 1337,
+		"room_count": 6,
+		"current_step": 999, # Far exceeds path size
+		"satchel_items": {"ancient_relic_fragment": 1}
+	}
+	var restore_failed: bool = test_exp.restore_expedition(clamp_test_snap)
+	_check(restore_failed == false, "restore_expedition returns false for out-of-range step (no silent clamp)")
+	_check(test_exp.is_active == pre_active, "Expedition active state unchanged after failed restore")
+	_check(test_exp.inventory.satchel_items.is_empty(), "Satchel unchanged after failed restore")
+
+	# Tampered expedition_path mismatch rejected
+	var mismatch_snap: Dictionary = {
+		"is_active": true,
+		"seed": 1337,
+		"room_count": 6,
+		"current_step": 0,
+		"expedition_path": [9999, 8888], # Does not match seed 1337 generated path
+		"satchel_items": {"ancient_relic_fragment": 1}
+	}
+	var path_mismatch_res: bool = test_exp.restore_expedition(mismatch_snap)
+	_check(path_mismatch_res == false, "restore_expedition rejects mismatched expedition_path")
+	test_exp.free()
+
+	# --------------------------------------------------------------------------
 	# 2. Unknown extension keys survive save/load cycles
 	# --------------------------------------------------------------------------
 	print("\n[Test 2] Unknown extension keys persistence across save cycles...")

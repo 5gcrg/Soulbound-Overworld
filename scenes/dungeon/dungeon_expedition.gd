@@ -13,6 +13,7 @@ signal expedition_cancelled
 signal expedition_suspended(state: Dictionary)
 signal extraction_save_failed(error: Error)
 signal defeat_save_failed(error: Error)
+signal suspend_save_failed(error: Error)
 
 const ROOM_SIZE: Vector2 = Vector2(180, 120)
 const ROOM_SPACING: Vector2 = Vector2(240, 180)
@@ -26,6 +27,7 @@ var expedition_path: Array[int] = []
 var current_step: int = 0
 var commit_extraction: Callable = Callable()
 var commit_defeat: Callable = Callable()
+var commit_suspend: Callable = Callable()
 var _is_extracting: bool = false
 
 @onready var rooms_container: Node2D = $RoomsContainer
@@ -313,9 +315,37 @@ func restore_expedition(data: Dictionary) -> bool:
 		if int(count) <= 0:
 			return false
 	var seed_val: int = int(data.get("seed", 1337))
-	if not setup(seed_val, room_count):
+
+	# Preflight generation and layout/path validation before applying mutations
+	var gen_success: bool = generator.generate(seed_val, room_count)
+	if not gen_success or not generator.is_valid:
 		return false
-	current_step = clampi(int(data.get("current_step", 0)), 0, maxi(0, expedition_path.size() - 1))
+	var calculated_path: Array[int] = _calculate_path()
+	if calculated_path.is_empty():
+		return false
+
+	var saved_path_var: Variant = data.get("expedition_path")
+	if saved_path_var != null:
+		if typeof(saved_path_var) != TYPE_ARRAY:
+			return false
+		var saved_path: Array = saved_path_var as Array
+		if saved_path.size() != calculated_path.size():
+			return false
+		for i in range(saved_path.size()):
+			if int(saved_path[i]) != calculated_path[i]:
+				return false
+
+	var step_var: Variant = data.get("current_step")
+	if typeof(step_var) != TYPE_INT and typeof(step_var) != TYPE_FLOAT:
+		return false
+	var step_val: int = int(step_var)
+	if step_val < 0 or step_val >= calculated_path.size():
+		return false
+
+	# All validations succeeded; apply state and build scene
+	_build_scene()
+	expedition_path = calculated_path
+	current_step = step_val
 	inventory.satchel_items = (satchel as Dictionary).duplicate()
 	is_active = true
 	_is_extracting = false
@@ -327,6 +357,17 @@ func suspend_expedition() -> Dictionary:
 	if not is_active or _is_extracting:
 		return {}
 	var state: Dictionary = serialize_expedition()
+	if commit_suspend.is_valid():
+		var err: Error = commit_suspend.call(state)
+		if err != OK:
+			if room_description_label != null:
+				room_description_label.text = "Suspend save failed (error %d). Satchel preserved. Please retry suspend." % err
+			if suspend_btn != null:
+				suspend_btn.disabled = false
+				suspend_btn.text = "Retry Suspend"
+				suspend_btn.grab_focus()
+			suspend_save_failed.emit(err)
+			return {}
 	is_active = false
 	expedition_suspended.emit(state)
 	return state

@@ -98,6 +98,48 @@ func _run_test() -> void:
 	_check(p3_load.get("error", OK) == ERR_FILE_NOT_FOUND, "Slot profile_03 remains clean and uncorrupted")
 
 	# ==========================================================================
+	# Step 4b: SBL-REV-001 Suspended Run Backup Round-Trip & Malformed Snapshot Guard
+	# ==========================================================================
+	var p1_pre: Dictionary = store.load_profile("profile_01")
+	var p1_data: Dictionary = p1_pre.get("profile", {})
+	p1_data["world"]["active_expedition"] = {
+		"is_active": true,
+		"seed": 4242,
+		"room_count": 6,
+		"current_step": 2,
+		"expedition_path": [0, 1, 2, 3, 4, 5],
+		"satchel_items": {"ancient_relic_fragment": 7}
+	}
+	var p1_save_err: Error = store.save_profile("profile_01", p1_data)
+	_check(p1_save_err == OK, "Saved profile_01 with active_expedition snapshot")
+	var p1_bytes_before: String = store.export_backup("profile_01").get("text", "")
+
+	# Export with suspended run
+	var p1_backup: Dictionary = store.export_backup("profile_01")
+	var p1_backup_text: String = p1_backup.get("text", "")
+	_check(p1_backup_text.contains("active_expedition"), "Export contains active_expedition")
+	_check(p1_backup_text.contains("4242"), "Export contains expedition seed")
+
+	# Round-trip into fresh profile_03
+	var p3_import_text: String = p1_backup_text.replace('"profile_01"', '"profile_03"')
+	var p3_import_err: Error = store.import_backup("profile_03", p3_import_text, GameplayProfileValidator.validate)
+	_check(p3_import_err == OK, "Imported backup with suspended run into profile_03")
+	var p3_loaded: Dictionary = store.load_profile("profile_03")
+	var p3_data: Dictionary = p3_loaded.get("profile", {})
+	_check(p3_data.get("world", {}).has("active_expedition"), "profile_03 has active_expedition preserved")
+	var p3_exp: Dictionary = p3_data["world"]["active_expedition"]
+	_check(int(p3_exp.get("seed", 0)) == 4242, "profile_03 seed preserved")
+	_check(int(p3_exp.get("current_step", -1)) == 2, "profile_03 current_step preserved")
+	_check(int(p3_exp["satchel_items"].get("ancient_relic_fragment", 0)) == 7, "profile_03 satchel items preserved")
+
+	# Malformed snapshot import fails and preserves profile_01 bytes
+	var bad_snap_text: String = p1_backup_text.replace('"current_step": 2', '"current_step": 999')
+	var bad_import_err: Error = store.import_backup("profile_01", bad_snap_text, GameplayProfileValidator.validate)
+	_check(bad_import_err != OK, "Malformed snapshot with invalid current_step rejected on import")
+	var p1_bytes_after: String = store.export_backup("profile_01").get("text", "")
+	_check(p1_bytes_after == p1_bytes_before, "Failed malformed import left active profile_01 bytes completely unmodified")
+
+	# ==========================================================================
 	# Step 5: SettingsSheet UI Web Backup Interaction
 	# ==========================================================================
 	var sheet: SettingsSheet = SettingsSheetScene.instantiate() as SettingsSheet

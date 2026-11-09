@@ -45,6 +45,7 @@ var _previous_input_frozen: bool = false
 var _pending_return_to_alpha: bool = false
 var _chapter_baseline: String = "{}"
 var _profile_slot: String = "profile_01"
+var _session_generation: int = 0
 
 var profile_store: ProfileStore = null
 var slice_progress: SliceProgress = null
@@ -107,6 +108,12 @@ func _ready() -> void:
 			push_error("Failed to initialize starting region: %s at spawn %s" % [DEFAULT_START_REGION, DEFAULT_START_SPAWN])
 
 func _init_slice_progress(store: ProfileStore = null, slot: String = "profile_01") -> void:
+	if _expedition != null and is_instance_valid(_expedition) and _expedition.is_active:
+		if slot != _profile_slot:
+			push_error("Cannot switch profile while an expedition is active. Suspend or retreat first.")
+			return
+	_session_generation += 1
+	_suspended_expedition.clear()
 	_profile_slot = slot
 	if store != null:
 		profile_store = store
@@ -537,25 +544,69 @@ func _try_open_expedition(gateway_id: int) -> bool:
 		return false
 	_expedition = instance
 	player.freeze_movement()
+	var bound_slot: String = _profile_slot
+	var bound_gen: int = _session_generation
+	var instance_id: int = instance.get_instance_id()
 	instance.inventory = inventory_manager
-	instance.commit_extraction = _commit_extraction
-	instance.commit_defeat = _commit_defeat
+	instance.commit_extraction = func(candidate: InventoryManager) -> Error:
+		return _commit_extraction_guarded(candidate, instance_id, bound_slot, bound_gen)
+	instance.commit_defeat = func(candidate: InventoryManager, lost: Dictionary) -> Error:
+		return _commit_defeat_guarded(candidate, lost, instance_id, bound_slot, bound_gen)
+	instance.commit_suspend = func(snapshot: Dictionary) -> Error:
+		return _commit_suspend_guarded(snapshot, instance_id, bound_slot, bound_gen)
 	instance.extraction_save_failed.connect(_on_extraction_save_failed)
 	instance.defeat_save_failed.connect(_on_defeat_save_failed)
+	instance.suspend_save_failed.connect(_on_suspend_save_failed)
 	instance.expedition_completed.connect(_on_expedition_completed)
 	instance.expedition_failed.connect(_on_expedition_failed)
 	instance.expedition_cancelled.connect(_on_expedition_cancelled)
 	instance.expedition_suspended.connect(_on_expedition_suspended)
 	target_layer.add_child(_expedition)
 	if not _suspended_expedition.is_empty() and _suspended_expedition.get("is_active", false):
-		instance.restore_expedition(_suspended_expedition)
-		if status_label != null:
-			status_label.text = "Expedition resumed at chamber %d: Reach Extraction Portal" % (instance.current_step + 1)
+		var restored: bool = instance.restore_expedition(_suspended_expedition)
+		if restored:
+			if status_label != null:
+				status_label.text = "Expedition resumed at chamber %d: Reach Extraction Portal" % (instance.current_step + 1)
+		else:
+			push_error("Failed to restore suspended expedition snapshot.")
+			if status_label != null:
+				status_label.text = "Expedition resume failed: invalid snapshot. Stored run preserved."
+			_expedition = null
+			instance.queue_free()
+			_restore_combat_movement()
+			return false
 	else:
 		instance.setup(1337, 6)
 		if status_label != null:
 			status_label.text = "Expedition active: Reach Extraction Portal"
 	return true
+
+func _is_expedition_callback_valid(origin_id: int, bound_slot: String, bound_gen: int) -> bool:
+	if bound_slot.is_empty() or bound_slot != _profile_slot:
+		return false
+	if bound_gen != _session_generation:
+		return false
+	var origin: DungeonExpedition = instance_from_id(origin_id) as DungeonExpedition
+	if origin == null or not is_instance_valid(origin) or origin.is_queued_for_deletion():
+		return false
+	if _expedition != origin:
+		return false
+	return true
+
+func _commit_extraction_guarded(candidate: InventoryManager, origin_id: int, bound_slot: String, bound_gen: int) -> Error:
+	if not _is_expedition_callback_valid(origin_id, bound_slot, bound_gen):
+		return ERR_UNAUTHORIZED
+	return _commit_extraction(candidate)
+
+func _commit_defeat_guarded(candidate: InventoryManager, lost: Dictionary, origin_id: int, bound_slot: String, bound_gen: int) -> Error:
+	if not _is_expedition_callback_valid(origin_id, bound_slot, bound_gen):
+		return ERR_UNAUTHORIZED
+	return _commit_defeat(candidate, lost)
+
+func _commit_suspend_guarded(snapshot: Dictionary, origin_id: int, bound_slot: String, bound_gen: int) -> Error:
+	if not _is_expedition_callback_valid(origin_id, bound_slot, bound_gen):
+		return ERR_UNAUTHORIZED
+	return _commit_suspend(snapshot)
 
 ## Extraction and the clearing of the active-expedition record are committed in a single
 ## profile write, so a resumed save can never bank the same satchel twice.
@@ -583,6 +634,14 @@ func _commit_defeat(candidate: InventoryManager, _lost: Dictionary) -> Error:
 		_suspended_expedition.clear()
 	return err
 
+func _commit_suspend(snapshot: Dictionary) -> Error:
+	if profile_store == null:
+		return ERR_UNCONFIGURED
+	var err: Error = _persist_active_expedition(snapshot)
+	if err == OK:
+		_suspended_expedition = snapshot.duplicate(true)
+	return err
+
 func _on_extraction_save_failed(err: Error) -> void:
 	if status_label != null:
 		status_label.text = "Extraction save failed (error %d). Expedition remains open for retry." % err
@@ -590,6 +649,10 @@ func _on_extraction_save_failed(err: Error) -> void:
 func _on_defeat_save_failed(err: Error) -> void:
 	if status_label != null:
 		status_label.text = "Expedition defeat save failed (error %d). Expedition remains open for retry." % err
+
+func _on_suspend_save_failed(err: Error) -> void:
+	if status_label != null:
+		status_label.text = "Expedition suspend save failed (error %d). Expedition remains open for retry." % err
 
 func _on_expedition_completed(extracted_items: Dictionary) -> void:
 	_suspended_expedition.clear()
@@ -613,13 +676,15 @@ func _on_expedition_cancelled() -> void:
 	_close_expedition()
 
 func _on_expedition_suspended(state: Dictionary) -> void:
-	_suspended_expedition = state.duplicate(true)
-	var err: Error = _persist_active_expedition(_suspended_expedition)
+	if _suspended_expedition.is_empty():
+		var err: Error = _persist_active_expedition(state)
+		if err != OK:
+			if status_label != null:
+				status_label.text = "Expedition suspend save failed (error %d). Expedition remains open." % err
+			return
+		_suspended_expedition = state.duplicate(true)
 	if status_label != null:
-		if err == OK:
-			status_label.text = "Expedition suspended. Satchel preserved for resume."
-		else:
-			status_label.text = "Expedition suspended in memory; resume save failed (error %d)." % err
+		status_label.text = "Expedition suspended. Satchel preserved for resume."
 	_close_expedition()
 
 ## Loads the persisted suspend snapshot so a resumed session can continue the same run.
@@ -634,7 +699,11 @@ func _load_active_expedition() -> void:
 	var world: Dictionary = profile["world"] if profile.get("world") is Dictionary else {}
 	var state: Variant = world.get(ACTIVE_EXPEDITION_KEY, {})
 	if state is Dictionary and bool((state as Dictionary).get("is_active", false)):
-		_suspended_expedition = (state as Dictionary).duplicate(true)
+		var val_err: Error = GameplayProfileValidator._validate_active_expedition(state)
+		if val_err == OK:
+			_suspended_expedition = (state as Dictionary).duplicate(true)
+		else:
+			push_error("Stored active_expedition in slot %s failed validation (error %d). Snapshot preserved but not activated." % [_profile_slot, val_err])
 
 func _persist_active_expedition(state: Dictionary) -> Error:
 	return _mutate_profile(func(profile: Dictionary) -> Error:

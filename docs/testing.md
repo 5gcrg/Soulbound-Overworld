@@ -52,7 +52,7 @@ At current development baseline (Batch 2), there are **25 headless test suites**
 | `m3_systems_test.gd` | Character leveling, inventory defeat wipe vs. bank preservation, Kurei 6-spell pips, BFS dungeon reachability |
 | `dimension_test.gd` | Physical/spirit plane shifting, player collision mask sync, zero-embed safety |
 | `kurei_combat_test.gd` | In-battle Kurei spell menu, SP pip consumption, cooldown tracking |
-| `dungeon_scene_test.gd` | Procedural room layout, at-risk satchel, suspend/resume, exact-once extraction |
+| `dungeon_scene_test.gd` | Procedural room layout, at-risk satchel, commit-first suspend/resume, session callback guarding, exact-once extraction |
 | `overworld_gateway_test.gd` | Overworld dungeon shrine entrance, town bank transfers, defeat wipes |
 | `education_report_test.gd` | Question bank, immutable first-attempt tracking, RFC-4180 CSV export |
 | `ui_sheets_test.gd` | Character sheet, inventory sheet, hotkey toggles (`C` / `I`), gear equip |
@@ -60,7 +60,7 @@ At current development baseline (Batch 2), there are **25 headless test suites**
 | `settings_accessibility_test.gd` | Audio sliders, text scale (0.8–1.5x), high contrast overrides, keyboard navigation |
 | `e2e_academic_playthrough_test.gd` | Complete student journey: Ch I -> Ch II -> Ch III -> Academic Modal -> CSV |
 | `educator_analytics_test.gd` | 12-student cohort batch simulation across archetypes, CSV generation |
-| `web_backup_test.gd` | Web profile JSON backup export/import, invalid JSON rejection, clipboard bridge |
+| `web_backup_test.gd` | Web profile JSON backup export/import, invalid JSON rejection, clipboard bridge, suspended run roundtrip |
 | `status_engine_test.gd` | DoT/HoT status ticks, shield absorption, stun/silence action blocking, serialization |
 | `evaluator_debug_bar_test.gd` | F1 debug tools, warps, instant cheats, terminal modal input exclusivity |
 | `title_screen_audio_test.gd` | Procedural AudioStreamWAV synthesis, 9 sound cues, title screen slot selection |
@@ -68,6 +68,7 @@ At current development baseline (Batch 2), there are **25 headless test suites**
 | `boss_combat_test.gd` | Void Sovereign multi-phase combat, Astral Shield, Cataclysm 2-turn telegraph |
 | `kurei_tree_test.gd` | 4-branch 2-tier skill tree, talent points, tier prerequisites, respec refund |
 | `release_tier_test.gd` | SBL-FIX-010 3-chapter academic MVP vs. full release tier separation |
+| `save_compatibility_recovery_test.gd` | SBL-FIX-012/SBL-REV-001 Legacy profile compatibility, revision recovery, snapshot non-clamping validation |
 
 ## Verification & Exit Codes
 

@@ -266,13 +266,16 @@ static func _validate_active_expedition(value: Variant) -> Error:
 		return ERR_INVALID_DATA
 	if not _is_bounded_int(state.get("room_count"), 1, 1024):
 		return ERR_INVALID_DATA
-	if not _is_bounded_int(state.get("current_step"), 0, 1024):
-		return ERR_INVALID_DATA
 	if typeof(state.get("expedition_path")) != TYPE_ARRAY:
 		return ERR_INVALID_DATA
-	for step: Variant in state["expedition_path"] as Array:
+	var path_arr: Array = state["expedition_path"] as Array
+	if path_arr.is_empty():
+		return ERR_INVALID_DATA
+	for step: Variant in path_arr:
 		if not _is_bounded_int(step, 0, MAX_SAFE_INT):
 			return ERR_INVALID_DATA
+	if not _is_bounded_int(state.get("current_step"), 0, path_arr.size() - 1):
+		return ERR_INVALID_DATA
 	if typeof(state.get("satchel_items")) != TYPE_DICTIONARY:
 		return ERR_INVALID_DATA
 	var satchel: Dictionary = state["satchel_items"] as Dictionary

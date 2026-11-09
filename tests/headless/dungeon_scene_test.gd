@@ -69,6 +69,9 @@ func _run_test() -> void:
 	# Run SBL-FIX-006 persisted suspend snapshot test
 	await _test_game_persisted_expedition_resume()
 
+	# Run SBL-REV-001 profile-owned suspension and terminal commit tests
+	await _test_sbl_rev_001_full_lifecycle()
+
 	if _failures > 0:
 		printerr("DUNGEON SCENE TESTS FAILED: ", _failures)
 		quit(1)
@@ -394,6 +397,229 @@ func _test_sbl_fix_007_defeat_failure_and_retry() -> void:
 	_check(failed_signals.size() == 1, "expedition_failed was NOT emitted again")
 
 	expedition.queue_free()
+	_cleanup_dir(test_root)
+
+func _open_game_expedition(game_inst: Node) -> bool:
+	var gw: Area2D = game_inst.world_router.active_region.get_node("ExpeditionGateway") as Area2D
+	return game_inst._try_open_expedition(gw.get_instance_id())
+
+func _test_sbl_rev_001_full_lifecycle() -> void:
+	print("--- Running SBL-REV-001 Profile-Owned Expedition & Terminal Commits Test ---")
+	var test_root: String = "user://test_rev001_%d_%d" % [OS.get_process_id(), Time.get_ticks_usec()]
+	var store: ProfileStore = ProfileStore.new(test_root)
+
+	# 1. UI Suspend, destroy GameRoot, reload in fresh session
+	print("  [REV-001.1] UI Suspend -> Destroy GameRoot -> Fresh Session Restore...")
+	var game = preload("res://scenes/main/game_root.tscn").instantiate()
+	game.profile_store = store
+	root.add_child(game)
+	game._init_slice_progress(store, "profile_01")
+	await process_frame
+
+	_check(_open_game_expedition(game), "Opened expedition in GameRoot")
+	_check(game._expedition != null, "Expedition instance present")
+
+	# Advance 2 steps
+	game._expedition._on_advance_pressed()
+	game._expedition._on_advance_pressed()
+	_check(game._expedition.current_step == 2, "Advanced to chamber 3 (step 2)")
+	var pre_satchel: int = game._expedition.inventory.satchel_items.get("ancient_relic_fragment", 0)
+	_check(pre_satchel > 0, "Satchel holds fragments mid-run")
+	_check(game.inventory_manager.banked_items.get("ancient_relic_fragment", 0) == 0, "Bank holds 0 fragments")
+
+	# UI Suspend via button click
+	game._expedition.suspend_btn.pressed.emit()
+	await process_frame
+	_check(game._expedition == null, "Expedition closed after successful UI suspend")
+	_check(not game._suspended_expedition.is_empty(), "GameRoot holds suspended snapshot in memory")
+	_check(game._suspended_expedition.get("current_step") == 2, "Suspended step is 2")
+
+	var p1_saved: Dictionary = store.load_profile("profile_01")["profile"]
+	_check((p1_saved.get("world", {}) as Dictionary).has("active_expedition"), "Snapshot saved to disk profile_01 world")
+	_check(int(p1_saved.get("inventory", {}).get("banked", {}).get("ancient_relic_fragment", 0)) == 0, "Satchel NOT banked upon suspend")
+
+	# Destroy GameRoot completely
+	game.queue_free()
+	await process_frame
+
+	# Fresh session loads snapshot
+	var fresh = preload("res://scenes/main/game_root.tscn").instantiate()
+	fresh.profile_store = store
+	root.add_child(fresh)
+	fresh._init_slice_progress(store, "profile_01")
+	await process_frame
+	_check(not fresh._suspended_expedition.is_empty(), "Fresh session reloads snapshot")
+	_check(fresh._suspended_expedition.get("current_step") == 2, "Fresh session loaded snapshot at step 2")
+	_check(int(fresh.inventory_manager.banked_items.get("ancient_relic_fragment", 0)) == 0, "Bank unchanged in fresh session")
+
+	_check(_open_game_expedition(fresh), "Fresh session opened expedition from snapshot")
+	_check(fresh._expedition.current_step == 2, "Resumed at chamber 3 (step 2)")
+	_check(fresh._expedition.inventory.satchel_items.get("ancient_relic_fragment", 0) == pre_satchel, "Satchel matches preserved count")
+
+	# 2. Cross-profile isolation
+	print("  [REV-001.2] Cross-Profile Isolation...")
+	# Verify switching rejected while live expedition is open
+	fresh._init_slice_progress(store, "profile_02")
+	_check(fresh._profile_slot == "profile_01", "Profile switch rejected while expedition is live")
+
+	# Suspend current expedition
+	fresh._expedition.suspend_btn.pressed.emit()
+	await process_frame
+	_check(fresh._expedition == null, "Expedition suspended before profile switch")
+
+	# Activate profile_02 (which has no expedition)
+	fresh._init_slice_progress(store, "profile_02")
+	_check(fresh._profile_slot == "profile_02", "Switched to profile_02")
+	_check(fresh._suspended_expedition.is_empty(), "profile_02 has NO snapshot from profile_01")
+
+	# Start distinct run in profile_02
+	_check(_open_game_expedition(fresh), "Opened fresh expedition in profile_02")
+	_check(fresh._expedition.current_step == 0, "profile_02 started fresh at step 0")
+	fresh._expedition._on_advance_pressed() # Step 1
+	fresh._expedition.suspend_btn.pressed.emit()
+	await process_frame
+	_check(fresh._suspended_expedition.get("current_step") == 1, "profile_02 suspended at step 1")
+
+	# Switch back to profile_01: restores step 2 snapshot
+	fresh._init_slice_progress(store, "profile_01")
+	_check(fresh._suspended_expedition.get("current_step") == 2, "Returning to profile_01 restores step 2 snapshot")
+
+	# Switch back to profile_02: restores step 1 snapshot
+	fresh._init_slice_progress(store, "profile_02")
+	_check(fresh._suspended_expedition.get("current_step") == 1, "Returning to profile_02 restores step 1 snapshot")
+
+	# 3. Stale callback rejection
+	print("  [REV-001.3] Stale Callback Rejection & Profile Byte Preservation...")
+	_open_game_expedition(fresh)
+	var stale_extract: Callable = fresh._expedition.commit_extraction
+	var stale_suspend: Callable = fresh._expedition.commit_suspend
+	var stale_defeat: Callable = fresh._expedition.commit_defeat
+	fresh._close_expedition()
+	fresh._init_slice_progress(store, "profile_01")
+
+	var p1_bytes: String = store.export_backup("profile_01")["text"]
+	var p2_bytes: String = store.export_backup("profile_02")["text"]
+	var fake_inv := InventoryManager.new()
+	fake_inv.add_satchel_item("ancient_relic_fragment", 10)
+
+	_check(stale_extract.call(fake_inv) == ERR_UNAUTHORIZED, "Stale extraction callback rejected with ERR_UNAUTHORIZED")
+	_check(stale_suspend.call({"is_active": true}) == ERR_UNAUTHORIZED, "Stale suspend callback rejected with ERR_UNAUTHORIZED")
+	_check(stale_defeat.call(fake_inv, {}) == ERR_UNAUTHORIZED, "Stale defeat callback rejected with ERR_UNAUTHORIZED")
+	_check(store.export_backup("profile_01")["text"] == p1_bytes, "Profile 01 bytes unchanged after stale calls")
+	_check(store.export_backup("profile_02")["text"] == p2_bytes, "Profile 02 bytes unchanged after stale calls")
+
+	# 4. Injected suspend write failure and retry
+	print("  [REV-001.4] Injected Suspend Write Failure & UI Retry...")
+	_open_game_expedition(fresh)
+	var exp: DungeonExpedition = fresh._expedition
+	var callback_control := {"fail": true}
+	var orig_commit_suspend: Callable = exp.commit_suspend
+	exp.commit_suspend = func(snap: Dictionary) -> Error:
+		if callback_control["fail"]:
+			return ERR_FILE_CANT_WRITE
+		return orig_commit_suspend.call(snap)
+
+	exp.suspend_btn.pressed.emit()
+	await process_frame
+	_check(exp.is_active == true, "Expedition remains active after failed suspend")
+	_check(exp.suspend_btn.text == "Retry Suspend", "Suspend button shows Retry Suspend")
+	_check(fresh._expedition == exp, "Expedition not closed on failed suspend")
+
+	# Clear failure and retry
+	callback_control["fail"] = false
+	exp.suspend_btn.pressed.emit()
+	await process_frame
+	_check(fresh._expedition == null, "Expedition closed after successful Retry Suspend")
+
+	# 5. Resume -> extraction -> restart
+	print("  [REV-001.5] Resume -> Extraction -> Restart (Single-Transfer Commits)...")
+	_open_game_expedition(fresh)
+	while not fresh._expedition.is_at_extraction_chamber():
+		fresh._expedition._on_advance_pressed()
+	var satchel_total: int = fresh._expedition.inventory.satchel_items.get("ancient_relic_fragment", 0)
+	_check(satchel_total > 0, "Satchel has fragments at extraction portal")
+
+	var pre_extract_callback = fresh._expedition.commit_extraction
+	fresh._expedition.extract_btn.pressed.emit()
+	await process_frame
+	_check(fresh._expedition == null, "Expedition closed after extraction")
+
+	var p1_after_extract: Dictionary = store.load_profile("profile_01")["profile"]
+	_check(not (p1_after_extract.get("world", {}) as Dictionary).has("active_expedition"), "Snapshot cleared from profile on extraction")
+	_check(int(p1_after_extract["inventory"]["banked"].get("ancient_relic_fragment", 0)) == satchel_total, "Satchel transferred to bank exactly once")
+
+	# Repeated extraction with old callback rejected
+	_check(pre_extract_callback.call(fake_inv) == ERR_UNAUTHORIZED, "Old extraction callback rejected after close")
+	var p1_after_repeat: Dictionary = store.load_profile("profile_01")["profile"]
+	_check(int(p1_after_repeat["inventory"]["banked"].get("ancient_relic_fragment", 0)) == satchel_total, "Bank unchanged after repeat attempt")
+
+	fresh.queue_free()
+	await process_frame
+
+	# Fresh restart confirms snapshot is absent
+	var restarted = preload("res://scenes/main/game_root.tscn").instantiate()
+	restarted.profile_store = store
+	root.add_child(restarted)
+	restarted._init_slice_progress(store, "profile_01")
+	await process_frame
+	_check(restarted._suspended_expedition.is_empty(), "Restart confirms no snapshot remains after extraction")
+	restarted.queue_free()
+	await process_frame
+
+	# 6. Defeat preserves secured gear, level/skills, story, education
+	print("  [REV-001.6] Defeat Preserves Secured State & Applies Approved Satchel Loss...")
+	var p_defeat: Dictionary = store.new_profile("profile_03")
+	p_defeat["character"]["level"] = 5
+	p_defeat["character"]["vitality"] = 15
+	p_defeat["character"]["resonance"] = 12
+	p_defeat["inventory"]["banked"] = {"iron_sword": 1, "ancient_relic_fragment": 10}
+	p_defeat["world"]["chapter_progress"] = {
+		"current_chapter": 2,
+		"unlocked_chapters": [1, 2],
+		"is_academic_complete": false,
+		"chapter_flags": {}
+	}
+	p_defeat["education"]["records"] = {
+		"q_dec_01": {
+			"id": "q_dec_01",
+			"competency": "Decision-Making",
+			"completed": true,
+			"first_attempt_correct": true,
+			"total_attempts": 1,
+			"selected_index": 0
+		}
+	}
+	store.save_profile("profile_03", p_defeat)
+
+	var d_game = preload("res://scenes/main/game_root.tscn").instantiate()
+	d_game.profile_store = store
+	root.add_child(d_game)
+	d_game._init_slice_progress(store, "profile_03")
+	await process_frame
+
+	_check(_open_game_expedition(d_game), "Opened expedition in profile_03")
+	d_game._expedition._on_advance_pressed() # Step 1: gathers satchel loot
+	var d_satchel: int = d_game._expedition.inventory.satchel_items.get("ancient_relic_fragment", 0)
+	_check(d_satchel > 0, "Expedition gathered satchel loot")
+
+	d_game._expedition.retreat_btn.pressed.emit()
+	await process_frame
+	_check(d_game._expedition == null, "Expedition closed after defeat")
+
+	var post_def: Dictionary = store.load_profile("profile_03")["profile"]
+	_check(int(post_def["character"]["level"]) == 5, "Defeat preserved character level 5")
+	_check(int(post_def["character"]["vitality"]) == 15, "Defeat preserved vitality 15")
+	_check(int(post_def["character"]["resonance"]) == 12, "Defeat preserved resonance 12")
+	_check(int(post_def["inventory"]["banked"]["iron_sword"]) == 1, "Defeat preserved iron_sword in bank")
+	_check(int(post_def["inventory"]["banked"]["ancient_relic_fragment"]) == 10, "Defeat preserved 10 banked fragments")
+	_check((post_def["inventory"]["satchel"] as Dictionary).is_empty(), "Defeat wiped satchel items")
+	_check(int(post_def["world"]["chapter_progress"]["current_chapter"]) == 2, "Defeat preserved chapter 2 progress")
+	_check(post_def["education"]["records"]["q_dec_01"]["completed"] == true, "Defeat preserved education record")
+	_check(not (post_def.get("world", {}) as Dictionary).has("active_expedition"), "Snapshot deleted after defeat")
+
+	d_game.queue_free()
+	await process_frame
+
 	_cleanup_dir(test_root)
 
 func _cleanup_dir(path: String) -> void:
