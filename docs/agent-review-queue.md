@@ -2030,3 +2030,60 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 | Disposable negative control: future schema version safety | Exit 0 | Verified `SettingsManager` rejects future schema version 99 with `ERR_INVALID_DATA`, blocks ordinary save with `ERR_UNAVAILABLE`, and preserves disk bytes untouched (`report/neg_future_settings_blocked.log`). |
 | Full headless runner (`run_headless_tests.ps1`) | Exit 0 (31/31 passed) | All 31 project headless suites pass cleanly with 0 Godot script/engine errors across all game systems. |
 | Full release exporter (`run_headless_tests.ps1 -Export -SkipImport`) | Exit 0 | Built and validated `Soulbound-AcademicMVP-Web.zip`, `Soulbound-Web.zip`, and `Soulbound-Windows-Portable.zip`; PCK gates passed; working tree verified byte-identical. |
+
+---
+
+## SBL-UX-001-FIX — Rebinding Review Remediation (Atomic Reset, Entry Type Check & Test Isolation)
+
+- **Milestone** M4 / M6 Settings & Accessibility Hardening.
+- **Requirements** GDD-092, FR-SET-001, TC-ACC-001, NFR-ACC-001, AGENTS.md Engineering Invariants.
+- **Codex finding** Codex CLI review session `01a1c06b-9905-7633-a299-32dac1671a06`:
+  1. Fix 1: In `scripts/settings/settings_manager.gd`, resetting one action can erase its override, call `apply_overrides()`, ignore a conflict error, and leave persisted/displayed bindings inconsistent.
+  2. Fix 2: In `scripts/settings/input_bindings.gd`, malformed arrays containing non-dictionaries can reach duplicate comparison and trigger an invalid cast.
+  3. Fix 3: In `tests/headless/input_rebinding_test.gd`, successful capture calls `settings.save_settings()` using the real `user://settings.json`.
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Modified persistence & bindings: `scripts/settings/settings_manager.gd`, `scripts/settings/input_bindings.gd`.
+  - Modified UI: `scenes/ui/settings_sheet.gd`.
+  - Modified test suites: `tests/headless/input_rebinding_test.gd`, `tests/headless/settings_accessibility_test.gd`.
+  - Documentation: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
+  - Negative control logs: `report/neg_conflicting_reset_atomic.log`, `report/neg_malformed_entry_cast.log`, `report/neg_user_settings_isolation.log`.
+- **Asset provenance** None (pure GDScript and UI state logic; zero image or audio generation).
+- **Review** REVIEW_PENDING_CODEX.
+- **Open questions** None.
+
+### Changes
+
+1. **Atomic Per-Action Reset & Actionable UI Conflict Feedback (`scripts/settings/settings_manager.gd` & `scenes/ui/settings_sheet.gd`)**:
+   - Updated `SettingsManager.reset_input_override(action) -> Error`: constructs a candidate override dictionary with the target action erased (reverting to authored defaults), runs `InputBindings.validate_overrides(candidate)`, and returns `val_err` on conflict without mutating `input_overrides` or calling `apply_overrides()`.
+   - Updated `SettingsManager.reset_all_input_overrides() -> Error` to validate candidate defaults atomically.
+   - Added `InputBindings.find_reset_conflict(action, current_overrides) -> Dictionary` helper querying which specific action and key would conflict upon resetting to authored defaults.
+   - Updated `SettingsSheet._on_reset_pressed(action)`: on conflict/error, retains current overrides, live bindings, and UI text; does not call `save_settings()`; and displays actionable feedback identifying the conflicting action and key (e.g. `"Cannot reset Move Left: default A conflicts with Move Right."`).
+   - Added regression test in `input_rebinding_test.gd` (Part 8): rebinds Move Left to J and Move Right to A, resets Move Left, asserts rejection with `ERR_INVALID_DATA`, and asserts manager overrides, live `InputMap`, UI labels, and disk bytes are 100% unchanged.
+
+2. **Validate Binding Entry Types Before Duplicate Checking (`scripts/settings/input_bindings.gd`)**:
+   - Refactored `InputBindings.validate_overrides(overrides)`: Pass 1 asserts that every array entry is a Dictionary (`typeof(item) != TYPE_DICTIONARY -> return ERR_INVALID_DATA`) and validates its primitive shape (`validate_primitive`), before Pass 2 performs pairwise duplicate comparisons.
+   - Rejects non-dictionary types (integers, strings, booleans, floats, nulls, nested arrays) immediately without invalid casts or script errors.
+   - Hardened `get_effective_primitives` and `get_effective_events` to look up both `StringName` and `String` keys safely.
+   - Added regression test in `input_rebinding_test.gd` (Part 9): validates fixture `[{"kind":"key","physical_keycode":74}, 1]`, asserting rejection with `ERR_INVALID_DATA`, 0 script errors, and unchanged disk/manager state.
+
+3. **Isolated Test Settings Paths & Real User Settings Byte-Identity Invariant (`tests/headless/input_rebinding_test.gd` & `tests/headless/settings_accessibility_test.gd`)**:
+   - Added configurable `settings_path: String = SETTINGS_FILE_PATH` to `SettingsManager` and `custom_settings_path: String = ""` to `SettingsSheet`.
+   - Updated `save_settings(path = "")` and `load_settings(path = "")` to use `settings_path` when path parameter is omitted.
+   - In `input_rebinding_test.gd` Part 7 (capture test), configured `sm.settings_path = _test_root + "/capture_settings.json"` and `sheet.custom_settings_path = _test_root + "/capture_settings.json"`, asserting successful capture rebind writes to the disposable test file.
+   - In `settings_accessibility_test.gd`, isolated `game_root.settings_manager.settings_path = "%s/gameroot_settings.json" % _test_root`.
+   - Added pre-suite snapshot of `user://settings.json` and post-suite byte-identity assertion in both suites, verifying `user://settings.json` is byte-identical before and after the test runs.
+
+### Verification Table
+
+| Test Scope / Invocation | Result | Evidence |
+|---|---|---|
+| `run_headless_tests.ps1 -Suite input_rebinding_test` | Exit 0 | Verified 9 parts: authored defaults, movement rebind/reset, mouse binding, profile isolation, atomic validation, legacy/future schemas, capture consumption, atomic conflicting reset rejection (Fix 1), malformed entry type validation without script errors (Fix 2), and user settings byte-identity guarantee (Fix 3) (`report/input_rebinding_test.log`). |
+| `run_headless_tests.ps1 -Suite settings_accessibility_test` | Exit 0 | Verified audio/accessibility controls, circular focus traversal, Escape capture cancel vs modal dismiss, isolated settings path, and user settings byte-identity guarantee (`report/settings_accessibility_test.log`). |
+| `run_headless_tests.ps1 -Suite layout_audit_test` | Exit 0 | Verified SettingsSheet and all 6 modals stay within 960x540 viewport at 1.0x and 1.5x text scale (`report/layout_audit_test.log`). |
+| Negative control: conflicting reset atomic rejection | Exit 0 | Proved conflicting reset rejects with `ERR_INVALID_DATA` (code 30) and preserves overrides and live bindings (`report/neg_conflicting_reset_atomic.log`). |
+| Negative control: malformed entry type check | Exit 0 | Proved fixture `[{"kind":"key","physical_keycode":74}, 1]` rejects with `ERR_INVALID_DATA` (code 30) with zero script errors (`report/neg_malformed_entry_cast.log`). |
+| Negative control: user settings file isolation | Exit 0 | Proved SHA256 before and after suite is byte-identical (`report/neg_user_settings_isolation.log`). |
+| Full headless runner (`run_headless_tests.ps1`) | Exit 0 (31/31 passed) | All 31 project headless suites pass cleanly with 0 Godot script/engine errors across all game systems. |
+| Full release exporter (`export_release.ps1 -Tier all`) | Exit 0 | Built and validated `Soulbound-AcademicMVP-Web.zip`, `Soulbound-Web.zip`, and `Soulbound-Windows-Portable.zip`; PCK gates passed; working tree verified byte-identical. |

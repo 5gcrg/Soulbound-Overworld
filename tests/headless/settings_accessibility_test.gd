@@ -9,6 +9,9 @@ const SettingsSheetScene: PackedScene = preload("res://scenes/ui/settings_sheet.
 var _failures: int = 0
 var _test_root: String = ""
 var _test_settings_path: String = ""
+var _user_settings_path: String = ""
+var _orig_user_settings_existed: bool = false
+var _orig_user_settings_bytes: PackedByteArray = PackedByteArray()
 
 func _check(ok: bool, msg: String) -> bool:
 	if not ok:
@@ -21,6 +24,14 @@ func _init() -> void:
 
 func _run_test() -> void:
 	print("--- Running SBL-W10-003 Settings, Audio & Accessibility Test Suite ---")
+
+	# Snapshot real user settings file to prove byte identity before and after suite
+	_user_settings_path = SettingsManager.SETTINGS_FILE_PATH
+	_orig_user_settings_existed = FileAccess.file_exists(_user_settings_path)
+	if _orig_user_settings_existed:
+		_orig_user_settings_bytes = FileAccess.get_file_as_bytes(_user_settings_path)
+	else:
+		_orig_user_settings_bytes = PackedByteArray()
 
 	_test_root = "user://test_settings_profiles_%d_%d" % [OS.get_process_id(), Time.get_ticks_usec()]
 	_test_settings_path = "%s/test_settings.json" % _test_root
@@ -135,6 +146,8 @@ func _run_test() -> void:
 	await process_frame
 
 	var sm_ui: SettingsManager = SettingsManager.new()
+	sm_ui.settings_path = _test_settings_path
+	sheet.custom_settings_path = _test_settings_path
 	sheet.set_settings(sm_ui)
 	await process_frame
 
@@ -189,6 +202,8 @@ func _run_test() -> void:
 	var test_store: ProfileStore = ProfileStore.new(_test_root)
 	var game_root: Control = GameRootScene.instantiate() as Control
 	game_root.profile_store = test_store
+	if game_root.settings_manager != null:
+		game_root.settings_manager.settings_path = "%s/gameroot_settings.json" % _test_root
 	root.add_child(game_root)
 	game_root._init_slice_progress(test_store, "profile_01")
 
@@ -357,6 +372,24 @@ func _run_test() -> void:
 
 	# Clean up temporary test files
 	_cleanup_dir(_test_root)
+
+	# Verify real user settings file is byte-identical before and after the suite
+	var user_settings_byte_identical: bool = false
+	if _orig_user_settings_existed:
+		if FileAccess.file_exists(_user_settings_path):
+			var current_bytes: PackedByteArray = FileAccess.get_file_as_bytes(_user_settings_path)
+			user_settings_byte_identical = (current_bytes == _orig_user_settings_bytes)
+			if not user_settings_byte_identical:
+				var f_res := FileAccess.open(_user_settings_path, FileAccess.WRITE)
+				if f_res != null:
+					f_res.store_buffer(_orig_user_settings_bytes)
+					f_res.close()
+	else:
+		user_settings_byte_identical = not FileAccess.file_exists(_user_settings_path)
+		if not user_settings_byte_identical:
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(_user_settings_path))
+
+	_check(user_settings_byte_identical, "Real user settings file '%s' is byte-identical before and after the suite" % _user_settings_path)
 
 	print("--- Settings & Accessibility Test Complete. Failures: %d ---" % _failures)
 	if _failures == 0:

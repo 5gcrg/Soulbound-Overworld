@@ -8,6 +8,9 @@ const SettingsSheetScene: PackedScene = preload("res://scenes/ui/settings_sheet.
 
 var _failures: int = 0
 var _test_root: String = ""
+var _user_settings_path: String = ""
+var _orig_user_settings_existed: bool = false
+var _orig_user_settings_bytes: PackedByteArray = PackedByteArray()
 
 func _check(condition: bool, message: String) -> bool:
 	if condition:
@@ -25,6 +28,14 @@ func _run_tests() -> void:
 	print("--- Running SBL-UX-001 Persistent Input Rebinding Test Suite ---")
 	print("=================================================================")
 
+	# Snapshot real user settings file to prove byte identity before and after suite
+	_user_settings_path = SettingsManager.SETTINGS_FILE_PATH
+	_orig_user_settings_existed = FileAccess.file_exists(_user_settings_path)
+	if _orig_user_settings_existed:
+		_orig_user_settings_bytes = FileAccess.get_file_as_bytes(_user_settings_path)
+	else:
+		_orig_user_settings_bytes = PackedByteArray()
+
 	_test_root = "user://test_rebinding_%d_%d" % [OS.get_process_id(), Time.get_ticks_usec()]
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_test_root))
 
@@ -35,10 +46,30 @@ func _run_tests() -> void:
 	await _test_atomic_validation_and_disk_preservation()
 	await _test_legacy_and_future_version_handling()
 	await _test_capture_event_consumption_and_leakage()
+	await _test_conflicting_reset_atomic_rejection()
+	await _test_malformed_array_entry_type_validation()
 
 	# Restore pristine InputMap state per Acceptance Criteria
 	InputBindings.restore_defaults_to_input_map()
 	_cleanup_dir(_test_root)
+
+	# Verify real user settings file is byte-identical before and after the suite
+	var user_settings_byte_identical: bool = false
+	if _orig_user_settings_existed:
+		if FileAccess.file_exists(_user_settings_path):
+			var current_bytes: PackedByteArray = FileAccess.get_file_as_bytes(_user_settings_path)
+			user_settings_byte_identical = (current_bytes == _orig_user_settings_bytes)
+			if not user_settings_byte_identical:
+				var f_res := FileAccess.open(_user_settings_path, FileAccess.WRITE)
+				if f_res != null:
+					f_res.store_buffer(_orig_user_settings_bytes)
+					f_res.close()
+	else:
+		user_settings_byte_identical = not FileAccess.file_exists(_user_settings_path)
+		if not user_settings_byte_identical:
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(_user_settings_path))
+
+	_check(user_settings_byte_identical, "Real user settings file '%s' is byte-identical before and after the suite" % _user_settings_path)
 
 	print("=================================================================")
 	print("--- SBL-UX-001 Input Rebinding Test Finished. Failures: %d ---" % _failures)
@@ -143,18 +174,24 @@ func _test_physical_movement_rebind_and_reset() -> void:
 	# Reset restores all alternatives (both Key A and Left Arrow work again)
 	InputBindings.restore_defaults_to_input_map()
 
-	Input.parse_input_event(ev_a_press)
+	var ev_a_restore := InputEventKey.new()
+	ev_a_restore.physical_keycode = KEY_A
+	ev_a_restore.pressed = true
+	Input.parse_input_event(ev_a_restore)
 	Input.flush_buffered_events()
 	_check(Input.is_action_pressed(&"move_left") == true, "Reset restores alternative Key A for move_left")
-	ev_a_press.pressed = false
-	Input.parse_input_event(ev_a_press)
+	ev_a_restore.pressed = false
+	Input.parse_input_event(ev_a_restore.duplicate())
 	Input.flush_buffered_events()
 
-	Input.parse_input_event(ev_left_press)
+	var ev_left_restore := InputEventKey.new()
+	ev_left_restore.physical_keycode = KEY_LEFT
+	ev_left_restore.pressed = true
+	Input.parse_input_event(ev_left_restore)
 	Input.flush_buffered_events()
 	_check(Input.is_action_pressed(&"move_left") == true, "Reset restores alternative Left Arrow for move_left")
-	ev_left_press.pressed = false
-	Input.parse_input_event(ev_left_press)
+	ev_left_restore.pressed = false
+	Input.parse_input_event(ev_left_restore.duplicate())
 	Input.flush_buffered_events()
 
 	InputBindings.clear_all_pressed_actions()
@@ -391,6 +428,8 @@ func _test_capture_event_consumption_and_leakage() -> void:
 
 	var sheet: SettingsSheet = SettingsSheetScene.instantiate() as SettingsSheet
 	var sm := SettingsManager.new()
+	sm.settings_path = _test_root + "/capture_settings.json"
+	sheet.custom_settings_path = _test_root + "/capture_settings.json"
 	sheet.settings = sm
 	root.add_child(sheet)
 	await process_frame
@@ -455,10 +494,165 @@ func _test_capture_event_consumption_and_leakage() -> void:
 	_check(InputBindings.is_capture_active() == false, "Capture ended after valid rebind")
 	_check(sheet.capture_status_label.text.find("Rebound") != -1, "Status label reports Rebound")
 	_check(sm.input_overrides.has("move_left"), "Manager recorded move_left override")
+	_check(FileAccess.file_exists(_test_root + "/capture_settings.json"), "Capture rebind saved to disposable test settings path")
 
 	sheet.queue_free()
 	await process_frame
 	InputBindings.clear_all_pressed_actions()
+	InputBindings.restore_defaults_to_input_map()
+
+# ==============================================================================
+# 8. Conflicting Reset Atomic Rejection (Fix 1 Regression)
+# ==============================================================================
+func _test_conflicting_reset_atomic_rejection() -> void:
+	print("\n[Part 8] Testing Conflicting Reset Atomic Rejection...")
+	var test_path: String = _test_root + "/settings_reset_conflict.json"
+
+	var sm := SettingsManager.new()
+	sm.settings_path = test_path
+
+	# 1. Rebind Move Left to Key J
+	var err_left: Error = sm.set_input_override(&"move_left", [{"kind": "key", "physical_keycode": KEY_J}])
+	_check(err_left == OK, "Rebound Move Left to Key J")
+
+	# 2. Rebind Move Right to Key A (A was authored Move Left default, so now Move Right is A)
+	var err_right: Error = sm.set_input_override(&"move_right", [{"kind": "key", "physical_keycode": KEY_A}])
+	_check(err_right == OK, "Rebound Move Right to Key A")
+
+	# 3. Save to disk
+	var err_save: Error = sm.save_settings(test_path)
+	_check(err_save == OK, "Saved initial valid rebinds to disk")
+	var orig_bytes: PackedByteArray = FileAccess.get_file_as_bytes(test_path)
+
+	# 4. Verify live InputMap states before attempted reset
+	var ev_j := InputEventKey.new()
+	ev_j.physical_keycode = KEY_J
+	ev_j.pressed = true
+	Input.parse_input_event(ev_j)
+	Input.flush_buffered_events()
+	_check(Input.is_action_pressed(&"move_left") == true, "Live InputMap: Key J triggers move_left")
+	ev_j.pressed = false
+	Input.parse_input_event(ev_j)
+	Input.flush_buffered_events()
+
+	var ev_a := InputEventKey.new()
+	ev_a.physical_keycode = KEY_A
+	ev_a.pressed = true
+	Input.parse_input_event(ev_a)
+	Input.flush_buffered_events()
+	_check(Input.is_action_pressed(&"move_right") == true, "Live InputMap: Key A triggers move_right")
+	ev_a.pressed = false
+	Input.parse_input_event(ev_a)
+	Input.flush_buffered_events()
+
+	# 5. Reset Move Left must be rejected atomically:
+	# Authored defaults of move_left contain Key A and Left Arrow.
+	# But move_right is currently bound to Key A!
+	# Reset must return ERR_INVALID_DATA.
+	var reset_err: Error = sm.reset_input_override(&"move_left")
+	_check(reset_err == ERR_INVALID_DATA, "reset_input_override(move_left) rejected with ERR_INVALID_DATA due to conflict with move_right")
+
+	# 6. Assert unchanged state in manager:
+	_check(sm.input_overrides.has("move_left"), "Manager input_overrides retains move_left override")
+	var ml_prims: Array = sm.input_overrides.get("move_left", [])
+	_check(ml_prims.size() == 1 and ml_prims[0].get("physical_keycode") == KEY_J, "move_left override remains Key J")
+	_check(sm.input_overrides.has("move_right"), "Manager input_overrides retains move_right override")
+
+	# 7. Assert unchanged live InputMap:
+	ev_j.pressed = true
+	Input.parse_input_event(ev_j)
+	Input.flush_buffered_events()
+	_check(Input.is_action_pressed(&"move_left") == true, "Live InputMap unchanged: Key J still triggers move_left")
+	ev_j.pressed = false
+	Input.parse_input_event(ev_j)
+	Input.flush_buffered_events()
+
+	ev_a.pressed = true
+	Input.parse_input_event(ev_a)
+	Input.flush_buffered_events()
+	_check(Input.is_action_pressed(&"move_right") == true, "Live InputMap unchanged: Key A still triggers move_right")
+	ev_a.pressed = false
+	Input.parse_input_event(ev_a)
+	Input.flush_buffered_events()
+
+	# 8. Assert unchanged disk bytes:
+	_check(FileAccess.get_file_as_bytes(test_path) == orig_bytes, "Disk bytes unchanged after rejected reset")
+
+	# 9. UI integration: SettingsSheet reset button on Move Left
+	var sheet: SettingsSheet = SettingsSheetScene.instantiate() as SettingsSheet
+	sheet.custom_settings_path = test_path
+	sheet.settings = sm
+	root.add_child(sheet)
+	await process_frame
+	await process_frame
+
+	var ml_row: Dictionary = sheet._action_rows.get(&"move_left", {})
+	var ml_reset_btn: Button = ml_row.get("reset_btn") as Button
+	var ml_bind_lbl: Label = ml_row.get("binding_lbl") as Label
+	_check(ml_bind_lbl.text.find("J") != -1, "UI binding label shows Key J before UI reset attempt")
+
+	ml_reset_btn.pressed.emit()
+	await process_frame
+
+	_check(ml_bind_lbl.text.find("J") != -1, "UI binding label still shows Key J after rejected UI reset")
+	_check(sheet.capture_status_label.text.find("Cannot reset Move Left") != -1, "Actionable feedback shown in capture_status_label")
+	_check(sheet.capture_status_label.text.find("Move Right") != -1, "Feedback identifies conflicting action Move Right")
+	_check(FileAccess.get_file_as_bytes(test_path) == orig_bytes, "Disk bytes still unchanged after UI reset attempt")
+
+	sheet.queue_free()
+	await process_frame
+	InputBindings.clear_all_pressed_actions()
+	InputBindings.restore_defaults_to_input_map()
+
+# ==============================================================================
+# 9. Malformed Array Entry Type Validation (Fix 2 Regression)
+# ==============================================================================
+func _test_malformed_array_entry_type_validation() -> void:
+	print("\n[Part 9] Testing Malformed Array Entry Type Validation...")
+	var test_path: String = _test_root + "/settings_malformed.json"
+
+	var sm := SettingsManager.new()
+	sm.settings_path = test_path
+	sm.save_settings(test_path)
+	var orig_bytes: PackedByteArray = FileAccess.get_file_as_bytes(test_path)
+
+	# 1. Regression fixture: [{"kind": "key", "physical_keycode": 74}, 1]
+	var malformed_fixture: Array = [
+		{"kind": "key", "physical_keycode": 74},
+		1
+	]
+	var malformed_dict := {
+		"move_left": malformed_fixture
+	}
+
+	# Direct validation on dictionary containing the fixture
+	var val_err: Error = InputBindings.validate_overrides(malformed_dict)
+	_check(val_err == ERR_INVALID_DATA, "validate_overrides rejects fixture [{'kind':'key','physical_keycode':74}, 1] with ERR_INVALID_DATA without script error")
+
+	# Manager set_input_override rejection
+	var set_err: Error = sm.set_input_override(&"move_left", malformed_fixture)
+	_check(set_err == ERR_INVALID_DATA, "set_input_override rejects malformed array with ERR_INVALID_DATA")
+	_check(not sm.input_overrides.has("move_left"), "Manager input_overrides was NOT mutated")
+
+	# Save rejection and disk preservation
+	sm.input_overrides = malformed_dict
+	var save_err: Error = sm.save_settings(test_path)
+	_check(save_err == ERR_INVALID_DATA, "save_settings rejects malformed array with ERR_INVALID_DATA")
+	_check(FileAccess.get_file_as_bytes(test_path) == orig_bytes, "Disk bytes unchanged after malformed save attempt")
+
+	# Other non-dictionary variations: strings, booleans, null, float, nested array
+	var non_dict_fixtures: Array = [
+		[{"kind": "key", "physical_keycode": 74}, "bad_string"],
+		[{"kind": "key", "physical_keycode": 74}, true],
+		[{"kind": "key", "physical_keycode": 74}, null],
+		[{"kind": "key", "physical_keycode": 74}, 3.14],
+		[{"kind": "key", "physical_keycode": 74}, []]
+	]
+	for fix in non_dict_fixtures:
+		var d := {"move_left": fix}
+		var err: Error = InputBindings.validate_overrides(d)
+		_check(err == ERR_INVALID_DATA, "validate_overrides rejects non-dictionary entry type without script error")
+
 	InputBindings.restore_defaults_to_input_map()
 
 func _cleanup_dir(path: String) -> void:

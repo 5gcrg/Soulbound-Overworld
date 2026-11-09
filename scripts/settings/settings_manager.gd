@@ -18,6 +18,7 @@ var reduced_motion: bool = false
 var high_contrast: bool = false
 var text_scale: float = 1.0
 var input_overrides: Dictionary = {} # action_name (String) -> Array[Dictionary]
+var settings_path: String = SETTINGS_FILE_PATH
 
 var _save_blocked: bool = false
 var _is_legacy_source: bool = false
@@ -73,22 +74,40 @@ func set_input_override(action: StringName, primitives: Array) -> Error:
 	if val_err != OK:
 		return val_err
 	input_overrides = candidate_overrides
-	InputBindings.apply_overrides(input_overrides)
+	var apply_err: Error = InputBindings.apply_overrides(input_overrides)
+	if apply_err != OK:
+		return apply_err
 	settings_changed.emit()
 	return OK
 
-func reset_input_override(action: StringName) -> void:
-	if input_overrides.has(String(action)):
-		input_overrides.erase(String(action))
-	elif input_overrides.has(action):
-		input_overrides.erase(action)
-	InputBindings.apply_overrides(input_overrides)
+func reset_input_override(action: StringName) -> Error:
+	if not InputBindings.is_configurable_action(action):
+		return ERR_INVALID_DATA
+	var candidate_overrides: Dictionary = input_overrides.duplicate(true)
+	var act_str: String = String(action)
+	if candidate_overrides.has(act_str):
+		candidate_overrides.erase(act_str)
+	elif candidate_overrides.has(action):
+		candidate_overrides.erase(action)
+	var val_err: Error = InputBindings.validate_overrides(candidate_overrides)
+	if val_err != OK:
+		return val_err
+	input_overrides = candidate_overrides
+	var apply_err: Error = InputBindings.apply_overrides(input_overrides)
+	if apply_err != OK:
+		return apply_err
 	settings_changed.emit()
+	return OK
 
-func reset_all_input_overrides() -> void:
-	input_overrides.clear()
+func reset_all_input_overrides() -> Error:
+	var candidate_overrides: Dictionary = {}
+	var val_err: Error = InputBindings.validate_overrides(candidate_overrides)
+	if val_err != OK:
+		return val_err
+	input_overrides = candidate_overrides
 	InputBindings.restore_defaults_to_input_map()
 	settings_changed.emit()
+	return OK
 
 func apply_audio_buses() -> void:
 	AudioManager.ensure_audio_buses()
@@ -167,10 +186,11 @@ func deserialize(data: Dictionary) -> Error:
 
 	return OK
 
-func load_settings(path: String = SETTINGS_FILE_PATH) -> Error:
-	if not FileAccess.file_exists(path):
+func load_settings(path: String = "") -> Error:
+	var target_path: String = path if not path.is_empty() else settings_path
+	if not FileAccess.file_exists(target_path):
 		return ERR_FILE_NOT_FOUND
-	var f := FileAccess.open(path, FileAccess.READ)
+	var f := FileAccess.open(target_path, FileAccess.READ)
 	if f == null:
 		return FileAccess.get_open_error()
 	var text: String = f.get_as_text()
@@ -180,7 +200,7 @@ func load_settings(path: String = SETTINGS_FILE_PATH) -> Error:
 	if typeof(parsed) != TYPE_DICTIONARY:
 		_save_blocked = true
 		reset_to_defaults()
-		push_error("Failed to parse settings JSON: malformed data at '%s'" % path)
+		push_error("Failed to parse settings JSON: malformed data at '%s'" % target_path)
 		return ERR_INVALID_DATA
 
 	var parsed_dict: Dictionary = parsed as Dictionary
@@ -190,21 +210,22 @@ func load_settings(path: String = SETTINGS_FILE_PATH) -> Error:
 			if int(ver_val) > CURRENT_SETTINGS_SCHEMA_VERSION:
 				_save_blocked = true
 				reset_to_defaults()
-				push_error("Unsupported future settings schema version: %d at '%s'" % [int(ver_val), path])
+				push_error("Unsupported future settings schema version: %d at '%s'" % [int(ver_val), target_path])
 				return ERR_INVALID_DATA
 
 	var err: Error = deserialize(parsed_dict)
 	if err != OK:
 		_save_blocked = true
 		reset_to_defaults()
-		push_error("Failed to deserialize settings at '%s': %s" % [path, error_string(err)])
+		push_error("Failed to deserialize settings at '%s': %s" % [target_path, error_string(err)])
 		return err
 
 	_save_blocked = false
 	apply_all_settings()
 	return OK
 
-func save_settings(path: String = SETTINGS_FILE_PATH) -> Error:
+func save_settings(path: String = "") -> Error:
+	var target_path: String = path if not path.is_empty() else settings_path
 	if _save_blocked:
 		push_error("Ordinary save blocked: current settings source is malformed or future version.")
 		return ERR_UNAVAILABLE
@@ -214,8 +235,8 @@ func save_settings(path: String = SETTINGS_FILE_PATH) -> Error:
 		return val_err
 
 	# Do not overwrite a file that on disk has a future schema version
-	if FileAccess.file_exists(path):
-		var check_f := FileAccess.open(path, FileAccess.READ)
+	if FileAccess.file_exists(target_path):
+		var check_f := FileAccess.open(target_path, FileAccess.READ)
 		if check_f != null:
 			var existing_text: String = check_f.get_as_text()
 			check_f.close()
@@ -223,13 +244,13 @@ func save_settings(path: String = SETTINGS_FILE_PATH) -> Error:
 			if parsed_ex is Dictionary and parsed_ex.has("settings_schema_version"):
 				var ex_ver: Variant = parsed_ex.get("settings_schema_version")
 				if (typeof(ex_ver) == TYPE_INT or typeof(ex_ver) == TYPE_FLOAT) and int(ex_ver) > CURRENT_SETTINGS_SCHEMA_VERSION:
-					push_error("Refusing to overwrite future-version settings file at '%s'" % path)
+					push_error("Refusing to overwrite future-version settings file at '%s'" % target_path)
 					return ERR_UNAVAILABLE
 
 	var json_str: String = JSON.stringify(serialize(), "\t")
 	var bytes: PackedByteArray = json_str.to_utf8_buffer()
 
-	var tmp_path: String = path + ".tmp_%d_%d" % [OS.get_process_id(), Time.get_ticks_usec()]
+	var tmp_path: String = target_path + ".tmp_%d_%d" % [OS.get_process_id(), Time.get_ticks_usec()]
 	var tmp_file := FileAccess.open(tmp_path, FileAccess.WRITE)
 	if tmp_file == null:
 		return FileAccess.get_open_error()
@@ -249,7 +270,7 @@ func save_settings(path: String = SETTINGS_FILE_PATH) -> Error:
 		_remove_file_if_exists(tmp_path)
 		return ERR_FILE_CORRUPT
 
-	var promote_err: Error = _promote_file(tmp_path, path)
+	var promote_err: Error = _promote_file(tmp_path, target_path)
 	if promote_err != OK:
 		_remove_file_if_exists(tmp_path)
 		return promote_err

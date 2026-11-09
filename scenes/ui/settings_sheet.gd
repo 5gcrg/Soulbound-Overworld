@@ -12,6 +12,7 @@ var settings: SettingsManager = null
 var profile_store: ProfileStore = null
 var active_profile_id: String = "profile_01"
 var last_exported_backup: String = ""
+var custom_settings_path: String = ""
 var _initial_section: String = "general"
 
 var _capturing_action: StringName = &""
@@ -178,6 +179,8 @@ static func _apply_visible_focus(control: Control) -> void:
 
 func set_settings(new_settings: SettingsManager) -> void:
 	settings = new_settings
+	if not custom_settings_path.is_empty() and settings != null:
+		settings.settings_path = custom_settings_path
 	if is_inside_tree():
 		refresh()
 
@@ -258,19 +261,45 @@ func _cancel_capture() -> void:
 
 func _on_reset_pressed(action: StringName) -> void:
 	if settings != null:
-		settings.reset_input_override(action)
-		settings.save_settings()
-	refresh()
-	if capture_status_label != null:
-		capture_status_label.text = "Reset %s to defaults." % InputBindings.get_action_label(action)
+		var conflict_info: Dictionary = InputBindings.find_reset_conflict(action, settings.input_overrides)
+		var reset_err: Error = settings.reset_input_override(action)
+		if reset_err == OK:
+			settings.save_settings()
+			refresh()
+			if capture_status_label != null:
+				capture_status_label.text = "Reset %s to defaults." % InputBindings.get_action_label(action)
+		else:
+			# Retain current overrides, live bindings, UI text, and disk bytes; show actionable feedback.
+			refresh()
+			if capture_status_label != null:
+				var conf_act: StringName = conflict_info.get("conflict_action", &"")
+				var conf_prim: Dictionary = conflict_info.get("conflicting_primitive", {})
+				if conf_act != &"":
+					var prim_name: String = InputBindings.get_primitive_display_text(conf_prim)
+					capture_status_label.text = "Cannot reset %s: default %s conflicts with %s." % [
+						InputBindings.get_action_label(action),
+						prim_name,
+						InputBindings.get_action_label(conf_act)
+					]
+				else:
+					capture_status_label.text = "Cannot reset %s: default binding conflicts with another action." % InputBindings.get_action_label(action)
+	else:
+		refresh()
 
 func _on_reset_all_pressed() -> void:
 	if settings != null:
-		settings.reset_all_input_overrides()
-		settings.save_settings()
-	refresh()
-	if capture_status_label != null:
-		capture_status_label.text = "Reset all controls to defaults."
+		var err: Error = settings.reset_all_input_overrides()
+		if err == OK:
+			settings.save_settings()
+			refresh()
+			if capture_status_label != null:
+				capture_status_label.text = "Reset all controls to defaults."
+		else:
+			refresh()
+			if capture_status_label != null:
+				capture_status_label.text = "Failed to reset controls to defaults."
+	else:
+		refresh()
 
 func _input(event: InputEvent) -> void:
 	if not InputBindings.is_capture_active() or _capturing_action.is_empty():

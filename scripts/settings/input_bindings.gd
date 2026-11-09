@@ -288,9 +288,14 @@ static func get_candidate_rejection_reason(event: InputEvent) -> String:
 ## Returns the effective primitive bindings for an action given an override dictionary.
 static func get_effective_primitives(action: StringName, overrides: Dictionary) -> Array[Dictionary]:
 	ensure_defaults_snapshotted()
-	if overrides.has(action) and overrides[action] is Array:
+	var raw_arr: Variant = null
+	if overrides.has(action):
+		raw_arr = overrides[action]
+	elif overrides.has(String(action)):
+		raw_arr = overrides[String(action)]
+	if raw_arr is Array:
 		var res: Array[Dictionary] = []
-		for item in overrides[action]:
+		for item in (raw_arr as Array):
 			if item is Dictionary:
 				res.append((item as Dictionary).duplicate(true))
 		return res
@@ -299,9 +304,14 @@ static func get_effective_primitives(action: StringName, overrides: Dictionary) 
 ## Returns the effective InputEvent objects for an action given an override dictionary.
 static func get_effective_events(action: StringName, overrides: Dictionary) -> Array[InputEvent]:
 	ensure_defaults_snapshotted()
-	if overrides.has(action) and overrides[action] is Array:
+	var raw_arr: Variant = null
+	if overrides.has(action):
+		raw_arr = overrides[action]
+	elif overrides.has(String(action)):
+		raw_arr = overrides[String(action)]
+	if raw_arr is Array:
 		var res: Array[InputEvent] = []
-		for item in overrides[action]:
+		for item in (raw_arr as Array):
 			if item is Dictionary:
 				var ev: InputEvent = primitive_to_event(item as Dictionary)
 				if ev != null:
@@ -328,6 +338,27 @@ static func find_conflict_for_event(target_action: StringName, event: InputEvent
 		return &""
 	return find_conflict(target_action, prim, current_overrides)
 
+## Finds if resetting an action to its authored defaults causes a conflict with other active overrides.
+## Returns Dictionary with {"conflict_action": StringName, "conflicting_primitive": Dictionary} or {} if no conflict.
+static func find_reset_conflict(action: StringName, current_overrides: Dictionary) -> Dictionary:
+	ensure_defaults_snapshotted()
+	var candidate: Dictionary = current_overrides.duplicate(true)
+	var act_str: String = String(action)
+	if candidate.has(act_str):
+		candidate.erase(act_str)
+	elif candidate.has(action):
+		candidate.erase(action)
+
+	var authored_prims: Array[Dictionary] = get_authored_primitives(action)
+	for prim in authored_prims:
+		var conf_act: StringName = find_conflict(action, prim, candidate)
+		if conf_act != &"":
+			return {
+				"conflict_action": conf_act,
+				"conflicting_primitive": prim
+			}
+	return {}
+
 ## Validates the entire override dictionary atomically.
 ## Rejects unknown actions, empty arrays, invalid primitives, duplicates within an action, and cross-action conflicts.
 static func validate_overrides(overrides: Dictionary) -> Error:
@@ -344,16 +375,21 @@ static func validate_overrides(overrides: Dictionary) -> Error:
 		if arr.is_empty():
 			return ERR_INVALID_DATA
 
-		# Validate primitives and check for duplicates within action
-		for i in range(arr.size()):
-			var item: Variant = arr[i]
+		# Pass 1: Validate every entry is a Dictionary and has a valid primitive shape before pairwise checks
+		for idx in range(arr.size()):
+			var item: Variant = arr[idx]
 			if typeof(item) != TYPE_DICTIONARY:
 				return ERR_INVALID_DATA
 			var prim_err: Error = validate_primitive(item as Dictionary)
 			if prim_err != OK:
 				return prim_err
+
+		# Pass 2: Check for duplicates within action (all entries are guaranteed to be Dictionaries)
+		for i in range(arr.size()):
+			var item_a: Dictionary = arr[i] as Dictionary
 			for j in range(i + 1, arr.size()):
-				if primitives_are_equal(item as Dictionary, arr[j] as Dictionary):
+				var item_b: Dictionary = arr[j] as Dictionary
+				if primitives_are_equal(item_a, item_b):
 					return ERR_INVALID_DATA # Duplicate within same action
 
 	# Cross-action conflict check across all effective bindings
