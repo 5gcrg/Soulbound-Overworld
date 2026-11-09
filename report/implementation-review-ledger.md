@@ -153,6 +153,16 @@ entries:
 - **Verdict:** `APPROVED`; no actionable regressions. Codex confirmed atomic reset, malformed-entry rejection, and byte-identical user-settings isolation.
 - **Disposition:** `SBL-UX-001` is `REVIEWED`. The next approved slice is `SBL-EDU-005`.
 
+## SBL-EDU-005 review
+
+- **Evidence:** `report/codex_review_edu005.log`.
+- **Session:** `01a1c094-60d4-70c0-aaa6-37f8ffbce421`.
+- **Range:** `738f56b..5ff4760`.
+- **Independent targeted verification:** learning journal, education report, web backup, settings/accessibility, and layout suites passed.
+- **Verdict:** `CHANGES_REQUESTED`; one P1 and one P2.
+- **Findings:** the journal test writes fixture answers to the real `user://profiles` instead of a disposable ProfileStore root; completion HTML exports hardcode `profile_01` instead of receiving the active slot.
+- **Disposition:** agy pauses. Present the remediation plan to the project owner before MiMo execution.
+
 ## Batch C audit order fix (SBL-REV-009)
 
 - **Task:** `SBL-REV-009` (Fix boss layout audit initialization order).
