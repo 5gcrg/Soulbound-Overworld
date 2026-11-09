@@ -239,6 +239,59 @@ func _test_live_restore() -> void:
 	game._toggle_inventory_sheet()
 	game._close_inventory_sheet()
 	_check(store.export_backup("profile_01")["text"] == slot_one_text, "slot 2 gameplay writes leave slot 1 unchanged")
+
+	# ==========================================================================
+	# SBL-REV-002: Title Selected Slot Context vs Gameplay Slot Context
+	# ==========================================================================
+	game.open_title_screen()
+	await process_frame
+	_check(game._title_screen != null, "TitleScreen opened while gameplay profile_02 was active")
+
+	var title_ui: TitleScreen = game._title_screen
+	title_ui.current_slot = "profile_01"
+	title_ui._refresh_profile_labels()
+
+	title_ui.backup_btn.pressed.emit()
+	await process_frame
+
+	_check(game._title_settings_sheet != null, "Title backup sheet opened from title screen")
+	var title_sheet: SettingsSheet = game._title_settings_sheet
+	_check(title_sheet.active_profile_id == "profile_01", "Title backup targets title-selected slot profile_01, not gameplay slot profile_02")
+
+	title_sheet._on_export_backup_pressed()
+	var exported_title_txt: String = title_sheet.last_exported_backup
+	_check(exported_title_txt.contains("profile_01"), "Title export contains title-selected profile_01")
+	_check(not exported_title_txt.contains("profile_02"), "Title export does not contain active gameplay slot profile_02")
+
+	# Import into profile_01 via title sheet text import
+	var p1_env_dict: Dictionary = JSON.parse_string(slot_one_text)
+	var p1_inner: Dictionary = p1_env_dict.get("payload", {})
+	p1_inner["inventory"] = {
+		"banked_items": {"spirit_salve": 10},
+		"satchel_items": {},
+		"equipment": {"weapon": "", "armor": "", "relic_1": "", "relic_2": ""}
+	}
+	p1_env_dict["payload"] = p1_inner
+	title_sheet.backup_text_field.text = JSON.stringify(p1_env_dict)
+	title_sheet.import_text_btn.pressed.emit()
+	await process_frame
+
+	_check(title_sheet.backup_status_label.text.contains("successfully"), "Title import into profile_01 reported success")
+	var disk_p1: Dictionary = store.load_profile("profile_01").get("profile", {})
+	_check(int(disk_p1.get("inventory", {}).get("banked_items", {}).get("spirit_salve", 0)) == 10, "profile_01 on disk updated by title import")
+
+	# Gameplay slot and in-memory consumers must remain profile_02 and unmodified
+	_check(game._profile_slot == "profile_02", "Active gameplay slot remains profile_02")
+	_check(game.inventory_manager.banked_items.get("spirit_salve", 0) == 0, "Active gameplay inventory was not modified by title import")
+	_check(game.inventory_manager.banked_items.get("iron_sword", 0) == 1, "Active gameplay inventory retains profile_02 iron_sword")
+
+	title_sheet.closed.emit()
+	await process_frame
+	_check(game._title_settings_sheet == null, "Title settings overlay closed")
+
+	game._close_title_screen()
+	await process_frame
+
 	game.queue_free()
 	await process_frame
 	_cleanup_dir(fixture_root)

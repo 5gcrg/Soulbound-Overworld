@@ -1464,3 +1464,53 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 | `save_compatibility_recovery_test.gd` | Exit 0 | Verified legacy profile without snapshot loads; verified invalid step, negative step, empty path, zero count, and mismatched path rejected without silent clamping. |
 | Negative control: disable snapshot persistence | Exit 1 | Verified fresh session failed to find snapshot on disk when persistence write was omitted. |
 | Negative control: disable callback ownership | Exit 1 | Verified stale callback caught when ownership checks bypassed. |
+
+---
+
+## SBL-REV-002 — Title-Aware Settings and Backup Overlay
+
+- **Milestone** Remediation Batch A (M6 & M10 Hardening).
+- **Requirements** GDD-092, GDD-098, GDD-102, FR-SET-001, FR-SAV-002, TC-ACC-001, TC-SAV-002, AGENTS.md Invariants ("single-threaded Godot web build; Compatibility renderer", "provide local web backup export/import").
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Scene definitions: `scenes/main/game_root.tscn`.
+  - Scene scripts: `scenes/main/game_root.gd`, `scenes/ui/settings_sheet.gd`, `scenes/ui/title_screen.gd`.
+  - Headless test suites: `tests/headless/title_screen_audio_test.gd`, `tests/headless/settings_accessibility_test.gd`, `tests/headless/web_backup_test.gd`.
+  - Process: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
+- **Asset provenance** None (pure code and UI scene hierarchy; zero image or audio generation).
+- **Review** REVIEW_PENDING_CODEX (Codex Finding 2, P2).
+- **Open questions** None.
+
+### Changes
+
+1. **Dedicated Title Settings Entry Path (`game_root.gd`)**:
+   - Added `open_title_settings(slot_id, origin_control, initial_section)` on `GameRoot`.
+   - Guarded invocation to require `_title_screen != null` and ensure no gameplay modal (`_battle`, `_boss_encounter`, `_dialog`, `_expedition`, `_academic_modal`, `_ending_modal`, `_chapter_dialog`, `_character_sheet`, `_inventory_sheet`, `_settings_sheet`, `_title_settings_sheet`) is open.
+   - Updated `has_blocking_modal()` to report true when `_title_settings_sheet != null`.
+2. **Dedicated Title Overlay CanvasLayer (`game_root.tscn` & `game_root.gd`)**:
+   - Added `TitleOverlayLayer` (layer 9) positioned strictly between `TitleLayer` (8) and `DebugLayer` (10).
+   - Added `_get_title_overlay_layer()` fallback dynamically calculating `TitleLayer.layer + 1` if instantiated outside the tscn.
+3. **Modal Blocking and Under-Overlay Input Protection (`title_screen.gd`)**:
+   - Added `TitleScreen.set_modal_blocked(blocked: bool)` toggling `disabled` and setting `focus_mode = FOCUS_NONE` across all title buttons.
+   - Added `_gui_input` event swallowing on `TitleScreen` while modal blocked.
+   - Guarded title button handler callbacks to discard simulated or delayed clicks while blocked.
+4. **Targeted Initial Section Navigation (`settings_sheet.gd`)**:
+   - Added `set_initial_section(section: String)` to `SettingsSheet`.
+   - Directly focused `export_backup_btn` on `"backup"` (scrolling the `ScrollContainer` via `follow_focus`) and `master_slider` on `"general"`.
+5. **Title-Selected Profile Isolation in Web Backup (`game_root.gd` & `settings_sheet.gd`)**:
+   - Title Settings and Backup bind to `TitleScreen.current_slot` rather than the active gameplay profile.
+   - On successful backup import in title context, `refresh_slot_summary(slot_id)` updates title summaries and disk files; active gameplay slot and in-memory consumers (`inventory_manager`, `character_stats`) remain isolated and unmutated until explicit activation.
+6. **Overlay Dismissal & Focus Restoration (`game_root.gd` & `settings_sheet.gd`)**:
+   - Escape (`ui_cancel`) or Close button dismisses `_title_settings_sheet` without closing `TitleScreen`.
+   - Ren movement freeze is preserved (`player.freeze_movement()`) while TitleScreen remains open.
+   - Focus is cleanly restored to the originating button (`settings_btn`, `backup_btn`, `recovery_export_btn`) using stored instance ID primitives.
+
+### Verification Table
+
+| Test Scope / Invocation | Result | Evidence |
+|---|---|---|
+| `title_screen_audio_test.gd` (Part 3) | Exit 0 | Verified Title Settings opens SettingsSheet on layer 9 (`TitleLayer.layer + 1`); title marked modal blocked; buttons disabled (`FOCUS_NONE`); underlying title clicks ignored; duplicate entry requests rejected; close restores focus to SettingsBtn and leaves Ren frozen; Backup button focuses `export_backup_btn` immediately; recovery export button opens backup context and restores focus to `recovery_export_btn`. |
+| `settings_accessibility_test.gd` (Part 6) | Exit 0 | Verified Escape (`ui_cancel`) dismisses Title Settings overlay; TitleScreen remains open; Ren movement remains frozen; originating focus restored; duplicate open requests create zero duplicate sheets. |
+| `web_backup_test.gd` (REV-002 section) | Exit 0 | Verified title Backup targets title-selected slot (`profile_01`) while gameplay slot (`profile_02`) is active; export produces `profile_01` data; title text import updates `profile_01` on disk; active gameplay slot (`profile_02`) and gameplay inventory remain unmutated. |
+| Negative control: generic modal blocking on title settings | Exit 1 | Demonstrated that if `has_blocking_modal()` unconditionally blocked title settings, title settings failed to open. |

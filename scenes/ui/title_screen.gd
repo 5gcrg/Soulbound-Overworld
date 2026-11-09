@@ -25,6 +25,32 @@ signal defense_demo_requested()
 
 var profile_store: ProfileStore = null
 var current_slot: String = "profile_01"
+var _is_modal_blocked: bool = false
+var _last_action_origin: Control = null
+
+func get_last_action_origin() -> Control:
+	return _last_action_origin
+
+func set_modal_blocked(blocked: bool) -> void:
+	_is_modal_blocked = blocked
+	var buttons: Array[Button] = [
+		continue_btn, new_game_btn, select_profile_btn,
+		settings_btn, backup_btn, defense_btn,
+		slot1_btn, slot2_btn, slot3_btn, back_from_profiles_btn
+	]
+	if recovery_export_btn != null:
+		buttons.append(recovery_export_btn)
+	for b in buttons:
+		if b != null and is_instance_valid(b):
+			b.disabled = blocked
+			b.focus_mode = Control.FOCUS_NONE if blocked else Control.FOCUS_ALL
+
+func refresh_slot_summary(_slot_id: String = "") -> void:
+	_refresh_profile_labels()
+
+func _gui_input(_event: InputEvent) -> void:
+	if _is_modal_blocked:
+		accept_event()
 
 func _ready() -> void:
 	profile_menu.visible = false
@@ -33,9 +59,20 @@ func _ready() -> void:
 	continue_btn.pressed.connect(_on_continue_pressed)
 	new_game_btn.pressed.connect(_on_new_game_pressed)
 	select_profile_btn.pressed.connect(_on_select_profile_pressed)
-	settings_btn.pressed.connect(func(): settings_requested.emit())
-	backup_btn.pressed.connect(func(): backup_requested.emit())
-	defense_btn.pressed.connect(func(): defense_demo_requested.emit())
+	settings_btn.pressed.connect(func():
+		if _is_modal_blocked: return
+		_last_action_origin = settings_btn
+		settings_requested.emit()
+	)
+	backup_btn.pressed.connect(func():
+		if _is_modal_blocked: return
+		_last_action_origin = backup_btn
+		backup_requested.emit()
+	)
+	defense_btn.pressed.connect(func():
+		if _is_modal_blocked: return
+		defense_demo_requested.emit()
+	)
 	if recovery_export_btn != null:
 		recovery_export_btn.pressed.connect(_on_recovery_export_pressed)
 
@@ -103,24 +140,37 @@ func _get_profile_summary(slot: String) -> String:
 	return summary
 
 func _on_continue_pressed() -> void:
+	if _is_modal_blocked:
+		return
 	game_started.emit(current_slot)
 
 func _on_new_game_pressed() -> void:
+	if _is_modal_blocked:
+		return
 	game_started.emit(current_slot)
 
 func _on_recovery_export_pressed() -> void:
+	if _is_modal_blocked:
+		return
+	_last_action_origin = recovery_export_btn
 	backup_requested.emit()
 
 func _on_select_profile_pressed() -> void:
+	if _is_modal_blocked:
+		return
 	_refresh_profile_labels()
 	main_menu.visible = false
 	profile_menu.visible = true
 
 func _on_back_from_profiles() -> void:
+	if _is_modal_blocked:
+		return
 	profile_menu.visible = false
 	main_menu.visible = true
 
 func _select_slot(slot_id: String) -> void:
+	if _is_modal_blocked:
+		return
 	current_slot = slot_id
 	profile_menu.visible = false
 	main_menu.visible = true

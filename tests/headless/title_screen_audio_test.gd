@@ -98,6 +98,74 @@ func _run_test() -> void:
 	await process_frame
 
 	_check(game_root._title_screen != null, "Title screen reopened via Evaluator Tools")
+
+	# ==========================================================================
+	# Part 3: SBL-REV-002 Title-Aware Settings & Backup Overlay Verification
+	# ==========================================================================
+	title = game_root._title_screen
+
+	# 1. Click Title Settings
+	title.settings_btn.pressed.emit()
+	await process_frame
+
+	_check(game_root._title_settings_sheet != null, "Title Settings opened SettingsSheet on overlay layer")
+	var overlay_layer: CanvasLayer = game_root._get_title_overlay_layer()
+	_check(overlay_layer != null, "TitleOverlayLayer exists")
+	_check(game_root._title_settings_sheet.get_parent() == overlay_layer, "SettingsSheet attached to TitleOverlayLayer")
+	_check(overlay_layer.layer == game_root._title_layer.layer + 1, "TitleOverlayLayer is exactly TitleLayer.layer + 1 (layer %d)" % overlay_layer.layer)
+	_check(title._is_modal_blocked == true, "TitleScreen marked modal blocked while settings overlay open")
+	_check(title.continue_btn.disabled == true, "Underlying title Continue button disabled")
+	_check(title.continue_btn.focus_mode == Control.FOCUS_NONE, "Underlying title Continue button focus_mode is FOCUS_NONE")
+
+	# 2. Duplicate entry guard: attempting to open again is rejected
+	var sheet_before: SettingsSheet = game_root._title_settings_sheet
+	game_root.open_title_settings("profile_01", title.settings_btn, "general")
+	_check(game_root._title_settings_sheet == sheet_before, "Repeated title settings request creates no duplicate sheet")
+
+	# 3. Underlying title clicks are ignored while modal blocked
+	title._on_continue_pressed()
+	_check(game_root._title_screen != null, "TitleScreen not dismissed by blocked Continue click")
+
+	# 4. Close Title Settings
+	game_root._title_settings_sheet.closed.emit()
+	await process_frame
+
+	_check(game_root._title_settings_sheet == null, "Title SettingsSheet freed on close")
+	_check(game_root._title_screen != null, "TitleScreen remains open after settings sheet closed")
+	_check(game_root.player.input_frozen == true, "Player Ren remains frozen while TitleScreen remains open")
+	_check(title._is_modal_blocked == false, "TitleScreen modal block cleared")
+	_check(title.continue_btn.disabled == false, "Underlying title Continue button re-enabled")
+	_check(title.settings_btn.has_focus() == true, "Focus restored to originating SettingsBtn")
+
+	# 5. Click Title Backup: reveals backup section immediately
+	title.backup_btn.pressed.emit()
+	await process_frame
+
+	_check(game_root._title_settings_sheet != null, "Title Backup opened SettingsSheet")
+	_check(game_root._title_settings_sheet.export_backup_btn.has_focus() == true, "Backup section controls focused immediately")
+
+	# Close Title Backup
+	game_root._title_settings_sheet.closed.emit()
+	await process_frame
+
+	_check(game_root._title_settings_sheet == null, "Title Backup sheet freed on close")
+	_check(title.backup_btn.has_focus() == true, "Focus restored to originating BackupBtn")
+
+	# 6. Recovery Export button routing
+	title.recovery_box.visible = true
+	title.recovery_export_btn.grab_focus()
+	title.recovery_export_btn.pressed.emit()
+	await process_frame
+
+	_check(game_root._title_settings_sheet != null, "Recovery export button opened SettingsSheet")
+	_check(game_root._title_settings_sheet.export_backup_btn.has_focus() == true, "Recovery export focuses backup controls immediately")
+
+	game_root._title_settings_sheet.closed.emit()
+	await process_frame
+
+	_check(game_root._title_settings_sheet == null, "Recovery export sheet freed on close")
+	_check(title.recovery_export_btn.has_focus() == true, "Focus restored to originating RecoveryExportBtn")
+
 	game_root._close_title_screen()
 	_check(game_root._title_screen == null, "Title screen closed cleanly")
 

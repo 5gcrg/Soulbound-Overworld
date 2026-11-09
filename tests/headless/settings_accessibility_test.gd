@@ -249,6 +249,43 @@ func _run_test() -> void:
 
 	_check(player.input_frozen == false, "Player unfrozen after settings closed")
 
+	# ==========================================================================
+	# 6. SBL-REV-002 Title Settings Overlay Escape, Focus & Freeze Verification
+	# ==========================================================================
+	game_root.open_title_screen()
+	await process_frame
+
+	_check(game_root._title_screen != null, "TitleScreen opened on game_root")
+	_check(player.input_frozen == true, "Player frozen during TitleScreen")
+
+	var title_inst: TitleScreen = game_root._title_screen
+	game_root.open_title_settings("profile_01", title_inst.settings_btn, "general")
+	await process_frame
+
+	_check(game_root._title_settings_sheet != null, "Title settings overlay opened")
+	var initial_overlay_sheet: SettingsSheet = game_root._title_settings_sheet
+
+	# Duplicate entry rejection check
+	game_root.open_title_settings("profile_01", title_inst.settings_btn, "general")
+	_check(game_root._title_settings_sheet == initial_overlay_sheet, "Repeated entry creates no duplicate sheets")
+
+	# Escape (ui_cancel) closes overlay only, leaving TitleScreen open
+	var esc_ev := InputEventAction.new()
+	esc_ev.action = "ui_cancel"
+	esc_ev.pressed = true
+	game_root._title_settings_sheet._unhandled_input(esc_ev)
+	await process_frame
+
+	_check(game_root._title_settings_sheet == null, "Escape dismissed Title Settings overlay")
+	_check(game_root._title_screen != null, "Escape left TitleScreen open")
+	_check(player.input_frozen == true, "Player Ren remains frozen while TitleScreen remains open")
+	_check(title_inst.settings_btn.has_focus() == true, "Originating focus restored to Title Settings button")
+
+	game_root._close_title_screen()
+	await process_frame
+	_check(game_root._title_screen == null, "Title screen closed")
+	_check(player.input_frozen == false, "Player unfrozen after title screen closed")
+
 	game_root.queue_free()
 	await process_frame
 

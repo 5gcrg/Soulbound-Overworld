@@ -85,6 +85,9 @@ layer = 5
 [node name="TitleLayer" type="CanvasLayer" parent="."]
 layer = 8
 
+[node name="TitleOverlayLayer" type="CanvasLayer" parent="."]
+layer = 9
+
 [node name="DebugLayer" type="CanvasLayer" parent="."]
 layer = 10
 

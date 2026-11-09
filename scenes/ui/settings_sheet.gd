@@ -11,6 +11,7 @@ var settings: SettingsManager = null
 var profile_store: ProfileStore = null
 var active_profile_id: String = "profile_01"
 var last_exported_backup: String = ""
+var _initial_section: String = "general"
 
 @onready var master_slider: HSlider = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/AudioBox/MasterRow/MasterSlider", "Panel/Margin/VBox/AudioBox/MasterRow/MasterSlider"]) as HSlider
 @onready var master_val_label: Label = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/AudioBox/MasterRow/ValLabel", "Panel/Margin/VBox/AudioBox/MasterRow/ValLabel"]) as Label
@@ -57,9 +58,23 @@ func _ready() -> void:
 	close_btn.pressed.connect(_on_close_pressed)
 
 	setup_focus()
+	_apply_initial_section()
 
 	if settings != null:
 		refresh()
+
+func set_initial_section(section: String) -> void:
+	_initial_section = section
+	if is_inside_tree() and is_node_ready():
+		_apply_initial_section()
+
+func _apply_initial_section() -> void:
+	if _initial_section == "backup":
+		if export_backup_btn != null and is_instance_valid(export_backup_btn):
+			export_backup_btn.grab_focus()
+	else:
+		if master_slider != null and is_instance_valid(master_slider):
+			master_slider.grab_focus()
 
 func get_focusable_controls() -> Array[Control]:
 	var list: Array[Control] = [

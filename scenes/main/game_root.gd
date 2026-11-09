@@ -38,6 +38,7 @@ var _academic_modal: AcademicCompletionModal = null
 var _ending_modal: EndingModal = null
 var _boss_encounter: BossEncounter = null
 var _settings_sheet: SettingsSheet = null
+var _title_settings_sheet: SettingsSheet = null
 var _debug_bar: EvaluatorDebugBar = null
 var _title_screen: TitleScreen = null
 var audio_manager: AudioManager = null
@@ -69,6 +70,7 @@ var kurei_tree: KureiTree = KureiTree.new()
 @onready var _expedition_layer: CanvasLayer = $ExpeditionLayer
 @onready var _sheet_layer: CanvasLayer = $SheetLayer
 @onready var _title_layer: CanvasLayer = $TitleLayer
+@onready var _title_overlay_layer: CanvasLayer = $TitleOverlayLayer
 @onready var _debug_layer: CanvasLayer = $DebugLayer
 
 func _ready() -> void:
@@ -223,6 +225,7 @@ func has_blocking_modal() -> bool:
 		or (_ending_modal != null and is_instance_valid(_ending_modal)) \
 		or (_chapter_dialog != null and is_instance_valid(_chapter_dialog)) \
 		or (_title_screen != null and is_instance_valid(_title_screen)) \
+		or (_title_settings_sheet != null and is_instance_valid(_title_settings_sheet)) \
 		or _chapter_dialog_pending
 
 # ==============================================================================
@@ -1533,6 +1536,105 @@ func _on_debug_max_stats() -> void:
 # Title Screen Management
 # ==============================================================================
 
+func _get_title_overlay_layer() -> CanvasLayer:
+	if _title_overlay_layer != null and is_instance_valid(_title_overlay_layer):
+		return _title_overlay_layer
+	if has_node("TitleOverlayLayer"):
+		_title_overlay_layer = get_node("TitleOverlayLayer") as CanvasLayer
+		return _title_overlay_layer
+	var layer_num: int = (_title_layer.layer + 1) if (_title_layer != null and is_instance_valid(_title_layer)) else 9
+	var overlay := CanvasLayer.new()
+	overlay.name = "TitleOverlayLayer"
+	overlay.layer = layer_num
+	add_child(overlay)
+	_title_overlay_layer = overlay
+	return _title_overlay_layer
+
+func open_title_settings(slot_id: String = "", origin_control: Control = null, initial_section: String = "general") -> void:
+	if _title_screen == null or not is_instance_valid(_title_screen):
+		return
+	if _title_settings_sheet != null and is_instance_valid(_title_settings_sheet):
+		return
+	if _settings_sheet != null and is_instance_valid(_settings_sheet):
+		return
+	if (_battle != null and is_instance_valid(_battle)) \
+			or (_boss_encounter != null and is_instance_valid(_boss_encounter)) \
+			or (_dialog != null and is_instance_valid(_dialog)) \
+			or (_expedition != null and is_instance_valid(_expedition)) \
+			or (_academic_modal != null and is_instance_valid(_academic_modal)) \
+			or (_ending_modal != null and is_instance_valid(_ending_modal)) \
+			or (_chapter_dialog != null and is_instance_valid(_chapter_dialog)) \
+			or (_character_sheet != null and is_instance_valid(_character_sheet)) \
+			or (_inventory_sheet != null and is_instance_valid(_inventory_sheet)) \
+			or _chapter_dialog_pending:
+		return
+
+	var target_layer: CanvasLayer = _get_title_overlay_layer()
+	if target_layer == null:
+		return
+
+	var target_slot: String = slot_id if not slot_id.is_empty() else (_title_screen.current_slot if _title_screen != null else _profile_slot)
+
+	_title_screen.set_modal_blocked(true)
+
+	var sheet: SettingsSheet = SETTINGS_SHEET_SCENE.instantiate() as SettingsSheet
+	if sheet == null:
+		_title_screen.set_modal_blocked(false)
+		return
+	_title_settings_sheet = sheet
+
+	sheet.set_settings(settings_manager)
+	sheet.set_profile_context(profile_store, target_slot)
+	sheet.set_initial_section(initial_section)
+
+	var bound_target_slot := target_slot
+	var origin_id: int = origin_control.get_instance_id() if origin_control != null and is_instance_valid(origin_control) else 0
+
+	sheet.backup_imported.connect(func(): _on_title_backup_imported(bound_target_slot))
+	sheet.closed.connect(func(): _close_title_settings(origin_id))
+
+	target_layer.add_child(sheet)
+
+func _close_title_settings(origin_id: int = 0) -> void:
+	if _title_settings_sheet != null and is_instance_valid(_title_settings_sheet):
+		_title_settings_sheet.queue_free()
+		_title_settings_sheet = null
+
+	if settings_manager != null:
+		settings_manager.save_settings()
+
+	if _title_screen != null and is_instance_valid(_title_screen):
+		_title_screen.set_modal_blocked(false)
+
+	if origin_id != 0:
+		var origin: Object = instance_from_id(origin_id)
+		if origin != null and origin is Control and is_instance_valid(origin):
+			(origin as Control).grab_focus()
+
+	if player != null and is_instance_valid(player) and _title_screen != null and is_instance_valid(_title_screen):
+		player.freeze_movement()
+
+func _on_title_backup_imported(slot_id: String) -> void:
+	if _title_screen != null and is_instance_valid(_title_screen):
+		_title_screen.refresh_slot_summary(slot_id)
+
+func _on_title_settings_requested() -> void:
+	var slot: String = _title_screen.current_slot if _title_screen != null else _profile_slot
+	var origin: Control = _title_screen.get_last_action_origin() if _title_screen != null else null
+	if origin == null and _title_screen != null:
+		origin = _title_screen.settings_btn
+	open_title_settings(slot, origin, "general")
+
+func _on_title_backup_requested() -> void:
+	var slot: String = _title_screen.current_slot if _title_screen != null else _profile_slot
+	var origin: Control = _title_screen.get_last_action_origin() if _title_screen != null else null
+	if origin == null and _title_screen != null:
+		if _title_screen.recovery_box != null and _title_screen.recovery_box.visible and _title_screen.recovery_export_btn != null and _title_screen.recovery_export_btn.has_focus():
+			origin = _title_screen.recovery_export_btn
+		else:
+			origin = _title_screen.backup_btn
+	open_title_settings(slot, origin, "backup")
+
 func open_title_screen() -> void:
 	if _title_screen != null and is_instance_valid(_title_screen):
 		return
@@ -1545,13 +1647,15 @@ func open_title_screen() -> void:
 	_title_layer.add_child(_title_screen)
 	_title_screen.setup_profiles(profile_store, _profile_slot)
 	_title_screen.game_started.connect(_on_title_game_started)
-	_title_screen.settings_requested.connect(_toggle_settings_sheet)
+	_title_screen.settings_requested.connect(_on_title_settings_requested)
 	_title_screen.backup_requested.connect(_on_title_backup_requested)
 	_title_screen.defense_demo_requested.connect(_on_title_defense_demo)
 	if player != null:
 		player.freeze_movement()
 
 func _close_title_screen() -> void:
+	if _title_settings_sheet != null and is_instance_valid(_title_settings_sheet):
+		_close_title_settings()
 	if _title_screen != null and is_instance_valid(_title_screen):
 		_title_screen.queue_free()
 		_title_screen = null
@@ -1563,9 +1667,6 @@ func _on_title_game_started(slot_id: String) -> void:
 	_close_title_screen()
 	if audio_manager != null:
 		audio_manager.play_cue("portal")
-
-func _on_title_backup_requested() -> void:
-	_toggle_settings_sheet()
 
 func _on_title_defense_demo() -> void:
 	_on_debug_complete_activities()
