@@ -1057,6 +1057,48 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | Exporter Full: `export_release.ps1 -Tier full_release` | Exit 0 | Produced `dist/Soulbound-Web.zip` (10.64 MB) and `dist/Soulbound-Windows-Portable.zip` (86.52 MB), validated markers, verified headless `.pck` gate, restored `project.godot` byte-identically. |
 | Validator negative control: injected tier mismatch | Exit 1 | Caught mismatch: `build_tier.txt marker 'full_release' does not match expected tier 'academic_mvp'`. |
 
+---
+
+## SBL-MCP-003 — Reproducible Godot MCP Proof Harness
+
+- **Milestone** Tooling & Workflow Validation.
+- **Requirements** AGENTS.md § AI Game Developer MCP caution ("demonstrate a Godot-compatible MCP/adapter on a disposable project: list scene tree, create/edit node, save scene, inspect errors, run headless validation... do not point at real project until it passes").
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Harness driver: `tools/mcp-proof/run_adapter_proof.js`.
+  - Generated scene reference: `tools/mcp-proof/mcp_generated_scene.tscn`.
+  - Headless verification suite: `tools/mcp-proof/verify_mcp_scene.gd`.
+  - Documentation: `tools/mcp-proof/README.md`, `docs/godot-mcp-evaluation.md`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None (tooling verification harness, documentation, and external test artifacts; zero generated images or runtime assets).
+- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Open questions** None. Production toolchain remains isolated to native GDScript and headless CLI.
+
+### Changes
+
+1. **Committed Minimal Reproducible Harness (`tools/mcp-proof/`).** Created a clean, git-tracked verification harness containing the Node.js JSON-RPC driver script (`run_adapter_proof.js`), the exact generated `.tscn` scene output (`mcp_generated_scene.tscn`), and the headless engine verification script (`verify_mcp_scene.gd`).
+2. **Zero In-Repo Node/Project Cruft.** Guaranteed no `node_modules`, no vendored binaries, and no credentials are added to the worktree. The disposable project is dynamically scaffolded outside the repository in `$env:TEMP\disposable_godot_mcp_proof`.
+3. **Empirical Re-Run from Committed Harness.** Executed `node tools/mcp-proof/run_adapter_proof.js` against `@coding-solo/godot-mcp` v0.1.1 and `Godot_v4.7.2-stable_win64_console.exe`:
+   - Connected via stdio JSON-RPC.
+   - Executed `initialize` (MCP server initialized).
+   - Executed `get_godot_version` (returned `4.7.2.stable.official.ed1daf0bf`).
+   - Executed `get_project_info` (retrieved project structure).
+   - Executed `create_scene` (`mcp_generated_scene.tscn`, `Node2D` root).
+   - Executed `add_node` (`Player: CharacterBody2D` under root).
+   - Executed `add_node` (`Collider: CollisionShape2D` under Player).
+   - Executed `save_scene` (saved `.tscn` to disk).
+   - Executed headless Godot 4.7.2 verification (`verify_mcp_scene.gd`), asserting root, Player, and Collider nodes with exit code 0.
+4. **Documentation & Evaluation Synchronization.** Updated `tools/mcp-proof/README.md` with full step-by-step reproduction instructions and pasted the exact empirical execution log into `docs/godot-mcp-evaluation.md`.
+
+### Verification Table
+
+| Test Scope / Invocation | Result | Evidence |
+|---|---|---|
+| Driver execution: `node tools/mcp-proof/run_adapter_proof.js` | Exit 0 | Initialized MCP server, called 5 tools, serialized valid `.tscn`, verified via headless Godot. |
+| Headless verification: `godot --headless --script res://verify_mcp_scene.gd` | Exit 0 | Scene tree parsed and verified: `root` (Node2D) -> `Player` (CharacterBody2D) -> `Collider` (CollisionShape2D). |
+| Repository hygiene audit | PASSED | Zero `node_modules`, credentials, or temporary files tracked. Disposable project created in `$env:TEMP`. |
+
 
 
 

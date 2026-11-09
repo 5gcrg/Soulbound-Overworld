@@ -1,0 +1,7 @@
+[gd_scene format=3]
+
+[node name="root" type="Node2D" unique_id=1559444246]
+
+[node name="Player" type="CharacterBody2D" parent="." unique_id=509938424]
+
+[node name="Collider" type="CollisionShape2D" parent="Player" unique_id=767305233]
