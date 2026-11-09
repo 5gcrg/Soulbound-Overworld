@@ -176,6 +176,7 @@ entries:
 
 - **Evidence:** `report/sbl_edu_005_fix_report.md`, `report/learning_journal_test.log`.
 - **Queue entry:** `docs/agent-review-queue.md` → `SBL-EDU-005-FIX`.
+- **Implementation commit:** `cd18b87` (tagged `[REVIEW_PENDING_CODEX]`).
 - **Implementation:** `tests/headless/learning_journal_test.gd`, `scenes/ui/academic_completion_modal.gd`, `scenes/main/game_root.gd`.
 - **Targeted verification:** `learning_journal_test.gd` exit 0 (9 parts, 116 PASS / 0 FAIL); in-suite byte-identity INVARIANTs for the real `user://profiles` (4 files) and `user://reports` (1 file) PASS; external SHA-256 manifest diff 0; no leftover disposable directory.
 - **Pre-fix reproduction:** with the fix stashed at `e45f7d8` the suite exited 0 but ADDED 3 fixture revisions to the real `user://profiles` and REMOVED 3 real revisions (P1 reproduced); real user data was restored byte-identically from a verified backup (5 files, 0 diffs) before the fix was re-applied.

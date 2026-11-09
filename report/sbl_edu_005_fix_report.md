@@ -21,7 +21,7 @@ REQUIREMENTS: GDD-071, GDD-072, GDD-112, FR-EDU-002, FR-EDU-004, TC-EDU-004, NFR
 MILESTONE: M2/M3/M4/M6 Educational Reporting Hardening (SBL-EDU-005 remediation)
 OWNER: agy
 PLAN OWNER: Codex
-BRANCH/COMMIT: feature/w4-5-vertical-slice — implementation commit recorded in report/implementation-review-ledger.md (both commits tagged [REVIEW_PENDING_CODEX])
+BRANCH/COMMIT: feature/w4-5-vertical-slice — implementation commit cd18b87 (tagged [REVIEW_PENDING_CODEX])
 FILES CHANGED: tests/headless/learning_journal_test.gd, scenes/ui/academic_completion_modal.gd, scenes/main/game_root.gd, docs/agent-review-queue.md, docs/traceability-matrix.md, docs/testing.md, report/sbl_edu_005_fix_report.md, report/implementation-review-ledger.md, report/README.md
 ASSET PROVENANCE: none
 TESTS RUN + RESULTS: learning_journal_test.gd exit 0 (9 parts, 116 PASS / 0 FAIL; in-suite INVARIANTs byte-identical for real user://profiles (4 files) and user://reports (1 file); external SHA-256 manifest diff 0; no leftover test_learning_journal_* directory); full runner exit 0 (32/32 suites); pre-fix reproduction exit 0 but ADDED 3 fixture revisions to the real user://profiles and REMOVED 3 real revisions (P1 reproduced), restored byte-identically (5 files, 0 diffs); suite-isolation probe shows learning_journal_test writes 0 bytes to real user data while 5 other suites pre-existingly write real user://profiles/profile_01
