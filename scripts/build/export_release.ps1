@@ -36,6 +36,10 @@ foreach ($dir in @($WebDir, $WindowsDir, $DistDir)) {
     if (-not (Test-Path $dir)) {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
     }
+    $gdignore = Join-Path $dir ".gdignore"
+    if (-not (Test-Path $gdignore)) {
+        New-Item -ItemType File -Path $gdignore -Force | Out-Null
+    }
 }
 
 # 1. Export Web Build
@@ -70,7 +74,7 @@ Write-Host "Windows Desktop export successful." -ForegroundColor Green
 
 # 3. Create Distribution Archives
 if (-not $SkipZip) {
-    Write-Host "`n[3/3] Packaging distribution archives..." -ForegroundColor Yellow
+    Write-Host "`n[3/4] Packaging distribution archives..." -ForegroundColor Yellow
     
     $WebZip = Join-Path $DistDir "Soulbound-Web.zip"
     $WinZip = Join-Path $DistDir "Soulbound-Windows-Portable.zip"
@@ -78,11 +82,26 @@ if (-not $SkipZip) {
     if (Test-Path $WebZip) { Remove-Item $WebZip -Force }
     if (Test-Path $WinZip) { Remove-Item $WinZip -Force }
     
-    Compress-Archive -Path "$WebDir\*" -DestinationPath $WebZip -CompressionLevel Optimal
+    # Remove any stray .import files in builds directory before archiving
+    Get-ChildItem -Path $WebDir, $WindowsDir -Filter "*.import" -File -Recurse | Remove-Item -Force
+    
+    $webFiles = Get-ChildItem -Path $WebDir -File | Where-Object { $_.Name -ne ".gdignore" } | Select-Object -ExpandProperty FullName
+    Compress-Archive -Path $webFiles -DestinationPath $WebZip -CompressionLevel Optimal
     Write-Host "Created Web package: $WebZip" -ForegroundColor Green
     
-    Compress-Archive -Path "$WindowsDir\*" -DestinationPath $WinZip -CompressionLevel Optimal
+    $winFiles = Get-ChildItem -Path $WindowsDir -File | Where-Object { $_.Name -ne ".gdignore" } | Select-Object -ExpandProperty FullName
+    Compress-Archive -Path $winFiles -DestinationPath $WinZip -CompressionLevel Optimal
     Write-Host "Created Windows package: $WinZip" -ForegroundColor Green
+}
+
+# 4. Validate Release Artifacts
+if (-not $SkipZip) {
+    Write-Host "`n[4/4] Validating release artifacts..." -ForegroundColor Yellow
+    $ValidateScript = Join-Path $PSScriptRoot "validate_release.ps1"
+    & $ValidateScript -DistDir $DistDir
+    if ($LASTEXITCODE -ne 0) {
+        throw "Release validation failed with exit code $LASTEXITCODE"
+    }
 }
 
 Write-Host "`n=========================================" -ForegroundColor Cyan

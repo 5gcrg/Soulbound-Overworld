@@ -888,6 +888,54 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | `tests/headless/save_model_test.gd` | Exit 0 | 100% regression pass on 3-slot rotation, revision sequencing, and timestamped backups. |
 | `tests/headless/title_screen_audio_test.gd` | Exit 0 | 100% regression pass on TitleScreen startup and audio wiring. |
 
+---
+
+## SBL-VER-003 — Exported-Artifact Validator & Pipeline Chaining
+
+- **Milestone** Build Integrity, Artifact Governance & Platform Compatibility.
+- **Requirements** GDD-108 (Target platforms: Web + Windows Desktop), GDD-109 (gl_compatibility renderer), GDD-129 (automated verification), AGENTS.md Engineering Invariants (single-threaded Web, Compatibility renderer).
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Validator script: `scripts/build/validate_release.ps1`.
+  - Export script: `scripts/build/export_release.ps1`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None (PowerShell validation and build scripts).
+- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Open questions** None.
+
+### Changes
+
+1. **Automated Release Validator (`scripts/build/validate_release.ps1`).** Created an artifact validation script that uses .NET `System.IO.Compression.ZipFile` to inspect distribution archives without external tooling dependencies.
+2. **Entry Point Verification.** Asserts required entry points exist in both distribution packages:
+   - Web (`Soulbound-Web.zip`): `index.html`, `index.wasm`, `index.pck`.
+   - Windows Portable (`Soulbound-Windows-Portable.zip`): `Soulbound.exe`, `Soulbound.pck`.
+3. **Debug & Editor Leftover Exclusion.** Enforces zero-tolerance check ensuring no `.uid`, `.import`, `.godot/`, `.git/`, `tests/`, `report/`, `.tmp`, or `.bak` files are packaged inside release zip archives.
+4. **Platform Invariant Configuration Checks.** Validates `export_presets.cfg` for `variant/thread_support=false` (single-threaded Web) and `project.godot` for `rendering_method="gl_compatibility"` (standard and web override).
+5. **Plausible Size Thresholds.** Verifies binary and package size plausibility against known baselines (`index.pck`/`Soulbound.pck` between 300KB and 50MB, `index.wasm` > 10MB, `Soulbound.exe` > 50MB).
+6. **Pipeline Chaining.** Wired `validate_release.ps1` into `export_release.ps1` as step 4/4 so any artifact invalidity fails the export build process with non-zero exit code.
+7. **Clean Packaging Isolation.** Added `.gdignore` placement to `builds/` and `dist/` and sanitized file selection during zip packaging, preventing Godot project scans from generating extraneous `.import` files inside release distributions.
+
+### Verification Table
+
+| Test Scope / Invocation | Result | Evidence |
+|---|---|---|
+| Direct validator: `validate_release.ps1` | Exit 0 | Presets confirmed single-threaded Compatibility; Web and Windows entry points verified; zero leftovers found. |
+| Export pipeline: `export_release.ps1` | Exit 0 | Web export, Windows export, clean archive compression, and post-export validator all passed. |
+| Test runner chaining: `run_headless_tests.ps1 -Suite smoke_test -Export` | Exit 0 | Headless test pass seamlessly triggered export and validation steps, exiting 0. |
+
+### Artifact Size Report
+
+| Artifact | Size (Bytes) | Size (MB) |
+|---|---|---|
+| `dist/Soulbound-Web.zip` | 10,636,169 B | ~10.14 MB |
+| `dist/Soulbound-Windows-Portable.zip` | 86,510,267 B | ~82.50 MB |
+| `builds/web/index.pck` | 505,180 B | ~493 KB |
+| `builds/web/index.wasm` | 39,514,754 B | ~37.68 MB |
+| `builds/windows/Soulbound.pck` | 505,180 B | ~493 KB |
+| `builds/windows/Soulbound.exe` | 180,717,576 B | ~172.35 MB |
+
+
 
 
 
