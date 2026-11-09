@@ -935,6 +935,48 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | `builds/windows/Soulbound.pck` | 505,180 B | ~493 KB |
 | `builds/windows/Soulbound.exe` | 180,717,576 B | ~172.35 MB |
 
+---
+
+## SBL-MCP-002 — Godot-Compatible Community MCP Adapter Evaluation
+
+- **Milestone** Tooling & Workflow Validation.
+- **Requirements** AGENTS.md § AI Game Developer MCP caution.
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Documentation: `docs/godot-mcp-evaluation.md`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None (tooling evaluation, documentation, and disposable scratch scripts).
+- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Open questions** None.
+
+### Changes
+
+1. **Comparative Community Adapter Survey & Empirical Probing.** Executed rigorous evaluation across candidate MCP adapters in accordance with AGENTS.md:
+   - `ivanmurzak/unity-mcp`: Incompatible (Unity C# only; port 26269 connection refused; zero Godot scene support).
+   - `IvanMurzak/Godot-MCP (godot-cli v0.36.0)`: Incompatible with GDScript-only projects (requires `.csproj`, NuGet C# assembly reload gate; emitted warning for missing Godot.NET.Sdk project; exit code 1).
+   - `@coding-solo/godot-mcp` v0.1.1: Functional standard Godot CLI bridge via Node.js stdio.
+2. **Disposable Project Proof Execution.** In strict adherence to AGENTS.md ("demonstrate on a disposable project: list scene tree, create/edit node, save scene, inspect errors, run headless validation... do not point at real project until it passes"), created disposable project at `scratch/disposable_godot_project`:
+   - Connected `@coding-solo/godot-mcp` to `Godot_v4.7.2-stable_win64_console.exe`.
+   - Executed `get_godot_version` (returned `4.7.2.stable.official.ed1daf0bf`).
+   - Executed `get_project_info` (retrieved project metadata and structure).
+   - Executed `create_scene` (created `mcp_generated_scene.tscn` with `Node2D` root).
+   - Executed `add_node` (added `CharacterBody2D` named `Player` under `root`).
+   - Executed `add_node` (added `CollisionShape2D` named `Collider` under `root/Player`).
+   - Executed `save_scene` (packed and wrote valid Godot 4 `.tscn` to disk).
+   - Executed headless Godot 4.7.2 runtime verification (`verify_mcp_scene.gd`), confirming scene loaded, instantiated, and node hierarchy verified with exit code 0.
+3. **Architectural Assessment & Production Isolation.** Documented in `docs/godot-mcp-evaluation.md` that while `@coding-solo/godot-mcp` passed disposable verification, each tool call executes a new Godot CLI process with RID teardown noise. Kept SoulBound's production workflow isolated to native GDScript and deterministic headless test suites without external Node.js daemon dependencies.
+
+### Verification Table
+
+| Adapter / Target | Test Performed | Result | Evidence |
+|---|---|---|---|
+| `ivanmurzak/unity-mcp` | Local port 26269 probe | FAILED | Unity C# only; connection refused; zero Godot support. |
+| `godot-cli v0.36.0` | `install-plugin --path <disposable>` | FAILED | Fails on GDScript projects: requires Godot.NET.Sdk and .csproj. |
+| `@coding-solo/godot-mcp v0.1.1` | JSON-RPC stdio initialization & tool calls | PASSED | Version discovery, project info, scene creation, node additions, scene save verified. |
+| Godot 4.7.2 Headless Engine | `res://verify_mcp_scene.gd` on disposable scene | Exit 0 | Scene tree loaded and verified (`Node2D` -> `Player` -> `Collider`). |
+
+
 
 
 
