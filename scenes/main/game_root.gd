@@ -341,6 +341,8 @@ func _on_boss_trigger_entered(body: Node2D, _trigger_id: int) -> void:
 func open_boss_encounter() -> void:
 	if _boss_encounter != null and is_instance_valid(_boss_encounter):
 		return
+	if has_blocking_modal():
+		return
 	if _battle_layer == null:
 		return
 	if player != null:
@@ -922,7 +924,7 @@ func _on_academic_portal_entered(body: Node2D, portal_id: int) -> void:
 	_open_academic_modal.call_deferred()
 
 func _open_academic_modal() -> void:
-	if _academic_modal != null:
+	if _academic_modal != null or has_blocking_modal():
 		return
 	if not chapter_manager.is_academic_complete:
 		var candidate := ChapterManager.new()
@@ -976,6 +978,8 @@ func _on_ending_altar_entered(body: Node2D, ending_type: String) -> void:
 
 func open_ending_modal(ending_type: String) -> void:
 	if _ending_modal != null and is_instance_valid(_ending_modal):
+		return
+	if has_blocking_modal():
 		return
 	var target_layer: CanvasLayer = _sheet_layer if _sheet_layer != null else _dialog_layer
 	if target_layer == null:
@@ -1302,7 +1306,7 @@ func _on_debug_chapter_dialog() -> void:
 	_dialog_layer.add_child(dialog)
 
 func _on_debug_academic_modal() -> void:
-	if _academic_modal != null:
+	if _academic_modal != null or has_blocking_modal():
 		return
 	var modal := ACADEMIC_COMPLETION_SCENE.instantiate() as AcademicCompletionModal
 	_academic_modal = modal

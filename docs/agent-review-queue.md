@@ -533,5 +533,34 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | --- | --- |
 | `tests/headless/dungeon_scene_test.gd` | Exit 0. Verified atomic extraction failure & retry, early extraction rejection, duplicate extraction rejection, defeat commit failure with satchel retention & retry, and duplicate defeat rejection. |
 
+---
+
+## SBL-FIX-008 — Terminal-State Input Exclusivity & Modal Stacking Prevention
+
+- **Milestone** M3, M4 & Release Hardening (Input Exclusivity Invariants).
+- **Requirements** GDD-103, GDD-116, FR-WLD-001, FR-CMB-001, AGENTS.md Invariants.
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Scene/Scripts: `scenes/combat/boss_encounter.gd`, `scenes/combat/battle_fixture.gd`, `scenes/ui/academic_completion_modal.gd`, `scenes/ui/ending_modal.gd`, `scenes/vertical_slice/chapter_activity_dialog.gd`, `scenes/vertical_slice/quest_dialog.gd`, `scenes/main/game_root.gd`.
+  - Tests: `tests/headless/evaluator_debug_bar_test.gd`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None (pure code and UI input management only).
+- **Review** REVIEW_PENDING_CODEX.
+- **Open questions** None.
+
+### Changes
+
+1. **Terminal-State Input Consumption.** `BossEncounter`, `EndingModal`, `AcademicCompletionModal`, `ChapterActivityDialog`, `QuestDialog`, and `BattleFixture` now explicitly consume `toggle_character`, `toggle_inventory`, `toggle_settings`, and `ui_cancel` via `_input()`, invoking `get_viewport().set_input_as_handled()` while visible in the scene tree.
+2. **Modal Stacking Guards.** `GameRoot` enforces `has_blocking_modal()` guards across all instantiation pathways, including `open_boss_encounter()`, `open_ending_modal()`, `_open_academic_modal()`, and evaluator debug bar triggers (`_on_debug_academic_modal`, `_on_debug_chapter_dialog`, `_on_debug_combat`, `_on_debug_dungeon`). No sheet or secondary modal can be instantiated on top of a visible blocking/terminal modal.
+3. **Headless Verification.** Driven via real `InputEventAction`s parsed through `Input.parse_input_event()`. Asserted `has_blocking_modal() == true` across Academic Modal, Boss Victory results state, Ending Modal, and Chapter Dialog, confirming zero extra child controls instantiated on `_sheet_layer` during active modal states.
+
+### Verification Table
+
+| Suite | Result |
+| --- | --- |
+| `tests/headless/evaluator_debug_bar_test.gd` | Exit 0. Verified input consumption for character/inventory/settings/ui_cancel actions and zero sheet layer children leakage across all 4 terminal/modal states under direct action injection and debug bar trigger attempts. |
+
+
 
 

@@ -80,6 +80,131 @@ func _run_test() -> void:
 	await process_frame
 	_check(game_root._academic_modal != null, "Academic Completion Modal opened directly for evaluator review")
 
+	# ==========================================================================
+	# SBL-FIX-008: Terminal-State Input Exclusivity & Modal Blocking
+	# ==========================================================================
+	print("--- Running SBL-FIX-008 Input Exclusivity & Modal Blocking Tests ---")
+
+	# Case 1: Academic Completion Modal input exclusivity
+	_check(game_root.has_blocking_modal() == true, "has_blocking_modal() is true with academic modal visible")
+	var initial_sheet_children: int = game_root._sheet_layer.get_child_count()
+
+	for action in ["toggle_character", "toggle_inventory", "toggle_settings", "ui_cancel"]:
+		_send_action(action)
+		await process_frame
+
+	_check(game_root._sheet_layer.get_child_count() == initial_sheet_children, "Zero extra children on sheet layer after input events")
+	_check(game_root._character_sheet == null, "Character sheet not opened over academic modal")
+	_check(game_root._inventory_sheet == null, "Inventory sheet not opened over academic modal")
+	_check(game_root._settings_sheet == null, "Settings sheet not opened over academic modal")
+
+	# Attempt to open second modal via debug bar while academic modal is open
+	debug_bar.combat_requested.emit()
+	debug_bar.dungeon_requested.emit()
+	debug_bar.chapter_dialog_requested.emit()
+	debug_bar.ending_requested.emit("transcendence")
+	debug_bar.boss_combat_requested.emit()
+	await process_frame
+
+	_check(game_root._sheet_layer.get_child_count() == initial_sheet_children, "Zero extra children on sheet layer after debug bar triggers")
+	_check(game_root._battle == null, "Combat fixture not opened over academic modal")
+	_check(game_root._expedition == null, "Dungeon expedition not opened over academic modal")
+	_check(game_root._boss_encounter == null, "Boss encounter not opened over academic modal")
+	_check(game_root._ending_modal == null, "Ending modal not opened over academic modal")
+
+	game_root._close_academic_modal()
+	await process_frame
+	_check(game_root._academic_modal == null, "Academic modal closed")
+	_check(game_root.has_blocking_modal() == false, "has_blocking_modal() is false after closing")
+
+	# Case 2: Boss Encounter Results State input exclusivity
+	game_root.open_boss_encounter()
+	await process_frame
+	_check(game_root._boss_encounter != null, "Boss encounter opened")
+	_check(game_root.has_blocking_modal() == true, "has_blocking_modal() is true during boss encounter")
+
+	# Set boss encounter to results state (terminal victory)
+	game_root._boss_encounter.current_phase = BossEncounter.BossPhase.VICTORY
+	game_root._boss_encounter._update_ui()
+	_check(game_root._boss_encounter.is_terminal() == true, "Boss encounter is in terminal results state")
+
+	var boss_sheet_children: int = game_root._sheet_layer.get_child_count()
+	for action in ["toggle_character", "toggle_inventory", "toggle_settings", "ui_cancel"]:
+		_send_action(action)
+		await process_frame
+
+	_check(game_root._sheet_layer.get_child_count() == boss_sheet_children, "Zero extra children on sheet layer during boss results state")
+	_check(game_root._character_sheet == null, "Character sheet blocked during boss results")
+	_check(game_root._inventory_sheet == null, "Inventory sheet blocked during boss results")
+	_check(game_root._settings_sheet == null, "Settings sheet blocked during boss results")
+
+	# Debug bar attempts during boss results state
+	debug_bar.academic_modal_requested.emit()
+	debug_bar.ending_requested.emit("transcendence")
+	await process_frame
+	_check(game_root._sheet_layer.get_child_count() == boss_sheet_children, "Zero extra children on sheet layer after debug bar requests during boss results")
+	_check(game_root._academic_modal == null, "Academic modal blocked during boss results")
+	_check(game_root._ending_modal == null, "Ending modal blocked during boss results")
+
+	game_root._close_boss_encounter()
+	await process_frame
+	_check(game_root._boss_encounter == null, "Boss encounter closed")
+	_check(game_root.has_blocking_modal() == false, "has_blocking_modal() is false after closing boss encounter")
+
+	# Case 3: Ending Modal Epilogue input exclusivity
+	game_root.open_ending_modal("transcendence")
+	await process_frame
+	_check(game_root._ending_modal != null, "Ending modal opened")
+	_check(game_root.has_blocking_modal() == true, "has_blocking_modal() is true during ending modal")
+
+	var ending_sheet_children: int = game_root._sheet_layer.get_child_count()
+	for action in ["toggle_character", "toggle_inventory", "toggle_settings", "ui_cancel"]:
+		_send_action(action)
+		await process_frame
+
+	_check(game_root._sheet_layer.get_child_count() == ending_sheet_children, "Zero extra children on sheet layer during ending modal")
+	_check(game_root._character_sheet == null, "Character sheet blocked during ending modal")
+	_check(game_root._inventory_sheet == null, "Inventory sheet blocked during ending modal")
+	_check(game_root._settings_sheet == null, "Settings sheet blocked during ending modal")
+
+	debug_bar.academic_modal_requested.emit()
+	debug_bar.boss_combat_requested.emit()
+	await process_frame
+	_check(game_root._sheet_layer.get_child_count() == ending_sheet_children, "Zero extra children after debug bar requests during ending modal")
+	_check(game_root._academic_modal == null, "Academic modal blocked during ending modal")
+	_check(game_root._boss_encounter == null, "Boss encounter blocked during ending modal")
+
+	game_root._close_ending_modal()
+	await process_frame
+	_check(game_root._ending_modal == null, "Ending modal closed")
+	_check(game_root.has_blocking_modal() == false, "has_blocking_modal() is false after closing ending modal")
+
+	# Case 4: Chapter Activity Dialog input exclusivity
+	game_root._on_debug_chapter_dialog()
+	await process_frame
+	_check(game_root._chapter_dialog != null, "Chapter activity dialog opened")
+	_check(game_root.has_blocking_modal() == true, "has_blocking_modal() is true during chapter dialog")
+
+	var ch_sheet_children: int = game_root._sheet_layer.get_child_count()
+	for action in ["toggle_character", "toggle_inventory", "toggle_settings", "ui_cancel"]:
+		_send_action(action)
+		await process_frame
+
+	_check(game_root._sheet_layer.get_child_count() == ch_sheet_children, "Zero extra children on sheet layer during chapter dialog")
+	_check(game_root._character_sheet == null, "Character sheet blocked during chapter dialog")
+	_check(game_root._inventory_sheet == null, "Inventory sheet blocked during chapter dialog")
+	_check(game_root._settings_sheet == null, "Settings sheet blocked during chapter dialog")
+
+	debug_bar.academic_modal_requested.emit()
+	debug_bar.ending_requested.emit("restoration")
+	await process_frame
+	_check(game_root._sheet_layer.get_child_count() == ch_sheet_children, "Zero extra children after debug bar requests during chapter dialog")
+
+	game_root._close_chapter_dialog()
+	await process_frame
+	_check(game_root._chapter_dialog == null, "Chapter dialog closed")
+	_check(game_root.has_blocking_modal() == false, "has_blocking_modal() is false after closing chapter dialog")
+
 	if _failures > 0:
 		printerr("EVALUATOR DEBUG BAR TESTS FAILED: ", _failures)
 		quit(1)
@@ -87,3 +212,14 @@ func _run_test() -> void:
 
 	print("=== ALL EVALUATOR DEBUG BAR TESTS PASSED SUCCESSFULLY ===")
 	quit(0)
+
+func _send_action(action_name: String) -> void:
+	var ev_press := InputEventAction.new()
+	ev_press.action = action_name
+	ev_press.pressed = true
+	Input.parse_input_event(ev_press)
+
+	var ev_release := InputEventAction.new()
+	ev_release.action = action_name
+	ev_release.pressed = false
+	Input.parse_input_event(ev_release)

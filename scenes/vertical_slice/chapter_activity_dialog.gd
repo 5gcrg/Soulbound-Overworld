@@ -151,11 +151,9 @@ func show_save_error(error: Error) -> void:
 func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree() or _closed_emitted:
 		return
-	if event.is_action_pressed("toggle_character") or event.is_action_pressed("toggle_inventory") or event.is_action_pressed("toggle_settings"):
+	if event.is_action_pressed("toggle_character") or event.is_action_pressed("toggle_inventory") \
+			or event.is_action_pressed("toggle_settings") or event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_cancel"):
-		get_viewport().set_input_as_handled()
-		_on_close_pressed()
 
 
 # --- UI construction -------------------------------------------------------

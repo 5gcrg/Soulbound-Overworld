@@ -145,11 +145,9 @@ func _on_close_pressed() -> void:
 func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree():
 		return
-	if event.is_action_pressed("toggle_character") or event.is_action_pressed("toggle_inventory") or event.is_action_pressed("toggle_settings"):
+	if event.is_action_pressed("toggle_character") or event.is_action_pressed("toggle_inventory") \
+			or event.is_action_pressed("toggle_settings") or event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_cancel"):
-		get_viewport().set_input_as_handled()
-		_on_close_pressed()
 
 func _hide_all_buttons() -> void:
 	accept_button.visible = false
