@@ -425,13 +425,11 @@ func _record_is_completed(record: Dictionary) -> bool:
 
 
 func _record_first_attempt_index(record: Dictionary) -> int:
-	for key in ["first_attempt_index", "first_attempt_choice", "selected_index"]:
-		if record.has(key):
-			return int(record[key])
+	var response: Variant = record.get("first_response")
+	if response is Dictionary:
+		return int(response.get("selected_index", response.get("index", -1)))
 	return -1
 
 
-func _record_correct_index(record: Dictionary) -> int:
-	if record.has("correct_index"):
-		return int(record["correct_index"])
-	return int(_question.get("correct_index", _question.get("answer_index", -1)))
+func _record_correct_index(_record: Dictionary) -> int:
+	return int(_question.get("correct_index", -1))

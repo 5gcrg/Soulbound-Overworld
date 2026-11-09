@@ -14,6 +14,7 @@ signal question_answered(question_id: String, is_correct: bool, is_first_attempt
 signal competency_completed(competency: String)
 
 var records: Dictionary = {} # String (question_id) -> Dictionary
+var _pending_baselines: Dictionary = {} # String (question_id) -> Dictionary
 
 func submit_answer(question_id: String, selected_index: int) -> Dictionary:
 	var q: Dictionary = QuestionBank.get_question(question_id)
@@ -23,6 +24,12 @@ func submit_answer(question_id: String, selected_index: int) -> Dictionary:
 	var options: Array = q.get("options", [])
 	if selected_index < 0 or selected_index >= options.size():
 		return {"error": ERR_INVALID_PARAMETER}
+
+	if not _pending_baselines.has(question_id):
+		if records.has(question_id):
+			_pending_baselines[question_id] = (records[question_id] as Dictionary).duplicate(true)
+		else:
+			_pending_baselines[question_id] = {}
 
 	var correct_idx: int = int(q.get("correct_index", -1))
 	var is_correct: bool = (selected_index == correct_idx)
@@ -122,6 +129,7 @@ func serialize() -> Dictionary:
 func deserialize(data: Dictionary) -> Error:
 	if not data.has("records"):
 		records = {}
+		_pending_baselines.clear()
 		return OK
 
 	if typeof(data["records"]) != TYPE_DICTIONARY:
@@ -229,6 +237,7 @@ func deserialize(data: Dictionary) -> Error:
 
 	# Validate before replacing live records
 	records = validated_records
+	_pending_baselines.clear()
 	return OK
 
 func load_from_store(store: ProfileStore, slot: String = "profile_01") -> Error:
@@ -254,21 +263,90 @@ func save_to_store(store: ProfileStore, slot: String = "profile_01") -> Error:
 	else:
 		return res["error"]
 
-	var edu: Dictionary = {}
-	if prof.has("education") and typeof(prof["education"]) == TYPE_DICTIONARY:
-		edu = (prof["education"] as Dictionary).duplicate(true)
+	var latest_edu: Dictionary = {}
+	if prof.has("education"):
+		if typeof(prof["education"]) != TYPE_DICTIONARY:
+			return ERR_INVALID_DATA
+		latest_edu = (prof["education"] as Dictionary).duplicate(true)
 
-	var existing_records: Dictionary = {}
-	if edu.has("records") and typeof(edu["records"]) == TYPE_DICTIONARY:
-		existing_records = (edu["records"] as Dictionary).duplicate(true)
+	var validator := AssessmentController.new()
+	var val_err: Error = validator.deserialize(latest_edu)
+	if val_err != OK:
+		return val_err
+	var latest_records: Dictionary = validator.records
 
-	for q_id: String in records.keys():
-		existing_records[q_id] = (records[q_id] as Dictionary).duplicate(true)
+	for q_id: String in _pending_baselines.keys():
+		var baseline: Dictionary = _pending_baselines[q_id]
+		var b_present: bool = not baseline.is_empty()
+		var l_present: bool = latest_records.has(q_id)
 
-	edu["records"] = existing_records
-	prof["education"] = edu
+		if b_present != l_present:
+			return ERR_BUSY
 
-	return store.save_profile(slot, prof)
+		if b_present and l_present:
+			var latest_rec: Dictionary = latest_records[q_id]
+
+			var b_has_att: bool = baseline.has("total_attempts")
+			var l_has_att: bool = latest_rec.has("total_attempts")
+			if b_has_att != l_has_att:
+				return ERR_BUSY
+			if b_has_att and _numeric_differ(baseline["total_attempts"], latest_rec["total_attempts"]):
+				return ERR_BUSY
+
+			var b_has_fac: bool = baseline.has("first_attempt_correct")
+			var l_has_fac: bool = latest_rec.has("first_attempt_correct")
+			if b_has_fac != l_has_fac:
+				return ERR_BUSY
+			if b_has_fac and bool(baseline["first_attempt_correct"]) != bool(latest_rec["first_attempt_correct"]):
+				return ERR_BUSY
+
+			var b_fr_info: Dictionary = _extract_first_response_selected_index(baseline)
+			var l_fr_info: Dictionary = _extract_first_response_selected_index(latest_rec)
+			if b_fr_info["present"] != l_fr_info["present"]:
+				return ERR_BUSY
+			if b_fr_info["present"] and _numeric_differ(b_fr_info["value"], l_fr_info["value"]):
+				return ERR_BUSY
+
+			var b_has_ts: bool = baseline.has("timestamp")
+			var l_has_ts: bool = latest_rec.has("timestamp")
+			if b_has_ts != l_has_ts:
+				return ERR_BUSY
+			if b_has_ts and _numeric_differ(baseline["timestamp"], latest_rec["timestamp"]):
+				return ERR_BUSY
+
+	var merged_records: Dictionary = latest_records.duplicate(true)
+
+	for q_id: String in _pending_baselines.keys():
+		if records.has(q_id):
+			merged_records[q_id] = (records[q_id] as Dictionary).duplicate(true)
+
+	latest_edu["records"] = merged_records
+	prof["education"] = latest_edu
+
+	var save_err: Error = store.save_profile(slot, prof)
+	if save_err != OK:
+		return save_err
+
+	records = merged_records
+	_pending_baselines.clear()
+
+	return OK
+
+static func _numeric_differ(a: Variant, b: Variant) -> bool:
+	if (a is int or a is float) and (b is int or b is float):
+		var fa: float = float(a)
+		var fb: float = float(b)
+		return fa != fb
+	return a != b
+
+static func _extract_first_response_selected_index(rec: Dictionary) -> Dictionary:
+	if rec.has("first_response") and typeof(rec["first_response"]) == TYPE_DICTIONARY:
+		var fr: Dictionary = rec["first_response"]
+		if fr.has("selected_index") or fr.has("index"):
+			var val: Variant = fr.get("selected_index", fr.get("index"))
+			if val is int or val is float:
+				return {"present": true, "value": val}
+	return {"present": false, "value": null}
 
 # ==============================================================================
 # RFC-4180 CSV Report Export

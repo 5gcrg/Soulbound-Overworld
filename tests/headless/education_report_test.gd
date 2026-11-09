@@ -166,6 +166,7 @@ func _run_test() -> void:
 		_check(line2.contains("false,2,true"), "q_dec_01 data fields match expected values (false, 2 attempts, completed)")
 		file.close()
 
+	_test_stale_first_answer(store)
 	# Cleanup test files
 	if FileAccess.file_exists(export_path):
 		DirAccess.remove_absolute(export_path)
@@ -177,3 +178,27 @@ func _run_test() -> void:
 
 	print("=== ALL EDUCATION & CSV REPORT TESTS PASSED SUCCESSFULLY ===")
 	quit(0)
+
+func _test_stale_first_answer(store: ProfileStore) -> void:
+	var slot := "profile_02"
+	var question := QuestionBank.get_question("q_dec_01")
+	var correct: int = question["correct_index"]
+	var wrong: int = (correct + 1) % (question["options"] as Array).size()
+	var first := AssessmentController.new()
+	var stale := AssessmentController.new()
+	first.submit_answer("q_dec_01", wrong)
+	stale.submit_answer("q_dec_01", correct)
+	_check(first.save_to_store(store, slot) == OK, "first instance saves original answer")
+	_check(stale.save_to_store(store, slot) == ERR_BUSY, "stale first answer cannot overwrite persisted result")
+	var reloaded := AssessmentController.new()
+	if not _check(reloaded.load_from_store(store, slot) == OK, "reload first answer"):
+		return
+	var answer: Dictionary = reloaded.records.get("q_dec_01", {})
+	_check(answer.get("first_attempt_correct", true) == false and answer.get("total_attempts", 0) == 1, "first wrong answer and attempt count preserved")
+	_check(answer.get("first_response", {}).get("selected_index", -1) == wrong, "original option retained")
+	reloaded.submit_answer("q_dec_01", correct)
+	_check(reloaded.save_to_store(store, slot) == OK, "fresh retry saves")
+	var final := AssessmentController.new()
+	_check(final.load_from_store(store, slot) == OK, "reload retry")
+	answer = final.records.get("q_dec_01", {})
+	_check(answer.get("first_attempt_correct", true) == false and answer.get("total_attempts", 0) == 2, "retry preserves first answer and increases attempts")

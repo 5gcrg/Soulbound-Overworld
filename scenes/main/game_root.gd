@@ -32,6 +32,7 @@ var _academic_modal: AcademicCompletionModal = null
 var _settings_sheet: SettingsSheet = null
 var _previous_input_frozen: bool = false
 var _pending_return_to_alpha: bool = false
+var _chapter_baseline: String = "{}"
 var _profile_slot: String = "profile_01"
 
 var profile_store: ProfileStore = null
@@ -103,6 +104,9 @@ func _init_slice_progress(store: ProfileStore = null, slot: String = "profile_01
 	_validate_and_clamp_progress()
 	_sync_chapter_gates()
 	_update_objective()
+
+	var loaded := profile_store.load_profile(_profile_slot)
+	_chapter_baseline = JSON.stringify(loaded.get("profile", {}).get("world", {}).get("chapter_progress", {}))
 
 func _on_region_transition_completed(region_id: String, spawn_id: String) -> void:
 	_current_region_id = region_id
@@ -424,6 +428,13 @@ func _close_expedition() -> void:
 # ==============================================================================
 
 func _toggle_character_sheet() -> void:
+	if _chapter_dialog_pending or _chapter_dialog != null or _academic_modal != null:
+		return
+	if _pending_return_to_alpha:
+		if _settings_sheet != null:
+			_close_settings_sheet()
+		return
+
 	if _character_sheet != null and is_instance_valid(_character_sheet):
 		_close_character_sheet()
 		return
@@ -465,6 +476,13 @@ func _close_character_sheet() -> void:
 		_restore_combat_movement()
 
 func _toggle_inventory_sheet() -> void:
+	if _chapter_dialog_pending or _chapter_dialog != null or _academic_modal != null:
+		return
+	if _pending_return_to_alpha:
+		if _settings_sheet != null:
+			_close_settings_sheet()
+		return
+
 	if _inventory_sheet != null and is_instance_valid(_inventory_sheet):
 		_close_inventory_sheet()
 		return
@@ -506,6 +524,13 @@ func _close_inventory_sheet() -> void:
 		_restore_combat_movement()
 
 func _toggle_settings_sheet() -> void:
+	if _chapter_dialog_pending or _chapter_dialog != null or _academic_modal != null:
+		return
+	if _pending_return_to_alpha:
+		if _settings_sheet != null:
+			_close_settings_sheet()
+		return
+
 	if _settings_sheet != null and is_instance_valid(_settings_sheet):
 		_close_settings_sheet()
 		return
@@ -548,7 +573,6 @@ func _close_settings_sheet() -> void:
 		settings_manager.save_settings()
 
 	if _pending_return_to_alpha:
-		_pending_return_to_alpha = false
 		_defer_return_to_alpha.call_deferred()
 
 	if _character_sheet == null and _inventory_sheet == null and _battle == null and _dialog == null and _expedition == null and _academic_modal == null and _chapter_dialog == null:
@@ -559,12 +583,17 @@ func _reload_imported_profile() -> void:
 	_pending_return_to_alpha = _is_current_location_locked()
 
 func _defer_return_to_alpha() -> void:
-	if not _is_current_location_locked() or world_router.active_region == null:
+	if not _is_current_location_locked():
+		_pending_return_to_alpha = false
+		return
+	if world_router.active_region == null:
 		return
 	for child in world_router.active_region.portals_container.get_children():
 		var portal := child as RegionPortal
 		if portal != null:
 			world_router.request_transition(portal, DEFAULT_START_REGION, DEFAULT_START_SPAWN)
+			if world_router.is_transition_in_flight:
+				_pending_return_to_alpha = false
 			return
 
 # ==============================================================================
@@ -751,6 +780,8 @@ func _commit_chapter(candidate: ChapterManager) -> Error:
 	if loaded["error"] != OK:
 		return loaded["error"]
 	var profile: Dictionary = loaded["profile"]
+	if JSON.stringify(profile["world"].get("chapter_progress", {})) != _chapter_baseline:
+		return ERR_BUSY
 	profile["world"]["chapter_progress"] = candidate.serialize()
 	var persisted := AssessmentController.new()
 	var evidence_error := persisted.deserialize(profile["education"])
@@ -765,6 +796,7 @@ func _commit_chapter(candidate: ChapterManager) -> Error:
 	var error := profile_store.save_profile(_profile_slot, profile)
 	if error != OK:
 		return error
+	_chapter_baseline = JSON.stringify(JSON.parse_string(JSON.stringify(candidate.serialize())))
 	chapter_manager.deserialize(candidate.serialize())
 	_sync_chapter_gates()
 	_update_objective()

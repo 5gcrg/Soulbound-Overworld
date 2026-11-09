@@ -87,6 +87,13 @@ func _finish_activity(game, npc_name: String, question_id: String, wrong: bool) 
 	var dialog: ChapterActivityDialog = game._chapter_dialog
 	if not _check(dialog != null, "open chapter practice via " + npc_name):
 		return false
+	var settings_event := InputEventAction.new()
+	settings_event.action = &"toggle_settings"
+	settings_event.pressed = true
+	Input.parse_input_event(settings_event)
+	await process_frame
+	if not _check(game._settings_sheet == null, "settings cannot open over chapter practice"):
+		return false
 	var question := QuestionBank.get_question(question_id)
 	var index: int = int(question["correct_index"])
 	if wrong:
