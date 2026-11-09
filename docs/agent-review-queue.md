@@ -976,6 +976,48 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | `@coding-solo/godot-mcp v0.1.1` | JSON-RPC stdio initialization & tool calls | PASSED | Version discovery, project info, scene creation, node additions, scene save verified. |
 | Godot 4.7.2 Headless Engine | `res://verify_mcp_scene.gd` on disposable scene | Exit 0 | Scene tree loaded and verified (`Node2D` -> `Player` -> `Collider`). |
 
+---
+
+## SBL-DATA-003 — Decision-Ready Briefs for Combat Open Decisions
+
+- **Milestone** Combat Architecture & Systems Governance.
+- **Requirements** GDD-016–023 (Turn structure, elemental magic, status effects), FR-CMB-001–005 (Combat engine), AGENTS.md Engineering Invariants (Zero invented statistics, coefficients, or drop probabilities; options and consequences only).
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Combat briefs: `docs/combat-open-decisions-briefs.md`.
+  - Ledger update: `docs/open-decisions-ledger.md`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None (system design briefs and documentation).
+- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex review is halted.
+- **Open questions** OD-002 (Initiative paradigm), OD-003 (Elemental affinity & SP model), OD-004 (Status stacking & boss tenacity).
+
+### Changes
+
+1. **OD-002 Decision Brief (Speed & Initiative Ordering).** Authored a structured decision analysis contrasting:
+   - *Option A (Discrete Round Speed Ordering)*: Predictable round sequence, low cognitive overhead, zero turn-skipping exploits.
+   - *Option B (Continuous Tick Action Gauge)*: High speed-scaling expression and turn-lapping, higher state complexity for save invariants.
+   - *Option C (Tiered Action Pip Economy)*: Synchronized rounds with discrete action volume scaling, subject to breakpoint min-maxing.
+2. **OD-003 Decision Brief (Elemental Affinities & SP Economy).** Authored a comparative analysis of:
+   - *Option A (Closed 4+2 Circular Wheel)*: High educational synergy, clear vulnerability telegraphing, risk of monotype build walls.
+   - *Option B (Taxonomy-Driven Asymmetric Resistances)*: Lore-rich bestiary discovery, deeper roguelite itemization, higher cognitive burden.
+   - *SP Models*: Attrition survival pool (fixed cap, rest recovery) vs. Dynamic offensive flow (Resonance-scaled, action generation).
+3. **OD-004 Decision Brief (Status Stacking & Boss Tenacity).** Authored analysis of:
+   - *Option A (Duration Refresh with Stack Cap)*: Rewards aggressive DoT maintenance, risk of infinite CC lockout without tenacity.
+   - *Option B (Independent Instance Lifespans)*: Precision burst timing windows, higher UI timer clutter.
+   - *Boss CC Tenacity*: Diminishing returns recovery vs. Categorical Stagger/Break meter gating.
+4. **Zero Invented Statistics Compliance.** Adhered strictly to AGENTS.md mandate by omitting all invented damage percentages, stat multipliers, tick intervals, and drop rates. The document articulates structural mechanics, what each option changes, what it unblocks, and the associated risks for human authority resolution.
+5. **Ledger Synchronization.** Updated `docs/open-decisions-ledger.md` to formally cross-link `OD-002`, `OD-003`, and `OD-004` to `docs/combat-open-decisions-briefs.md`.
+
+### Verification Table
+
+| Item / Scope | Result | Evidence |
+|---|---|---|
+| Rule compliance audit | PASSED | Document contains zero hardcoded formulas, percentages, coefficients, or drop probabilities. |
+| Scope completeness | PASSED | Detailed dedicated briefs authored for `OD-002`, `OD-003`, and `OD-004` with Options, Changes, Unblocks, and Risks. |
+| Ledger linkage | PASSED | `docs/open-decisions-ledger.md` synchronized and cross-referenced. |
+
+
 
 
 
