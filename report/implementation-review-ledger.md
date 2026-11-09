@@ -125,6 +125,15 @@ entries:
 - **Finding:** `tests/headless/layout_audit_test.gd` accesses `b.kurei_btn` before `root_control.add_child(inst)`, so the `@onready` node is null and the claimed boss viewport coverage is not actually executed.
 - **Disposition:** Stage a focused test-order fix, then re-run the layout and full suites and obtain Codex re-review. `OD-003/004` remains unchanged.
 
+## Batch C audit order fix (SBL-REV-009)
+
+- **Task:** `SBL-REV-009` (Fix boss layout audit initialization order).
+- **Implementation:** agy (`tests/headless/layout_audit_test.gd`).
+- **Evidence:** `report/neg_boss_layout_audit_order.log`.
+- **Targeted verification:** `layout_audit_test.gd`, `kurei_tree_test.gd`, `kurei_combat_test.gd`, `boss_combat_test.gd` all passed (exit 0).
+- **Full verification:** 30/30 headless suites passed with zero script or engine errors; automated release exporter succeeded across all tiers (`run_headless_tests.ps1 -Export -Tier all`).
+- **Review status:** `REVIEW_PENDING_CODEX` awaiting Codex CLI re-review.
+
 ## Rule
 
 Every future implementation, review, finding, negative control, and disposition

@@ -39,7 +39,7 @@ On Windows, the default Godot executable (`godot.exe`) is compiled targeting the
 
 ## Suite Count and Inventory
 
-At current development baseline (Batch 2), there are **25 headless test suites**:
+At current development baseline (Batch C remediation), there are **30 headless test suites**:
 
 | Suite Name | Scope & Verification Invariants |
 |---|---|
@@ -67,10 +67,12 @@ At current development baseline (Batch 2), there are **25 headless test suites**
 | `ending_chapter5_test.gd` | Chapter V Void Citadel warp, dual-ending altars (A & B), capstone question |
 | `boss_combat_test.gd` | Void Sovereign multi-phase combat, Astral Shield, Cataclysm 2-turn telegraph, SBL-REV-005 Phase Mastery 4 SP capacity, SBL-REV-006 dynamic spell menu, starter functionality, OD-003/004 advanced skill disabled state with notice, and zero mutation on unsupported skills, SBL-REV-007 4-column GridContainer viewport safety, starter/Cancel keyboard reachability, and SBL-REV-008 empty loadout starter normalization regression test |
 | `kurei_tree_test.gd` | 4-branch 2-tier skill tree, talent points, tier prerequisites, respec refund, SBL-REV-005 Phase Mastery unlock, SBL-REV-006 6-slot equip lifecycle, minimum 1 skill invariant, auto-equip to 6, 7th unequipped, SBL-REV-008 atomic deserialize failure preservation, explicit empty loadout rejection, legacy starter defaulting, and starter normalization |
-| `layout_audit_test.gd` | SBL-FIX-011 / SBL-REV-007 960x540 viewport boundary & overflow audit across SettingsSheet, InventorySheet, CharacterSheet, ChapterActivityDialog, AcademicCompletionModal, EndingModal, and BossEncounter at 1.0x and 1.5x accessibility text scale |
+| `layout_audit_test.gd` | SBL-FIX-011 / SBL-REV-007 / SBL-REV-009 960x540 viewport boundary & overflow audit across SettingsSheet, InventorySheet, CharacterSheet, ChapterActivityDialog, AcademicCompletionModal, EndingModal, and BossEncounter at 1.0x and 1.5x accessibility text scale (SBL-REV-009 SceneTree attachment lifecycle order fix) |
+| `build_tier_test.gd` | SBL-FIX-010 project.godot build tier configuration and scene exclusion validation |
 | `release_tier_test.gd` | SBL-FIX-010 3-chapter academic MVP vs. full release tier separation |
 | `save_compatibility_recovery_test.gd` | SBL-FIX-012/SBL-REV-001 Legacy profile compatibility, revision recovery, snapshot non-clamping validation |
 | `profile_activation_test.gd` | SBL-REV-003 / SBL-REV-003-FIX Empty-slot new journey picker, non-launching profile selection, safe profile activation, defense demo title-selected activation & failure safety, world/dimension reset |
+| `verify_exported_tier.gd` | Automated PCK content and entry point verification across release packages |
 
 ## Verification & Exit Codes
 

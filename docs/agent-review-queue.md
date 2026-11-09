@@ -1923,3 +1923,47 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 | Disposable negative control: validator on empty equipped array | Exit 0 | Negative control proved validator catches empty equipped loadout with `ERR_INVALID_DATA` (`report/neg_empty_equipped_loadout.log`). |
 | Full headless runner (`run_headless_tests.ps1`) | Exit 0 (30/30 passed) | All 30 project headless suites pass cleanly with 0 Godot script/engine errors. |
 | Full release exporter (`run_headless_tests.ps1 -Export -Tier all`) | Exit 0 | Built and validated `Soulbound-AcademicMVP-Web.zip`, `Soulbound-Web.zip`, and `Soulbound-Windows-Portable.zip`; PCK gates passed; working tree verified byte-identical. |
+
+
+---
+
+## SBL-REV-009 — Fix Boss Layout Audit Initialization Order
+
+- **Milestone** Remediation Batch C (M3 Combat UI & Accessibility Hardening Audit Fix).
+- **Requirements** GDD-018..020, GDD-041, GDD-089, GDD-103, GDD-116, FR-CMB-001/002/003, TC-ACC-001 (viewport 960x540 and 1.5x accessibility text scale), AGENTS.md Invariants ("Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer", "Do not invent numerical stats, formula coefficients, drop probabilities, story revelations, or unsupported integrations. Mark such items TBD and seek change approval").
+- **Codex finding** Finding from Codex CLI review session `01a1c04c-cc02-7c12-8171-7c27cadfcb1e` [P2]:
+  "tests/headless/layout_audit_test.gd accesses b.kurei_btn before the boss scene instance is added to the tree. The @onready variable is null, causing the audit to crash before it verifies the expanded boss menu viewport."
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Headless test suite: `tests/headless/layout_audit_test.gd`.
+  - Evidence logs: `report/neg_boss_layout_audit_order.log`.
+  - Process: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
+- **Asset provenance** None (pure test harness lifecycle order fix; zero image or audio generation).
+- **Review** REVIEW: REVIEW_PENDING_CODEX.
+- **Open questions** `OD-003/004`: advanced boss skill effect specifications remain open pending designer/educator approval; notices remain displayed on disabled buttons and tooltips without inventing combat values.
+
+### Changes
+
+1. **SceneTree Attachment Precedes Onready Access (`tests/headless/layout_audit_test.gd`)**:
+   - In `modal_loaders["BossEncounter"]`, removed premature pre-attachment access `b.kurei_btn.pressed.emit()`. The factory now configures the `kurei_tree` on the instantiated scene and returns the instance cleanly.
+   - In both Phase 1 (1.0x authored base) and Phase 2 (1.5x accessibility scale), `inst` is attached to `root_control` via `root_control.add_child(inst)` and process frames are awaited before checking `b.kurei_btn != null` and emitting `b.kurei_btn.pressed.emit()`.
+2. **KureiMenu Visibility & Viewport Assertions (`tests/headless/layout_audit_test.gd`)**:
+   - Added explicit assertion `_check(b.kurei_btn != null, "BossEncounter: kurei_btn initialized after adding to tree")`.
+   - Added explicit assertion `_check(b.kurei_menu != null and b.kurei_menu.is_visible_in_tree(), "BossEncounter: Kurei menu is opened and visible")`.
+   - Added dedicated bounding box checks for `b.kurei_menu.get_global_rect()` confirming that the expanded 4-column `GridContainer` stays strictly inside `Rect2(0, 0, 960, 540)` at both 1.0x (`[P: (32.0, 442.0), S: (896.0, 78.0)]`) and 1.5x (`[P: (32.0, 418.0), S: (896.0, 110.0)]`).
+3. **Negative Control Verification**:
+   - Captured negative control evidence in `report/neg_boss_layout_audit_order.log` proving that prior to the fix, attempting to access `b.kurei_btn` inside the anonymous factory lambda before scene attachment crashed with `SCRIPT ERROR: Invalid access to property or key 'pressed' on a base object of type 'Nil'`.
+   - Post-fix execution runs all 30 project headless suites with exit code 0 and zero script or engine errors.
+
+### Verification Table
+
+| Test Scope / Invocation | Result | Evidence |
+|---|---|---|
+| `run_headless_tests.ps1 -Suite layout_audit_test` | Exit 0 | Audited BossEncounter with KureiMenu open at 960x540 without null-node errors: Phase 1 (1.0x KureiMenu `[P: (32, 442), S: (896, 78)]`, panel `[P: (32, 20), S: (896, 500)]`) and Phase 2 (1.5x KureiMenu `[P: (32, 418), S: (896, 110)]`, panel `[P: (32, 12), S: (896, 516)]`). |
+| `run_headless_tests.ps1 -Suite kurei_tree_test` | Exit 0 | Verified empty array validator rejection, atomic deserialize failure state preservation, legacy profile defaulting to starters without write-on-load, and in-memory starter normalization. |
+| `run_headless_tests.ps1 -Suite kurei_combat_test` | Exit 0 | Verified BattleFixture dynamic menu displays starter buttons on empty tree via normalization and request_action succeeds without rejection. |
+| `run_headless_tests.ps1 -Suite boss_combat_test` | Exit 0 | Verified BossEncounter dynamic menu displays starter buttons on empty tree via normalization and request_action succeeds without rejection. |
+| Negative control: pre-attachment kurei_btn access | Exit 0 | Negative control proved accessing `@onready var kurei_btn` before `add_child` fails with null access (`report/neg_boss_layout_audit_order.log`). |
+| Full headless runner (`run_headless_tests.ps1`) | Exit 0 (30/30 passed) | All 30 project headless suites pass cleanly with 0 Godot script/engine errors across all game systems. |
+| Full release exporter (`run_headless_tests.ps1 -Export -Tier all`) | Exit 0 | Built and validated `Soulbound-AcademicMVP-Web.zip`, `Soulbound-Web.zip`, and `Soulbound-Windows-Portable.zip`; PCK gates passed; working tree verified byte-identical. |

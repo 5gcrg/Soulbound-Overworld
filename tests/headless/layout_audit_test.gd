@@ -131,7 +131,6 @@ func _run_tests() -> void:
 			tree.unlock_skill(&"celestial_prism")
 			tree.unlock_skill(&"glacial_aegis")
 			b.kurei_tree = tree
-			b.kurei_btn.pressed.emit()
 			return b
 	}
 
@@ -144,6 +143,19 @@ func _run_tests() -> void:
 		inst.size = Vector2(960, 540)
 		await process_frame
 		await process_frame
+
+		if inst is BossEncounter:
+			var b := inst as BossEncounter
+			_check(b.kurei_btn != null, "BossEncounter: kurei_btn initialized after adding to tree")
+			if b.kurei_btn != null:
+				b.kurei_btn.pressed.emit()
+				await process_frame
+				await process_frame
+			_check(b.kurei_menu != null and b.kurei_menu.is_visible_in_tree(), "BossEncounter: Kurei menu is opened and visible")
+			if b.kurei_menu != null:
+				var m_rect: Rect2 = b.kurei_menu.get_global_rect()
+				var m_inside := (m_rect.position.x >= 0 and m_rect.position.y >= 0 and m_rect.end.x <= 960 and m_rect.end.y <= 540)
+				_check(m_inside, "BossEncounter @ 1.0x: KureiMenu rect %s stays inside 960x540 viewport" % [m_rect])
 
 		var panel: Control = _find_panel(inst)
 		_check(panel != null, "%s: Found panel container" % name)
@@ -173,11 +185,28 @@ func _run_tests() -> void:
 		root_control.add_child(inst)
 		inst.size = Vector2(960, 540)
 		await process_frame
+		await process_frame
+
+		if inst is BossEncounter:
+			var b := inst as BossEncounter
+			_check(b.kurei_btn != null, "BossEncounter: kurei_btn initialized after adding to tree at 1.5x")
+			if b.kurei_btn != null:
+				b.kurei_btn.pressed.emit()
+				await process_frame
+				await process_frame
+			_check(b.kurei_menu != null and b.kurei_menu.is_visible_in_tree(), "BossEncounter: Kurei menu is opened and visible at 1.5x")
 
 		# Scale fonts by 1.5x
 		_apply_text_scale(inst, 1.5)
 		await process_frame
 		await process_frame
+
+		if inst is BossEncounter:
+			var b := inst as BossEncounter
+			if b.kurei_menu != null:
+				var m_rect: Rect2 = b.kurei_menu.get_global_rect()
+				var m_inside := (m_rect.position.x >= 0 and m_rect.position.y >= 0 and m_rect.end.x <= 960 and m_rect.end.y <= 540)
+				_check(m_inside, "BossEncounter @ 1.5x: KureiMenu rect %s stays inside 960x540 viewport" % [m_rect])
 
 		var panel: Control = _find_panel(inst)
 		_check(panel != null, "%s: Found panel container at 1.5x" % name)
