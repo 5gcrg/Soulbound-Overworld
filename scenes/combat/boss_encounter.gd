@@ -25,6 +25,14 @@ enum BossPhase {
 	DEFEAT
 }
 
+const BASELINE_MAX_SP: int = 3
+
+const SUPPORTED_BOSS_SKILLS: Array[StringName] = [
+	&"flame_burst",
+	&"lumina_lance",
+	&"torrent_surge"
+]
+
 const HEALING_ITEMS: Array[String] = [
 	"spirit_salve",
 	"health_elixir",
@@ -43,7 +51,7 @@ var current_phase: BossPhase = BossPhase.PHASE_1
 var ren_hp: int = 4
 var max_ren_hp: int = 4
 var ren_sp: int = 3
-var max_ren_sp: int = 3
+var max_ren_sp: int = BASELINE_MAX_SP
 
 var boss_hp: int = 10
 var max_boss_hp: int = 10
@@ -58,7 +66,22 @@ var _continued_emitted: bool = false
 var turn_counter: int = 1
 
 var inventory: InventoryManager = null
-var kurei_tree: KureiTree = null
+var kurei_tree: KureiTree = null:
+	set(value):
+		if kurei_tree == value:
+			return
+		if kurei_tree != null:
+			if kurei_tree.skill_unlocked.is_connected(_on_kurei_tree_updated):
+				kurei_tree.skill_unlocked.disconnect(_on_kurei_tree_updated)
+			if kurei_tree.talents_reset.is_connected(_on_kurei_tree_updated):
+				kurei_tree.talents_reset.disconnect(_on_kurei_tree_updated)
+		kurei_tree = value
+		if kurei_tree != null:
+			if not kurei_tree.skill_unlocked.is_connected(_on_kurei_tree_updated):
+				kurei_tree.skill_unlocked.connect(_on_kurei_tree_updated)
+			if not kurei_tree.talents_reset.is_connected(_on_kurei_tree_updated):
+				kurei_tree.talents_reset.connect(_on_kurei_tree_updated)
+		apply_kurei_tree_capacity()
 var standalone_consumables: int = 2
 var kurei: KureiSystem = KureiSystem.new()
 var ren_statuses: StatusEngine = StatusEngine.new()
@@ -115,7 +138,22 @@ func _ready() -> void:
 	if torrent_surge_btn != null:
 		torrent_surge_btn.pressed.connect(func() -> void: request_action(&"kurei_torrent_surge"))
 
+	apply_kurei_tree_capacity()
 	_update_ui()
+
+func _on_kurei_tree_updated(_arg = null) -> void:
+	apply_kurei_tree_capacity()
+
+func apply_kurei_tree_capacity() -> void:
+	if kurei_tree != null and kurei_tree.has_phase_mastery():
+		max_ren_sp = KureiTree.AUTHORED_PHASE_MASTERY_MAX_SP
+	else:
+		max_ren_sp = BASELINE_MAX_SP
+	ren_sp = mini(ren_sp, max_ren_sp)
+	_update_ui()
+
+func is_boss_skill_supported(skill_id: StringName) -> bool:
+	return SUPPORTED_BOSS_SKILLS.has(skill_id)
 
 func _on_kurei_toggle() -> void:
 	if is_terminal():
@@ -172,18 +210,21 @@ func request_action(action: StringName) -> bool:
 	if action != &"attack" and action != &"defend" and action != &"item" and not is_kurei:
 		return false
 
-	last_player_action = action
-	if kurei_menu != null:
-		kurei_menu.visible = false
+	var skill_id: StringName = &""
+	if is_kurei:
+		skill_id = StringName(String(action).trim_prefix("kurei_"))
+		if kurei_tree != null and not kurei_tree.is_skill_unlocked(skill_id):
+			return false
+		if kurei_tree != null and kurei_tree.is_skill_passive(skill_id):
+			return false
+		if skill_id == &"phase_mastery":
+			return false
+		if not is_boss_skill_supported(skill_id):
+			return false
+		if not kurei.can_cast(skill_id, ren_sp):
+			return false
 
-	# 1. Process player action
-	if action == &"attack":
-		action_performed.emit(&"attack")
-		_deal_damage_to_boss(1)
-	elif action == &"defend":
-		action_performed.emit(&"defend")
-		ren_statuses.apply_status(StatusEngine.EFFECT_DEFENSE_UP, 1, 1)
-	elif action == &"item":
+	if action == &"item":
 		if get_available_item_count() <= 0 or ren_hp >= max_ren_hp:
 			return false
 		if not consume_healing_item():
@@ -191,9 +232,6 @@ func request_action(action: StringName) -> bool:
 		ren_hp = mini(max_ren_hp, ren_hp + 2)
 		action_performed.emit(&"item")
 	elif is_kurei:
-		var skill_id: StringName = StringName(String(action).trim_prefix("kurei_"))
-		if not kurei.can_cast(skill_id, ren_sp):
-			return false
 		var cast_res: Dictionary = kurei.cast_skill(skill_id, ren_sp)
 		if cast_res.get("error", OK) != OK:
 			return false
@@ -210,6 +248,18 @@ func request_action(action: StringName) -> bool:
 		elif skill_id == &"torrent_surge":
 			ren_hp = mini(max_ren_hp, ren_hp + 1)
 			ren_statuses.apply_status(StatusEngine.EFFECT_REGENERATION, 2, 1)
+
+	last_player_action = action
+	if kurei_menu != null:
+		kurei_menu.visible = false
+
+	# 1. Process player action (attack, defend)
+	if action == &"attack":
+		action_performed.emit(&"attack")
+		_deal_damage_to_boss(1)
+	elif action == &"defend":
+		action_performed.emit(&"defend")
+		ren_statuses.apply_status(StatusEngine.EFFECT_DEFENSE_UP, 1, 1)
 
 	# Check boss defeat
 	if boss_hp <= 0:

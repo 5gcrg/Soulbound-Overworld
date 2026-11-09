@@ -120,9 +120,60 @@ func _run_test() -> void:
 	_check(game_root._boss_encounter == null, "Boss encounter closed cleanly")
 	_check(game_root.player.input_frozen == false, "Player unfrozen after boss encounter")
 
+	# =========================================================================
+	# SBL-REV-005 Phase Mastery in BossEncounter
+	# =========================================================================
+	print("--- Running SBL-REV-005 Phase Mastery in BossEncounter ---")
+	var boss_mastery: BossEncounter = boss_scene.instantiate() as BossEncounter
+	root.add_child(boss_mastery)
+	await process_frame
+
+	_check(boss_mastery.max_ren_sp == 3, "Baseline BossEncounter max_ren_sp is 3 without mastery")
+	_check(boss_mastery.ren_sp == 3, "Baseline BossEncounter starting ren_sp is 3")
+
+	var boss_tree := KureiTree.new()
+	boss_tree.sync_with_level(8)
+	boss_tree.unlock_skill(&"void_shift")
+	boss_tree.unlock_skill(&"phase_mastery")
+	_check(boss_tree.has_phase_mastery(), "Boss tree has phase_mastery unlocked")
+
+	boss_mastery.kurei_tree = boss_tree
+	_check(boss_mastery.max_ren_sp == 4, "Phase Mastery gives authored capacity 4 in BossEncounter")
+	_check(boss_mastery.ren_sp == 3, "Phase Mastery preserves baseline starting SP 3")
+
+	# Reapplication does not stack or refill
+	boss_mastery.apply_kurei_tree_capacity()
+	_check(boss_mastery.max_ren_sp == 4, "Reapplying capacity does not stack above 4")
+	_check(boss_mastery.ren_sp == 3, "Reapplying capacity does not refill SP")
+
+	# Direct passive attempt rejects without mutation
+	var boss_passive_ok: bool = boss_mastery.request_action(&"kurei_phase_mastery")
+	_check(boss_passive_ok == false, "Direct passive phase_mastery request rejected in BossEncounter")
+	_check(boss_mastery.ren_sp == 3, "Rejected passive request leaves ren_sp unchanged")
+	_check(boss_mastery.turn_counter == 1, "Rejected passive request leaves turn_counter unchanged")
+	_check(boss_mastery.last_player_action == &"", "Rejected passive request leaves last_player_action unchanged")
+	_check(boss_mastery.kurei.cooldowns.is_empty(), "Rejected passive request does not start cooldown")
+
+	# Unsupported advanced boss skill (OD-003/004 boundary) rejects without mutation
+	var unsupp_ok: bool = boss_mastery.request_action(&"kurei_solar_flare")
+	_check(unsupp_ok == false, "Unsupported advanced skill solar_flare rejected in BossEncounter without mutation")
+	_check(boss_mastery.ren_sp == 3, "Rejected unsupported action leaves ren_sp at 3")
+	_check(boss_mastery.turn_counter == 1, "Rejected unsupported action leaves turn_counter at 1")
+	_check(boss_mastery.boss_hp == 10, "Rejected unsupported action leaves boss_hp at 10")
+
+	# Turn 1: Defend against Void Strike -> end of turn regenerates SP to 4 (clamped to max_ren_sp 4)!
+	boss_mastery.request_action(&"defend")
+	_check(boss_mastery.ren_sp == 4, "SP regenerated to 4 (effective maximum with Phase Mastery)")
+
+	# Respec restores baseline capacity 3 and clamps SP
+	boss_tree.respec_talents()
+	_check(boss_mastery.max_ren_sp == 3, "Respec restores BossEncounter max_ren_sp to baseline 3")
+	_check(boss_mastery.ren_sp == 3, "Respec clamps ren_sp to restored baseline 3")
+
 	# Cleanup
 	boss.queue_free()
 	game_root.queue_free()
+	boss_mastery.queue_free()
 
 	if _failures == 0:
 		print("--- SBL-W11-002 Multi-Phase Boss Encounter Test Suite PASSED ---")

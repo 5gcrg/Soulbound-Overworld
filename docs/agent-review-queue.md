@@ -1695,3 +1695,56 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 | Negative control 3: Omit mute update | Exit 1 | Zero-volume assertion caught mute flag false; exited 1 (`report/neg_sfx_mute_update_omitted.log`). |
 | Full headless runner (`run_headless_tests.ps1`) | Exit 0 (30/30 passed) | All 30 project headless suites pass with 0 Godot script/engine errors across all game systems. |
 | Release exporter (`export_release.ps1`) | Exit 0 | Built `Soulbound-Web.zip` and `Soulbound-Windows-Portable.zip`; validated PCK gates and entry points; verified working tree byte-identical. |
+
+---
+
+## SBL-REV-005 — Apply Authored Phase Mastery Capacity
+
+- **Milestone** Remediation Batch C (M3 Combat & Kurei Magic Hardening).
+- **Requirements** GDD-019, GDD-030, FR-CMB-001/003, TC-CMB-002, persistence checks supporting TC-SAV-001. AGENTS.md Engineering Invariants ("Do not invent numerical stats, formula coefficients, drop probabilities, story revelations, or unsupported integrations. Mark such items TBD and seek change approval").
+- **Codex finding** Finding 6, P2 from Codex review session `01a1bee0-6c04-72b0-b38d-6bce20925f2f`:
+  "`scripts/magic/kurei_tree.gd:99-107`: Phase Mastery advertises raising maximum SP to four, but neither combat scene reads the unlock; `BattleFixture` stays at two and `BossEncounter` at three, so the purchase has no effect and Solar Flare's three-SP cost is unreachable in ordinary battles."
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Skill tree & magic: `scripts/magic/kurei_tree.gd`, `scripts/magic/kurei_system.gd`.
+  - Combat fixtures: `scenes/combat/battle_fixture.gd`, `scenes/combat/boss_encounter.gd`.
+  - Game root orchestration: `scenes/main/game_root.gd`.
+  - Test suites: `tests/headless/kurei_tree_test.gd`, `tests/headless/kurei_combat_test.gd`, `tests/headless/boss_combat_test.gd`.
+  - Documentation: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
+- **Asset provenance** None (pure GDScript logic and state synchronization; zero image generation, zero audio assets).
+- **Review** REVIEW_PENDING_CODEX.
+- **Open questions** `OD-002/003/004` combat balance numbers, elemental affinities, and status formulas remain blocked for human authority sign-off; authored maximum capacity is 4.
+
+### Changes
+
+1. **Authored SP Capacity Constant & Active/Passive Classification (`scripts/magic/kurei_tree.gd` & `scripts/magic/kurei_system.gd`)**:
+   - Added `const AUTHORED_PHASE_MASTERY_MAX_SP: int = 4` to `KureiTree`.
+   - Marked `&"phase_mastery"` node with `"passive": true` in `KureiTree.SKILL_NODES` and `KureiSystem.SKILL_CATALOG`.
+   - Added helper queries: `has_phase_mastery() -> bool`, `get_max_sp_capacity(baseline_max_sp) -> int`, `is_skill_passive(skill_id) -> bool`, and `is_skill_active(skill_id) -> bool`.
+   - Hardened `KureiSystem.can_cast()` to reject passive skills unconditionally, ensuring passive abilities can never be cast or consume resources.
+2. **Dynamic Capacity Binding & Invariant Guards (`scenes/combat/battle_fixture.gd`)**:
+   - Defined `const BASELINE_MAX_SP: int = 2`.
+   - Wired property setter on `kurei_tree` connecting `skill_unlocked` and `talents_reset` signals to `apply_kurei_tree_capacity()`.
+   - `apply_kurei_tree_capacity()` sets `max_sp = 4` when `phase_mastery` is owned, or restores `max_sp = 2` when absent or respec'd.
+   - Guaranteed starting SP remains baseline 2; re-applying configuration does not refill SP or stack capacity.
+   - Regulated regeneration in `_resolve_enemy_turn()` to clamp strictly to `max_sp`, allowing Ren to accumulate 3 SP on Turn 2 to cast Solar Flare (which costs 3 SP and was previously unreachable).
+   - In `request_action()`, direct requests for passive `kurei_phase_mastery` or locked skills are rejected atomically with `return false` before setting `last_player_action`, emitting signals, deducting SP, starting cooldowns, or advancing phase.
+3. **Boss Combat Dynamic Capacity & Pre-Mutation Rejection (`scenes/combat/boss_encounter.gd`)**:
+   - Defined `const BASELINE_MAX_SP: int = 3`.
+   - Wired property setter on `kurei_tree` connecting signals to `apply_kurei_tree_capacity()`.
+   - Sets `max_ren_sp = 4` when `phase_mastery` is owned, preserving baseline starting SP 3. Re-application does not stack or refill.
+   - Restructured `request_action()` so that all validation occurs strictly before modifying any state: passive requests (`kurei_phase_mastery`), locked skills, and unsupported advanced boss actions (`solar_flare`, etc. under OD-003/004 boundary) return `false` without modifying `last_player_action`, `ren_sp`, cooldowns, HP, status, or `turn_counter`.
+   - Turn regeneration clamps to `max_ren_sp`, allowing SP regeneration up to 4. Respec cleanly restores baseline capacity 3.
+4. **Automated Headless Test Coverage**:
+   - `kurei_tree_test.gd`: asserts active/passive queries, initial baseline capacity (2 in normal, 3 in boss), Phase Mastery unlock expanding capacity to 4, save/reload round-trip through `ProfileStore` preserving capacity 4, and respec restoration to baseline 2.
+   - `kurei_combat_test.gd`: asserts normal encounter baseline 2 SP, Phase Mastery expanding capacity to 4 with unchanged starting SP 2, no-refill and no-stack on re-application, rejection of direct passive and locked requests without state mutation, Ren SP regeneration to 3, and successful casting of Solar Flare (cost 3 SP) causing 3 damage and Burn status to achieve Victory.
+   - `boss_combat_test.gd`: asserts boss encounter baseline 3 SP, Phase Mastery expanding capacity to 4 with unchanged starting SP 3, no-refill and no-stack on re-application, rejection of direct passive and unsupported advanced skills without mutating `turn_counter` or boss HP, end-of-turn regeneration to 4 SP, and respec restores baseline 3.
+
+### Verification Table
+
+| Test Scope / Invocation | Result | Evidence |
+|---|---|---|
+| `kurei_tree_test.gd` | Exit 0 | Active/passive queries verified; initial capacity 2/3 verified; Phase Mastery unlock verified; capacity 4 survives `ProfileStore` serialization and reload; respec restores baseline. |
+| `kurei_combat_test.gd` | Exit 0 | Baseline 2 SP verified; Phase Mastery capacity 4 with unchanged starting SP 2 verified; reapplication no-stack/no-refill verified; passive rejection verified; Solar Flare 3 SP cast verified; respec restores baseline. |
+| `boss_combat_test.gd` | Exit 0 | Baseline 3 SP verified; Phase Mastery capacity 4 with unchanged starting SP 3 verified; passive rejection without turn/state mutation verified; unsupported skill rejection verified; regeneration to 4 verified; respec restores baseline. |

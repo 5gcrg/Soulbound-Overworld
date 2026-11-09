@@ -127,17 +127,28 @@ const SKILL_CATALOG: Dictionary = {
 		"pip_cost": 0,
 		"cooldown_turns": 0,
 		"base_power": 0,
-		"effect": "mastery"
+		"effect": "mastery",
+		"passive": true
 	}
 }
 
 var cooldowns: Dictionary = {} # StringName -> int (turns remaining)
+
+func is_skill_passive(skill_id: StringName) -> bool:
+	if skill_id == &"phase_mastery":
+		return true
+	if SKILL_CATALOG.has(skill_id):
+		var node: Dictionary = SKILL_CATALOG[skill_id]
+		return bool(node.get("passive", false)) or String(node.get("effect", "")) == "mastery"
+	return false
 
 func get_skill(skill_id: StringName) -> Dictionary:
 	return SKILL_CATALOG.get(skill_id, {})
 
 func can_cast(skill_id: StringName, available_pips: int) -> bool:
 	if not SKILL_CATALOG.has(skill_id):
+		return false
+	if is_skill_passive(skill_id):
 		return false
 	if cooldowns.get(skill_id, 0) > 0:
 		return false

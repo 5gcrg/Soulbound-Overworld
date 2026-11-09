@@ -90,9 +90,12 @@ const SKILL_NODES: Dictionary = {
 		"tier": 2,
 		"cost": 2,
 		"prerequisite": &"void_shift",
+		"passive": true,
 		"description": "Passive resonance expanding Ren's maximum SP capacity to 4."
 	}
 }
+
+const AUTHORED_PHASE_MASTERY_MAX_SP: int = 4
 
 var unlocked_skills: Array[StringName] = []
 var total_talent_points: int = 0
@@ -115,6 +118,24 @@ func get_unspent_points() -> int:
 
 func is_skill_unlocked(skill_id: StringName) -> bool:
 	return unlocked_skills.has(skill_id)
+
+func has_phase_mastery() -> bool:
+	return is_skill_unlocked(&"phase_mastery")
+
+func get_max_sp_capacity(baseline_max_sp: int = 2) -> int:
+	if has_phase_mastery():
+		return AUTHORED_PHASE_MASTERY_MAX_SP
+	return baseline_max_sp
+
+func is_skill_passive(skill_id: StringName) -> bool:
+	if skill_id == &"phase_mastery":
+		return true
+	if SKILL_NODES.has(skill_id):
+		return bool(SKILL_NODES[skill_id].get("passive", false))
+	return false
+
+func is_skill_active(skill_id: StringName) -> bool:
+	return SKILL_NODES.has(skill_id) and not is_skill_passive(skill_id)
 
 func can_unlock_skill(skill_id: StringName) -> bool:
 	if not SKILL_NODES.has(skill_id):

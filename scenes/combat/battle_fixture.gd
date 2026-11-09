@@ -19,18 +19,35 @@ const HEALING_ITEMS: Array[String] = [
 	"healing_herb"
 ]
 
+const BASELINE_MAX_SP: int = 2
+
 var phase: Phase = Phase.PLAYER
 var ren_pips: int = 1
 var max_ren_pips: int = 3
 var enemy_pips: int = 2
 var ren_sp: int = 2
-var max_sp: int = 2
+var max_sp: int = BASELINE_MAX_SP
 var enemy_intent: StringName = &"Strike"
 var last_player_action: StringName = &""
 var _continued_emitted: bool = false
 
 var inventory: InventoryManager = null
-var kurei_tree: KureiTree = null
+var kurei_tree: KureiTree = null:
+	set(value):
+		if kurei_tree == value:
+			return
+		if kurei_tree != null:
+			if kurei_tree.skill_unlocked.is_connected(_on_kurei_tree_updated):
+				kurei_tree.skill_unlocked.disconnect(_on_kurei_tree_updated)
+			if kurei_tree.talents_reset.is_connected(_on_kurei_tree_updated):
+				kurei_tree.talents_reset.disconnect(_on_kurei_tree_updated)
+		kurei_tree = value
+		if kurei_tree != null:
+			if not kurei_tree.skill_unlocked.is_connected(_on_kurei_tree_updated):
+				kurei_tree.skill_unlocked.connect(_on_kurei_tree_updated)
+			if not kurei_tree.talents_reset.is_connected(_on_kurei_tree_updated):
+				kurei_tree.talents_reset.connect(_on_kurei_tree_updated)
+		apply_kurei_tree_capacity()
 var standalone_consumables: int = 0
 var kurei: KureiSystem = KureiSystem.new()
 var ren_statuses: StatusEngine = StatusEngine.new()
@@ -67,6 +84,18 @@ func _ready() -> void:
 	torrent_surge_btn.pressed.connect(func() -> void: request_action(&"kurei_torrent_surge"))
 
 	continue_button.pressed.connect(_on_continue_pressed)
+	apply_kurei_tree_capacity()
+	_update_ui()
+
+func _on_kurei_tree_updated(_arg = null) -> void:
+	apply_kurei_tree_capacity()
+
+func apply_kurei_tree_capacity() -> void:
+	if kurei_tree != null and kurei_tree.has_phase_mastery():
+		max_sp = KureiTree.AUTHORED_PHASE_MASTERY_MAX_SP
+	else:
+		max_sp = BASELINE_MAX_SP
+	ren_sp = mini(ren_sp, max_sp)
 	_update_ui()
 
 func _on_kurei_button_pressed() -> void:
@@ -121,6 +150,10 @@ func request_action(action: StringName) -> bool:
 	if is_kurei:
 		var skill_id: StringName = StringName(String(action).trim_prefix("kurei_"))
 		if kurei_tree != null and not kurei_tree.is_skill_unlocked(skill_id):
+			return false
+		if kurei_tree != null and kurei_tree.is_skill_passive(skill_id):
+			return false
+		if skill_id == &"phase_mastery":
 			return false
 		if not kurei.can_cast(skill_id, ren_sp):
 			return false
