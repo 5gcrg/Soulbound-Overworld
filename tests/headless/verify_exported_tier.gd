@@ -31,6 +31,9 @@ func _run_verification() -> void:
 
 	if not expected_tier.is_empty():
 		_check(active_tier == expected_tier, "Active tier '%s' matches expected '%s'" % [active_tier, expected_tier])
+		if ProjectSettings.has_setting("soulbound/release_tier"):
+			var setting_tier: String = String(ProjectSettings.get_setting("soulbound/release_tier")).strip_edges().to_lower()
+			_check(setting_tier == expected_tier, "Pack project setting 'soulbound/release_tier' ('%s') matches expected '%s'" % [setting_tier, expected_tier])
 
 	var root_scene: PackedScene = load("res://scenes/main/game_root.tscn")
 	_check(root_scene != null, "GameRoot scene loaded from pack")

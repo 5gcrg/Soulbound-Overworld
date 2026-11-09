@@ -1172,3 +1172,43 @@ The `SliceProgress: Invalid data` warning seen when mounting a packed build came
 | Test Scope / Invocation | Result | Evidence |
 |---|---|---|
 | `run_headless_tests.ps1 -Suite layout_audit_test` | Exit 0 | Verified `follow_focus == true` across all scroll containers; verified below-the-fold focus scrolls `BackupTextField` (offset 39), `BtnSolarFlare` (offset 31), activity option button (offset 43), and pinned `RespecButton` (offset 135). |
+
+---
+
+## SBL-VER-004 — Validate Archive-Contained PCK Packages & Cross-Check Tier Settings (Review Finding 2)
+
+- **Milestone** Build Integrity & Release Artifact Governance.
+- **Requirements** GDD-041, GDD-113, GDD-116, AGENTS.md Engineering Invariants ("Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer", "Keep the 3-chapter academic MVP separate from the 5-chapter 2-ending full release").
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Build automation: `scripts/build/validate_release.ps1`.
+  - Tests: `tests/headless/verify_exported_tier.gd`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None (PowerShell validation automation and GDScript test harness; zero art assets).
+- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5; Codex CLI will review after batch completion.
+- **Open questions** None.
+
+### Changes
+
+1. **Extraction of Archive's Own PCKs for Live Tier Gating**:
+   - Replaced static local path references (`builds\web-academic_mvp\index.pck` and `builds\web\index.pck`) in `validate_release.ps1`.
+   - Each archive being validated (`Soulbound-AcademicMVP-Web.zip`, `Soulbound-Web.zip`, and `Soulbound-Windows-Portable.zip`) now extracts its own enclosed `.pck` (`index.pck` or `Soulbound.pck`) to an isolated temporary directory.
+   - Live headless tier gate execution (`verify_exported_tier.gd`) runs against the freshly extracted `.pck` file from each package.
+2. **Derive Tier from Archive's Own Marker & Cross-Check Pack Setting**:
+   - Derived expected tier from each archive's enclosed `build_tier.txt`.
+   - Verified that the archive marker matches expected tier targets (`academic_mvp` vs `full_release`).
+   - Extended `tests/headless/verify_exported_tier.gd` to assert that the internal `ProjectSettings` value `soulbound/release_tier` inside the mounted pack matches the expected tier.
+3. **Negative Control Verification**:
+   - Proved rejection by swapping markers between archives in temporary copies: verified that both the marker mismatch and the live headless `.pck` gate fail with Exit Code 1.
+4. **Preserved Existing Validations**:
+   - Retained entry point checks, single-threaded web configuration checks, compatibility renderer assertions, debug leftover exclusion, and file size threshold guards.
+
+### Verification Table
+
+| Test Scope / Invocation | Result | Evidence |
+|---|---|---|
+| `validate_release.ps1` (all archives) | Exit 0 | Extracted `index.pck` from Academic MVP Web zip (tier `academic_mvp`), `index.pck` from Full Release Web zip (tier `full_release`), and `Soulbound.pck` from Windows Portable zip (tier `full_release`); all 3 passed live gate assertions. |
+| Negative control: swapped marker on MVP Web zip | Exit 1 | Caught marker mismatch `[AcademicMVP-Web] build_tier.txt marker 'full_release' does not match expected tier 'academic_mvp'` and gate failure `FAIL: Active tier 'academic_mvp' matches expected 'full_release'`. |
+| Negative control: swapped marker on Full Web zip | Exit 1 | Caught marker mismatch `[FullRelease-Web] build_tier.txt marker 'academic_mvp' does not match expected tier 'full_release'` and gate failure `FAIL: Active tier 'full_release' matches expected 'academic_mvp'`. |
+

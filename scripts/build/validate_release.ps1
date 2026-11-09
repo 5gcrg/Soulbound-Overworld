@@ -224,17 +224,18 @@ Write-Host "`n[4/5] Running End-to-End Headless Gate Verification on Artifact PC
 $verifyScript = "res://tests/headless/verify_exported_tier.gd"
 
 if (Test-Path $GodotPath) {
-    # Helper to test pck extracted or built
+    # Helper to test pck extracted from archive
     function Test-PckGate {
         param (
             [string]$PckPath,
-            [string]$TierName
+            [string]$TierName,
+            [string]$PlatformName
         )
         if (-not (Test-Path $PckPath)) {
-            return "PCK file not found for verification: $PckPath"
+            return "[$PlatformName] PCK file not found for verification: $PckPath"
         }
-        $logPath = Join-Path $ProjectRoot "report\verify_pck_${TierName}.log"
-        $errPath = Join-Path $ProjectRoot "report\verify_pck_${TierName}.err"
+        $logPath = Join-Path $ProjectRoot "report\verify_pck_${PlatformName}.log"
+        $errPath = Join-Path $ProjectRoot "report\verify_pck_${PlatformName}.err"
         
         $proc = Start-Process -FilePath $GodotPath `
             -ArgumentList @(
@@ -249,22 +250,90 @@ if (Test-Path $GodotPath) {
 
         if ($proc.ExitCode -ne 0) {
             $errText = Get-Content $errPath -Raw -ErrorAction SilentlyContinue
-            return "Headless gate verification failed for '$TierName' on $PckPath (Exit $($proc.ExitCode)): $errText"
+            return "Headless gate verification failed for '$TierName' on $PlatformName ($PckPath) (Exit $($proc.ExitCode)): $errText"
         }
-        Write-Host "  PASS: [$TierName] Headless gate verification succeeded on $PckPath." -ForegroundColor Green
+        Write-Host "  PASS: [$PlatformName] Headless gate verification succeeded on extracted $PckPath (tier '$TierName')." -ForegroundColor Green
         return $null
     }
 
+    $targetsToVerify = @()
     if ($checkAcademicMvp) {
-        $mvpPck = Join-Path $ProjectRoot "builds\web-academic_mvp\index.pck"
-        $gateErr = Test-PckGate -PckPath $mvpPck -TierName "academic_mvp"
-        if ($gateErr) { $Failures += $gateErr }
+        $targetsToVerify += @{
+            ZipName = "Soulbound-AcademicMVP-Web.zip"
+            PckEntry = "index.pck"
+            PlatformName = "AcademicMVP-Web"
+            ExpectedMarker = "academic_mvp"
+        }
+    }
+    if ($checkFullRelease) {
+        $targetsToVerify += @{
+            ZipName = "Soulbound-Web.zip"
+            PckEntry = "index.pck"
+            PlatformName = "FullRelease-Web"
+            ExpectedMarker = "full_release"
+        }
+        $targetsToVerify += @{
+            ZipName = "Soulbound-Windows-Portable.zip"
+            PckEntry = "Soulbound.pck"
+            PlatformName = "FullRelease-Windows"
+            ExpectedMarker = "full_release"
+        }
     }
 
-    if ($checkFullRelease) {
-        $fullPck = Join-Path $ProjectRoot "builds\web\index.pck"
-        $gateErr = Test-PckGate -PckPath $fullPck -TierName "full_release"
-        if ($gateErr) { $Failures += $gateErr }
+    $tempExtractDir = Join-Path ([System.IO.Path]::GetTempPath()) ("sb_validate_pck_" + [System.Guid]::NewGuid().ToString("N"))
+    New-Item -ItemType Directory -Path $tempExtractDir -Force | Out-Null
+
+    try {
+        foreach ($target in $targetsToVerify) {
+            $zipPath = Join-Path $ResolvedDist $target.ZipName
+            if (-not (Test-Path $zipPath)) {
+                $Failures += "[$($target.PlatformName)] Archive not found: $zipPath"
+                continue
+            }
+
+            $zip = $null
+            $markerTier = ""
+            $extractedPckPath = Join-Path $tempExtractDir "$($target.PlatformName)_$($target.PckEntry)"
+            try {
+                $zip = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
+                $tierEntry = $zip.GetEntry("build_tier.txt")
+                if ($null -eq $tierEntry) {
+                    $Failures += "[$($target.PlatformName)] Missing 'build_tier.txt' in $zipPath"
+                    continue
+                }
+                $stream = $tierEntry.Open()
+                $reader = New-Object System.IO.StreamReader($stream)
+                $markerTier = $reader.ReadToEnd().Trim()
+                $reader.Dispose()
+                $stream.Dispose()
+
+                if (-not [string]::IsNullOrWhiteSpace($target.ExpectedMarker) -and $markerTier -ne $target.ExpectedMarker) {
+                    $Failures += "[$($target.PlatformName)] build_tier.txt marker '$markerTier' does not match expected tier '$($target.ExpectedMarker)'."
+                }
+
+                $pckEntry = $zip.GetEntry($target.PckEntry)
+                if ($null -eq $pckEntry) {
+                    $Failures += "[$($target.PlatformName)] Missing '$($target.PckEntry)' in $zipPath"
+                    continue
+                }
+
+                [System.IO.Compression.ZipFileExtensions]::ExtractToFile($pckEntry, $extractedPckPath, $true)
+            } catch {
+                $Failures += "[$($target.PlatformName)] Failed extracting from zip: $_"
+                continue
+            } finally {
+                if ($null -ne $zip) { $zip.Dispose() }
+            }
+
+            $gateErr = Test-PckGate -PckPath $extractedPckPath -TierName $markerTier -PlatformName $target.PlatformName
+            if ($gateErr) {
+                $Failures += $gateErr
+            }
+        }
+    } finally {
+        if (Test-Path $tempExtractDir) {
+            Remove-Item -Path $tempExtractDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
     }
 } else {
     Write-Host "  Godot binary not found at '$GodotPath'; skipping live headless PCK gate execution." -ForegroundColor Yellow
