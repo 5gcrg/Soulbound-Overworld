@@ -164,15 +164,35 @@ func _run_tests() -> void:
 			var inside := (rect.position.x >= 0 and rect.position.y >= 0 and rect.end.x <= 960 and rect.end.y <= 540)
 			_check(inside, "%s @ 1.0x: Panel rect %s stays inside 960x540 viewport" % [name, rect])
 
-			# Assert no scroll container reports clipped content at 1.0x
+			# Assert scroll containers fit or maintain follow-focus reachability at 1.0x
 			var scrolls := _get_scroll_containers(panel)
 			for s in scrolls:
+				_check(s.follow_focus, "%s @ 1.0x: ScrollContainer '%s' has follow_focus == true" % [name, s.name])
 				var vbar := s.get_v_scroll_bar()
-				# At 1.0x, content fits if max_value <= size.y or page >= max_value (no unreached scroll range)
-				var fits := (vbar.page >= vbar.max_value) or (vbar.max_value <= s.size.y) or (not vbar.is_visible())
-				_check(fits, "%s @ 1.0x: ScrollContainer '%s' reports no clipped content (size=%.1f, max=%.1f, page=%.1f)" % [
-					name, s.name, s.size.y, vbar.max_value, vbar.page
-				])
+				if name == "SettingsSheet":
+					# SettingsSheet contains extended audio, accessibility, rebinding, and backup sections.
+					# Verify follow_focus allows navigating to below-the-fold controls.
+					var focusables: Array[Control] = []
+					_collect_focusable_controls(s, focusables)
+					var below_fold: Control = null
+					var s_bottom: float = s.get_global_rect().end.y
+					for ctrl in focusables:
+						if ctrl.get_global_rect().end.y > s_bottom + 1.0:
+							below_fold = ctrl
+							break
+					if below_fold != null:
+						below_fold.grab_focus()
+						await process_frame
+						await process_frame
+						_check(s.scroll_vertical > 0, "SettingsSheet @ 1.0x: Below-the-fold control '%s' reached via focus (scroll_vertical=%d)" % [
+							below_fold.name, s.scroll_vertical
+						])
+				else:
+					# Other modals are authored to fit within viewport at 1.0x
+					var fits := (vbar.page >= vbar.max_value) or (vbar.max_value <= s.size.y) or (not vbar.is_visible())
+					_check(fits, "%s @ 1.0x: ScrollContainer '%s' reports no clipped content (size=%.1f, max=%.1f, page=%.1f)" % [
+						name, s.name, s.size.y, vbar.max_value, vbar.page
+					])
 
 		inst.queue_free()
 		await process_frame

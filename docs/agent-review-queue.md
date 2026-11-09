@@ -1967,3 +1967,66 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 | Negative control: pre-attachment kurei_btn access | Exit 0 | Negative control proved accessing `@onready var kurei_btn` before `add_child` fails with null access (`report/neg_boss_layout_audit_order.log`). |
 | Full headless runner (`run_headless_tests.ps1`) | Exit 0 (30/30 passed) | All 30 project headless suites pass cleanly with 0 Godot script/engine errors across all game systems. |
 | Full release exporter (`run_headless_tests.ps1 -Export -Tier all`) | Exit 0 | Built and validated `Soulbound-AcademicMVP-Web.zip`, `Soulbound-Web.zip`, and `Soulbound-Windows-Portable.zip`; PCK gates passed; working tree verified byte-identical. |
+
+---
+
+## SBL-UX-001 — Persistent Keyboard/Mouse Rebinding
+
+- **Milestone** M4 / M6 Settings & Accessibility Hardening.
+- **Requirements** GDD-092 (configurable keyboard/mouse inputs and accessibility), FR-SET-001 (persist and consistently apply remapped inputs and existing settings), TC-ACC-001 (input rebinding, reduced motion, scalable text), supporting NFR-ACC-001 (readable UI, configurable keys, scalable interface).
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - New scripts & suites: `scripts/settings/input_bindings.gd`, `tests/headless/input_rebinding_test.gd`.
+  - Modified persistence & UI: `scripts/settings/settings_manager.gd`, `scenes/ui/settings_sheet.gd`, `scenes/ui/settings_sheet.tscn`, `scenes/main/game_root.gd`, `scenes/ui/evaluator_debug_bar.gd`.
+  - Modified test suites: `tests/headless/settings_accessibility_test.gd`, `tests/headless/layout_audit_test.gd`.
+  - Documentation: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
+  - Negative control logs: `report/neg_input_rebinding_conflict.log`, `report/neg_future_settings_blocked.log`.
+- **Asset provenance** None (pure GDScript and Control scene node structure; zero image or audio generation).
+- **Review** REVIEW: REVIEW_PENDING_CODEX.
+- **Open questions** None. (Controller/touch bindings, modifier chords, custom actions, input presets, and OD-002..004 combat formulas remain separate out-of-scope boundaries).
+
+### Changes
+
+1. **InputBindings Singleton & Domain Engine (`scripts/settings/input_bindings.gd`)**:
+   - Authored defaults snapshot: cached directly from pristine `ProjectSettings` (`input/<action>`), never polluted by runtime `InputMap` mutations.
+   - Configurable action whitelist: strictly limited to `move_left`, `move_right`, `move_up`, `move_down`, `shift_dimension`, `toggle_character`, `toggle_inventory`, and `toggle_settings`.
+   - Primitive serialization: converts `InputEventKey` and `InputEventMouseButton` to JSON-safe primitives (`{"kind": "key", "physical_keycode": <int>}` or `{"kind": "mouse_button", "button_index": <int>}`) and vice versa.
+   - Strict candidate validation: rejects wheel events, mouse motion, double-click, joypads, touch, modifier chords, Escape, Enter, Tab, F1, backtick (`KEY_QUOTELEFT`), and modifier-only keys (`KEY_SHIFT`, `KEY_CTRL`, `KEY_ALT`, `KEY_META`, `KEY_CAPSLOCK`, etc.).
+   - Atomic cross-action conflict validation: detects conflicts against effective bindings of all other configurable actions and returns conflicting action label without silent swapping.
+   - Idempotent `apply_overrides(overrides)`: preserves action deadzones (0.5), unrelated actions (`ui_*`), and non-key/mouse events.
+   - Complete `restore_defaults_to_input_map()` and `clear_all_pressed_actions()` for leak-free test isolation and capture cleanup.
+
+2. **SettingsManager Schema 1 Persistence (`scripts/settings/settings_manager.gd`)**:
+   - Added schema versioning (`settings_schema_version = 1`) and `input_overrides: Dictionary`.
+   - Transactional persistence: verifies serialized JSON, writes to a temporary sibling file, confirms exact byte length and content, and safely promotes via atomic backup/rename without destination collision.
+   - Disk preservation: injection of write or promotion failures leaves disk file bytes 100% untouched.
+   - Legacy compatibility: unversioned settings load audio/accessibility and default `input_overrides` to empty without rewriting the file on disk.
+   - Future schema protection: files with `settings_schema_version > 1` or malformed payloads fail to load, fall back to session defaults in memory, leave disk files untouched, and block ordinary saving (`ERR_UNAVAILABLE`).
+
+3. **SettingsSheet UI Controls Section (`scenes/ui/settings_sheet.tscn` & `scenes/ui/settings_sheet.gd`)**:
+   - Added Controls section: header, `CaptureStatusRow` (`CaptureStatusLabel` and `CancelCaptureBtn`), 8 action rows (`Row_<action>` with action label, effective binding label, `RebindBtn`, and `ResetBtn`), and `ResetAllBtn`.
+   - Focus management: all Rebind, Reset, Cancel, and Reset All buttons participate in the circular focus chain, with visible high-contrast focus styleboxes.
+   - Capture lifecycle: during capture, gameplay is frozen (`player.freeze_movement()`), input is consumed in `_input()`, echo and candidate invalid events are rejected with explanatory status text, and Escape or Cancel button dismisses capture without closing SettingsSheet.
+   - Originating focus restoration: on rebind completion or cancellation, focus is restored to the initiating Rebind button.
+
+4. **GameRoot & Evaluator Debug Bar Integration (`scenes/main/game_root.gd` & `scenes/ui/evaluator_debug_bar.gd`)**:
+   - Guarded `_unhandled_input()` against `InputBindings.is_capture_active()` to prevent capture leakage to dimension shift, menu toggles, or evaluator debug tools.
+   - Dynamic dimension shift hint: updated Chapter II objective label from hardcoded `[Q]` to `[%s]` populated from `InputBindings.get_action_binding_text(&"shift_dimension")`.
+
+5. **Headless Test Coverage**:
+   - New `tests/headless/input_rebinding_test.gd`: verifies authored defaults snapshot, idempotence, physical key rebind & release displacement, replaced key disabling, reset restoring all alternatives, mouse menu binding outside capture, transactional save/reload across profile switches, atomic validation & disk preservation on failure, legacy and future schema version handling, and capture event consumption & zero state leakage.
+   - Updated `tests/headless/settings_accessibility_test.gd`: verifies full 29-element circular focus chain, Escape during capture canceling capture without dismissing SettingsSheet, and Escape outside capture dismissing SettingsSheet.
+   - Updated `tests/headless/layout_audit_test.gd`: verified all panels stay within `Rect2(0, 0, 960, 540)` at 1.0x and 1.5x text scale, with `ScrollContainer` absorbing content and proving focus reachability of below-the-fold controls.
+
+### Verification Table
+
+| Test Scope / Invocation | Result | Evidence |
+|---|---|---|
+| `run_headless_tests.ps1 -Suite input_rebinding_test` | Exit 0 | Verified authored defaults, apply/reset idempotence, physical key rebind/release, replaced key deactivation, reset restoring alternatives, mouse menu binding outside capture, profile-independent persistence, atomic conflict/invalid/empty/duplicate validation, legacy & future schema protection, and capture event consumption with zero state leakage (`report/input_rebinding_test.log`). |
+| `run_headless_tests.ps1 -Suite settings_accessibility_test` | Exit 0 | Verified 29-element focus traversal, visible focus styleboxes, Escape canceling capture without closing SettingsSheet, and Escape dismissing SettingsSheet outside capture (`report/settings_accessibility_test.log`). |
+| `run_headless_tests.ps1 -Suite layout_audit_test` | Exit 0 | Audited SettingsSheet and all 6 modals at 960x540 viewport: Phase 1 (1.0x rect `[P: (205, 20), S: (550, 500)]` fits, follow_focus reached below-the-fold controls) and Phase 2 (1.5x rect `[P: (190.5, 20), S: (579, 500)]` fits, follow_focus reached below-the-fold controls) (`report/layout_audit_test.log`). |
+| Disposable negative control: conflict validation | Exit 0 | Verified `InputBindings.validate_overrides` rejects conflicting key with `ERR_INVALID_DATA` (code 30) (`report/neg_input_rebinding_conflict.log`). |
+| Disposable negative control: future schema version safety | Exit 0 | Verified `SettingsManager` rejects future schema version 99 with `ERR_INVALID_DATA`, blocks ordinary save with `ERR_UNAVAILABLE`, and preserves disk bytes untouched (`report/neg_future_settings_blocked.log`). |
+| Full headless runner (`run_headless_tests.ps1`) | Exit 0 (31/31 passed) | All 31 project headless suites pass cleanly with 0 Godot script/engine errors across all game systems. |
+| Full release exporter (`run_headless_tests.ps1 -Export -SkipImport`) | Exit 0 | Built and validated `Soulbound-AcademicMVP-Web.zip`, `Soulbound-Web.zip`, and `Soulbound-Windows-Portable.zip`; PCK gates passed; working tree verified byte-identical. |

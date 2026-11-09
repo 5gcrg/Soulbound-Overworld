@@ -39,7 +39,7 @@ On Windows, the default Godot executable (`godot.exe`) is compiled targeting the
 
 ## Suite Count and Inventory
 
-At current development baseline (Batch C remediation), there are **30 headless test suites**:
+At current development baseline (SBL-UX-001 persistent input rebinding), there are **31 headless test suites**:
 
 | Suite Name | Scope & Verification Invariants |
 |---|---|
@@ -57,7 +57,8 @@ At current development baseline (Batch C remediation), there are **30 headless t
 | `education_report_test.gd` | Question bank, immutable first-attempt tracking, RFC-4180 CSV export |
 | `ui_sheets_test.gd` | Character sheet, inventory sheet, hotkey toggles (`C` / `I`), gear equip |
 | `chapter_progression_test.gd` | 3-chapter lifecycle, completion gating, bramble dissolve, academic portal |
-| `settings_accessibility_test.gd` | Audio sliders, text scale (0.8–1.5x), high contrast overrides, keyboard navigation, SBL-REV-002 title settings overlay Escape & focus restoration, SBL-REV-004 SFX bus routing, mute flags, and settings reload persistence |
+| `settings_accessibility_test.gd` | Audio sliders, text scale (0.8–1.5x), high contrast overrides, keyboard navigation, SBL-REV-002 title settings overlay Escape & focus restoration, SBL-REV-004 SFX bus routing, mute flags, SBL-UX-001 Escape capture cancellation vs modal dismiss |
+| `input_rebinding_test.gd` | SBL-UX-001 Persistent keyboard/mouse rebinding, authored snapshot, apply/reset idempotence, physical key release & replaced key disabling, mouse menu binding outside capture, transactional save/reload across profile switches, atomic validation & disk byte preservation on failure, legacy and future schema version safety, rebind capture event consumption & zero state leakage |
 | `e2e_academic_playthrough_test.gd` | Complete student journey: Ch I -> Ch II -> Ch III -> Academic Modal -> CSV |
 | `educator_analytics_test.gd` | 12-student cohort batch simulation across archetypes, CSV generation |
 | `web_backup_test.gd` | Web profile JSON backup export/import, invalid JSON rejection, clipboard bridge, suspended run roundtrip, SBL-REV-002 title-selected slot context isolation |

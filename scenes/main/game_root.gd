@@ -255,6 +255,8 @@ func _bind_region_fixtures() -> void:
 	_bind_boss_encounter()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if InputBindings.is_capture_active():
+		return
 	if event.is_action_pressed("shift_dimension"):
 		if player != null and not player.input_frozen and not has_blocking_modal() \
 				and world_router != null and world_router.active_region != null \
@@ -1268,7 +1270,8 @@ func _update_objective() -> void:
 					ChapterManager.CHAPTER_1:
 						objective_label.text = "Chapter I: Consult Elder Kael in Dawnreach Village."
 					ChapterManager.CHAPTER_2:
-						objective_label.text = "Chapter II: Use Dimension Shift [Q] to navigate Whispering Grove."
+						var shift_hint: String = InputBindings.get_action_binding_text(&"shift_dimension", settings_manager.input_overrides if settings_manager != null else {})
+						objective_label.text = "Chapter II: Use Dimension Shift [%s] to navigate Whispering Grove." % shift_hint
 					ChapterManager.CHAPTER_3:
 						objective_label.text = "Chapter III: Step into Academic Sanctum in Forgotten Shrine."
 					_:

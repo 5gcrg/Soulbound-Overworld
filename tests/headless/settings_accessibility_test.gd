@@ -247,10 +247,29 @@ func _run_test() -> void:
 	var settings_controls: Array[Control] = settings_sheet.get_focusable_controls()
 	_assert_focus_reachability(settings_controls, "SettingsSheet")
 
-	# Toggle Settings OFF
-	game_root._toggle_settings_sheet()
+	# SBL-UX-001 Escape during capture cancels capture without closing SettingsSheet
+	var move_left_row: Dictionary = settings_sheet._action_rows.get(&"move_left", {})
+	var rebind_btn: Button = move_left_row.get("rebind_btn") as Button
+	_check(rebind_btn != null, "Rebind button for move_left exists")
+	if rebind_btn != null:
+		rebind_btn.pressed.emit()
+		_check(InputBindings.is_capture_active() == true, "Capture is active after rebind pressed")
+		var esc_key := InputEventKey.new()
+		esc_key.physical_keycode = KEY_ESCAPE
+		esc_key.pressed = true
+		settings_sheet._input(esc_key)
+		await process_frame
+		_check(InputBindings.is_capture_active() == false, "Capture canceled by Escape key")
+		_check(game_root._settings_sheet != null, "SettingsSheet remains open after Escape cancels capture")
+		_check(rebind_btn.has_focus() == true, "Initiating rebind button regained focus after cancel")
+
+	# SBL-UX-001 Escape outside capture closes SettingsSheet normally
+	var esc_close := InputEventAction.new()
+	esc_close.action = "ui_cancel"
+	esc_close.pressed = true
+	settings_sheet._unhandled_input(esc_close)
 	await process_frame
-	_check(game_root._settings_sheet == null, "Settings sheet closed in GameRoot")
+	_check(game_root._settings_sheet == null, "Settings sheet closed by Escape outside capture in GameRoot")
 
 	# 2. InventorySheet focus traversal
 	var inv_scene: PackedScene = load("res://scenes/ui/inventory_sheet.tscn")

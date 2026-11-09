@@ -185,6 +185,270 @@ horizontal_alignment = 2
 [node name="HSeparator2" type="HSeparator" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
 
+[node name="ControlsHeader" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.75, 0.3, 1)
+theme_override_font_sizes/font_size = 12
+text = "KEYBOARD & MOUSE CONTROLS (GDD-092 / FR-SET-001)"
+
+[node name="ControlsBox" type="VBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="CaptureStatusRow" type="HBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CaptureStatusLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/CaptureStatusRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.85, 0.85, 0.85, 1)
+theme_override_font_sizes/font_size = 10
+text = "Click Rebind on an action to assign a key or mouse button. Esc cancels."
+autowrap_mode = 3
+
+[node name="CancelCaptureBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/CaptureStatusRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Cancel Capture [Esc]"
+
+[node name="ActionsContainer" type="VBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Row_move_left" type="HBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_move_left"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Move Left:"
+
+[node name="BindingLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_move_left"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "A, Left"
+
+[node name="RebindBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_move_left"]
+custom_minimum_size = Vector2(64, 22)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Rebind"
+
+[node name="ResetBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_move_left"]
+custom_minimum_size = Vector2(54, 22)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Reset"
+
+[node name="Row_move_right" type="HBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_move_right"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Move Right:"
+
+[node name="BindingLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_move_right"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "D, Right"
+
+[node name="RebindBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_move_right"]
+custom_minimum_size = Vector2(64, 22)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Rebind"
+
+[node name="ResetBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_move_right"]
+custom_minimum_size = Vector2(54, 22)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Reset"
+
+[node name="Row_move_up" type="HBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_move_up"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Move Up:"
+
+[node name="BindingLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_move_up"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "W, Up"
+
+[node name="RebindBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_move_up"]
+custom_minimum_size = Vector2(64, 22)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Rebind"
+
+[node name="ResetBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_move_up"]
+custom_minimum_size = Vector2(54, 22)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Reset"
+
+[node name="Row_move_down" type="HBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_move_down"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Move Down:"
+
+[node name="BindingLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_move_down"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "S, Down"
+
+[node name="RebindBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_move_down"]
+custom_minimum_size = Vector2(64, 22)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Rebind"
+
+[node name="ResetBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_move_down"]
+custom_minimum_size = Vector2(54, 22)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Reset"
+
+[node name="Row_shift_dimension" type="HBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_shift_dimension"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Shift Dimension:"
+
+[node name="BindingLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_shift_dimension"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "Q"
+
+[node name="RebindBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_shift_dimension"]
+custom_minimum_size = Vector2(64, 22)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Rebind"
+
+[node name="ResetBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_shift_dimension"]
+custom_minimum_size = Vector2(54, 22)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Reset"
+
+[node name="Row_toggle_character" type="HBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_toggle_character"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Character Sheet:"
+
+[node name="BindingLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_toggle_character"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "C"
+
+[node name="RebindBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_toggle_character"]
+custom_minimum_size = Vector2(64, 22)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Rebind"
+
+[node name="ResetBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_toggle_character"]
+custom_minimum_size = Vector2(54, 22)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Reset"
+
+[node name="Row_toggle_inventory" type="HBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_toggle_inventory"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Inventory Sheet:"
+
+[node name="BindingLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_toggle_inventory"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "I"
+
+[node name="RebindBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_toggle_inventory"]
+custom_minimum_size = Vector2(64, 22)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Rebind"
+
+[node name="ResetBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_toggle_inventory"]
+custom_minimum_size = Vector2(54, 22)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Reset"
+
+[node name="Row_toggle_settings" type="HBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_toggle_settings"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Settings Menu:"
+
+[node name="BindingLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_toggle_settings"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = "O"
+
+[node name="RebindBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_toggle_settings"]
+custom_minimum_size = Vector2(64, 22)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Rebind"
+
+[node name="ResetBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox/ActionsContainer/Row_toggle_settings"]
+custom_minimum_size = Vector2(54, 22)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Reset"
+
+[node name="ResetAllBtn" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/ControlsBox"]
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Reset All Controls to Authored Defaults"
+
+[node name="HSeparator3" type="HSeparator" parent="Panel/Margin/VBox/Scroll/ContentBox"]
+layout_mode = 2
+
 [node name="BackupHeader" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.7, 0.3, 1)

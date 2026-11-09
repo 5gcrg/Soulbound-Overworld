@@ -26,8 +26,11 @@ func _ready() -> void:
 	_connect_buttons()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if InputBindings.is_capture_active():
+		return
 	if event is InputEventKey and event.is_pressed() and not event.is_echo():
-		if event.keycode == KEY_F1 or event.keycode == KEY_QUOTELEFT:
+		var k: Key = event.physical_keycode if event.physical_keycode != 0 else event.keycode
+		if k == KEY_F1 or k == KEY_QUOTELEFT:
 			toggle_panel()
 			get_viewport().set_input_as_handled()
 
