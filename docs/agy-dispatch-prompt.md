@@ -41,6 +41,6 @@ Definition of done per task: relevant suites green with real assertion evidence,
 
 - **Batch 1 complete** (`e5f93e8..e2a68bd`), **batch 2 complete** (`f263001..6f6efa5`), and **batch 3 complete** (`9040561..5e81a04`): 18 tasks implemented, 29/29 suites green, export chain validated.
 - **Codex CLI review of `e25491d..5e81a04` ran on 9 November 2026** (session `01a1be9a-5583-7252-b082-ebd436372c80`): **CHANGES_REQUESTED**, three P2 findings (focus-following, archive-contained PCK validation, MCP error results).
-- **Batch 4 staged, not yet dispatched:** `docs/agy-next-queue.md` lists SBL-FIX-013, SBL-VER-004, SBL-MCP-004, SBL-BLD-003 as the review fixes.
+- **Batch 4 complete (`0b7e85f..4ed9280`)**: SBL-FIX-013, SBL-VER-004, SBL-MCP-004, SBL-BLD-003 implemented and verified. 29/29 headless suites pass, full export and archive-contained PCK validation pass, negative controls pass. Marked `REVIEW_PENDING_CODEX` awaiting Codex CLI re-review.
 - Runner pins `--model gemini-3.8-flash-high --effort high` because Gemini 4 Argon is quota-blocked until ~14 Nov 09:21.
-- Every batch 1-3 entry is `CHANGES_REQUESTED`; nothing in that range is `REVIEWED`.
+- Every batch 1-4 entry is `CHANGES_REQUESTED` / `REVIEW_PENDING_CODEX`; nothing in that range is `REVIEWED`.
