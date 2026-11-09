@@ -110,12 +110,8 @@ func apply_kurei_tree_capacity() -> void:
 	_update_ui()
 
 func get_equipped_active_skills() -> Array[StringName]:
-	if kurei_tree != null and not kurei_tree.equipped_skills.is_empty():
-		var list: Array[StringName] = []
-		for sid in kurei_tree.equipped_skills:
-			if kurei_tree.is_skill_active(sid):
-				list.append(sid)
-		return list
+	if kurei_tree != null:
+		return kurei_tree.get_equipped_active_skills()
 	var defaults: Array[StringName] = []
 	for sid in KureiTree.STARTER_SKILLS:
 		defaults.append(sid)

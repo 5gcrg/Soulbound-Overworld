@@ -145,8 +145,22 @@ func is_skill_passive(skill_id: StringName) -> bool:
 func is_skill_active(skill_id: StringName) -> bool:
 	return SKILL_NODES.has(skill_id) and not is_skill_passive(skill_id)
 
+func normalize_equipped_if_empty() -> void:
+	if equipped_skills.is_empty():
+		for s: StringName in STARTER_SKILLS:
+			equipped_skills.append(s)
+
 func is_skill_equipped(skill_id: StringName) -> bool:
+	normalize_equipped_if_empty()
 	return equipped_skills.has(skill_id)
+
+func get_equipped_active_skills() -> Array[StringName]:
+	normalize_equipped_if_empty()
+	var list: Array[StringName] = []
+	for sid in equipped_skills:
+		if is_skill_active(sid):
+			list.append(sid)
+	return list
 
 func can_equip_skill(skill_id: StringName) -> bool:
 	if not SKILL_NODES.has(skill_id):
@@ -222,27 +236,33 @@ func deserialize(data: Dictionary) -> Error:
 	if not data.has("unlocked_skills"):
 		_init_starters()
 		return OK
-	var list: Array = data["unlocked_skills"] as Array
-	unlocked_skills.clear()
-	for item: Variant in list:
-		var sid: StringName = StringName(String(item))
-		if SKILL_NODES.has(sid) and not unlocked_skills.has(sid):
-			unlocked_skills.append(sid)
-	for s: StringName in STARTER_SKILLS:
-		if not unlocked_skills.has(s):
-			unlocked_skills.append(s)
-	spent_talent_points = maxi(0, int(data.get("spent_talent_points", 0)))
-	total_talent_points = maxi(0, int(data.get("total_talent_points", 0)))
+	if typeof(data["unlocked_skills"]) != TYPE_ARRAY:
+		return ERR_INVALID_DATA
 
-	# Equipped skills: optional array, maximum six, unique ordered active unlocked IDs
+	var list: Array = data["unlocked_skills"] as Array
+	var candidate_unlocked: Array[StringName] = []
+	for item: Variant in list:
+		if typeof(item) != TYPE_STRING and typeof(item) != TYPE_STRING_NAME:
+			return ERR_INVALID_DATA
+		var sid: StringName = StringName(String(item))
+		if SKILL_NODES.has(sid) and not candidate_unlocked.has(sid):
+			candidate_unlocked.append(sid)
+	for s: StringName in STARTER_SKILLS:
+		if not candidate_unlocked.has(s):
+			candidate_unlocked.append(s)
+
+	var candidate_spent: int = maxi(0, int(data.get("spent_talent_points", 0)))
+	var candidate_total: int = maxi(0, int(data.get("total_talent_points", 0)))
+
+	var candidate_equipped: Array[StringName] = []
+	# Equipped skills: optional array, maximum six, non-empty, unique ordered active unlocked IDs
 	if data.has("equipped_skills"):
 		if typeof(data["equipped_skills"]) != TYPE_ARRAY:
 			return ERR_INVALID_DATA
 		var eq_list: Array = data["equipped_skills"] as Array
-		if eq_list.size() > MAX_EQUIPPED_SKILLS:
+		if eq_list.is_empty() or eq_list.size() > MAX_EQUIPPED_SKILLS:
 			return ERR_INVALID_DATA
 		var seen := {}
-		var valid_equipped: Array[StringName] = []
 		for item: Variant in eq_list:
 			if typeof(item) != TYPE_STRING and typeof(item) != TYPE_STRING_NAME:
 				return ERR_INVALID_DATA
@@ -254,15 +274,19 @@ func deserialize(data: Dictionary) -> Error:
 				return ERR_INVALID_DATA
 			if is_skill_passive(sid):
 				return ERR_INVALID_DATA
-			if not is_skill_unlocked(sid):
+			if not candidate_unlocked.has(sid):
 				return ERR_INVALID_DATA
-			valid_equipped.append(sid)
-		equipped_skills = valid_equipped
+			candidate_equipped.append(sid)
 	else:
 		# Legacy data without the field defaults in memory to the existing three starter skills; no write-on-load migration
-		equipped_skills.clear()
 		for s: StringName in STARTER_SKILLS:
-			equipped_skills.append(s)
+			candidate_equipped.append(s)
+
+	# Atomic commit: mutate self only after all preflights succeed
+	unlocked_skills = candidate_unlocked
+	spent_talent_points = candidate_spent
+	total_talent_points = candidate_total
+	equipped_skills = candidate_equipped
 	return OK
 
 func load_from_store(store: ProfileStore, slot: String = "profile_01") -> Error:

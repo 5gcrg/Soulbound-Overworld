@@ -1821,3 +1821,105 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 | `settings_accessibility_test.gd` | Exit 0 | Verified 100% circular keyboard focus chain traversal across all CharacterSheet controls including dynamic equip/unequip buttons. |
 | Full headless runner (`run_headless_tests.ps1`) | Exit 0 (30/30 passed) | All 30 project headless suites pass with 0 Godot script/engine errors across all game systems. |
 | Release exporter (`export_release.ps1`) | Exit 0 | Built `Soulbound-Web.zip` and `Soulbound-Windows-Portable.zip`; validated PCK gates and entry points; verified working tree byte-identical. |
+
+---
+
+## SBL-REV-007 — Boss Menu Viewport Safety and Layout Audit (Fix 1)
+
+- **Milestone** Remediation Batch C (M3 Combat UI & Accessibility Hardening).
+- **Requirements** GDD-018..020, GDD-041, GDD-089, GDD-103, GDD-116, FR-CMB-001/002/003, TC-ACC-001 (viewport 960x540 and 1.5x accessibility text scale), AGENTS.md Invariants ("Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer", "Do not invent numerical stats, formula coefficients, drop probabilities, story revelations, or unsupported integrations. Mark such items TBD and seek change approval").
+- **Codex finding** Finding from Codex CLI review session `01a1c033-a580-7dc0-b15a-1a703f857eb0` [P2]:
+  "with three starters plus advanced skills equipped, long disabled notices in `BossEncounter` expand a non-wrapping HBox to approximately 1236px, clipping functional controls at the default 960×540 viewport."
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Scene definitions: `scenes/combat/boss_encounter.tscn`.
+  - Scene script: `scenes/combat/boss_encounter.gd`.
+  - Headless test suites: `tests/headless/boss_combat_test.gd`, `tests/headless/layout_audit_test.gd`.
+  - Evidence logs: `report/neg_boss_menu_viewport.log`.
+  - Process: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
+- **Asset provenance** None (Godot Control containers, themes, and GDScript layout logic; zero image or audio generation).
+- **Review** REVIEW: REVIEW_PENDING_CODEX.
+- **Open questions** `OD-003/004`: advanced boss skill effect specifications remain open pending designer/educator approval; notices remain displayed on disabled buttons and tooltips without inventing combat values.
+
+### Changes
+
+1. **GridContainer Layout Replacement (`scenes/combat/boss_encounter.tscn`)**:
+   - Replaced non-wrapping `HBoxContainer` on `KureiMenu` with a 4-column `GridContainer` (`columns = 4`, `theme_override_constants/h_separation = 8`, `theme_override_constants/v_separation = 6`).
+   - Up to 6 equipped skills + Cancel button fit neatly into 2 rows (4 items in row 1, 3 items in row 2).
+2. **Text Autowrap and Size Flags (`scenes/combat/boss_encounter.gd`)**:
+   - In `_rebuild_kurei_menu()`, set `autowrap_mode = TextServer.AUTOWRAP_WORD_SMART`, `size_flags_horizontal = Control.SIZE_EXPAND_FILL`, and `custom_minimum_size = Vector2(130, 34)` on dynamic skill buttons and `cancel_kurei_btn`.
+   - Long OD-003/004 notices wrap cleanly without expanding container width beyond the 960px viewport.
+3. **Explicit OD-003/004 Notice & Tooltips (`scenes/combat/boss_encounter.gd`)**:
+   - Preserved explicit button text notice `"%s (Boss effect pending design approval)"` on unsupported advanced skills.
+   - Added descriptive `tooltip_text = "%s: Boss effect pending design approval (OD-003/004)" % sname`.
+4. **Vertical Budget Conservation (`scenes/combat/boss_encounter.tscn`)**:
+   - Tuned `RenSilhouette` and `BossSilhouette` minimum height to 70px (from 100px) and `VBoxContainer` separation to 6px (from 10px).
+   - Entire `BossEncounter` layout stays strictly inside `Rect2(0, 0, 960, 540)` at both 1.0x authored scale and 1.5x accessibility text scale (tested bounding rect `[P: (32.0, 12.0), S: (896.0, 516.0)]` at 1.5x, bottom edge 528px <= 540px).
+5. **Mouse & Keyboard Accessibility (`scenes/combat/boss_encounter.gd` & `tests/headless/boss_combat_test.gd`)**:
+   - Verified enabled starter skills and Cancel are clickable and reachable via keyboard focus navigation (`grab_focus()`, Tab, and Escape).
+6. **Automated Layout Audit Integration (`tests/headless/layout_audit_test.gd`)**:
+   - Extended `layout_audit_test.gd` to include `BossEncounter` with 6 equipped skills and open Kurei menu, asserting zero boundary overflow across Phase 1 (1.0x) and Phase 2 (1.5x).
+
+### Verification Table
+
+| Test Scope / Invocation | Result | Evidence |
+|---|---|---|
+| `run_headless_tests.ps1 -Suite boss_combat_test` | Exit 0 | Verified 4-column GridContainer, 1.0x and 1.5x viewport safety bounds, enabled starters, disabled advanced notices, starter/Cancel keyboard reachability, mouse click and Escape dismissal. |
+| `run_headless_tests.ps1 -Suite layout_audit_test` | Exit 0 | Audited BossEncounter at 960x540: Phase 1 (1.0x rect `[P: (32, 20), S: (896, 500)]` fits) and Phase 2 (1.5x rect `[P: (32, 12), S: (896, 516)]` fits). |
+| Disposable negative control: revert to non-wrapping HBox without autowrap | Exit 0 | Negative control reproduced overflow: non-wrapping HBox expanded to width 1240px (`[P: (-140, 486), S: (1240, 34)]`), overflowing 960px viewport (`report/neg_boss_menu_viewport.log`). |
+
+---
+
+## SBL-REV-008 — Empty Equipped Loadout Validation and Starter Normalization (Fix 2)
+
+- **Milestone** Remediation Batch C (M3 Progression & Persistence Hardening).
+- **Requirements** GDD-018..020, GDD-030, GDD-098..101, FR-SAV-001, FR-CMB-003/004, TC-SAV-001/002, AGENTS.md Invariants ("Preserve legacy profiles with the field absent: they continue to default in memory to the existing starter loadout without write-on-load", "Keep validation atomic and preserve unrelated profile data on failure").
+- **Codex finding** Finding from Codex CLI review session `01a1c033-a580-7dc0-b15a-1a703f857eb0` [P2]:
+  "imported `character.kurei_tree.equipped_skills: []` passes validation and deserialization. Menus show starter fallback while `request_action()` rejects every visible spell because none is equipped."
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Persistence validation: `scripts/persistence/gameplay_profile_validator.gd`.
+  - Skill tree: `scripts/magic/kurei_tree.gd`.
+  - Combat scenes: `scenes/combat/battle_fixture.gd`, `scenes/combat/boss_encounter.gd`.
+  - Headless test suites: `tests/headless/kurei_tree_test.gd`, `tests/headless/kurei_combat_test.gd`, `tests/headless/boss_combat_test.gd`.
+  - Evidence logs: `report/neg_empty_equipped_loadout.log`.
+  - Process: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
+- **Asset provenance** None (pure GDScript persistence validation and combat logic; zero image or audio generation).
+- **Review** REVIEW: REVIEW_PENDING_CODEX.
+- **Open questions** None.
+
+### Changes
+
+1. **Strict Non-Empty Preflight Validation (`scripts/persistence/gameplay_profile_validator.gd`)**:
+   - In `_validate_character`, updated `equipped_skills` preflight: `if eq.is_empty() or eq.size() > KureiTree.MAX_EQUIPPED_SKILLS: return ERR_INVALID_DATA`.
+   - Explicit empty arrays (`character.kurei_tree.equipped_skills: []`) are rejected atomically during backup import and profile activation.
+2. **Atomic Deserialization Rejection (`scripts/magic/kurei_tree.gd`)**:
+   - Updated `deserialize(data: Dictionary)` to validate all candidate lists (`candidate_unlocked`, `candidate_spent`, `candidate_total`, `candidate_equipped`) in local variables before modifying `self`.
+   - An empty `equipped_skills: []` triggers `if eq_list.is_empty(): return ERR_INVALID_DATA`, immediately terminating without mutating `unlocked_skills`, `spent_talent_points`, or `equipped_skills`.
+3. **Legacy Profile Compatibility (`scripts/magic/kurei_tree.gd` & `scripts/persistence/gameplay_profile_validator.gd`)**:
+   - Profiles lacking the `equipped_skills` key pass validation and `deserialize` defaults `equipped_skills` in memory to `STARTER_SKILLS` (`flame_burst`, `lumina_lance`, `torrent_surge`) with zero write-on-load modification.
+4. **Starter Loadout Normalization Safeguard (`scripts/magic/kurei_tree.gd`)**:
+   - Added `normalize_equipped_if_empty()` on `KureiTree`.
+   - `get_equipped_active_skills()` and `is_skill_equipped()` both invoke `normalize_equipped_if_empty()`.
+   - If `equipped_skills` is ever empty in memory, it self-heals by repopulating `STARTER_SKILLS`, guaranteeing visible menu buttons always match accepted actions in `BattleFixture` and `BossEncounter`.
+5. **Dynamic Combat Menu Integration (`scenes/combat/battle_fixture.gd` & `scenes/combat/boss_encounter.gd`)**:
+   - Refactored `get_equipped_active_skills()` in both combat controllers to delegate directly to `kurei_tree.get_equipped_active_skills()`, eliminating disparate fallback logic.
+6. **Headless Regression Suites**:
+   - `kurei_tree_test.gd`: asserts validator rejects explicit empty equipped array, atomic deserialization failure preserves existing tree state, legacy profile lacking the key passes and defaults to starters, and empty tree normalizes to starters.
+   - `kurei_combat_test.gd`: asserts empty tree in `BattleFixture` normalizes to starters, displays 3 starter buttons, and `request_action(&"kurei_flame_burst")` succeeds.
+   - `boss_combat_test.gd`: asserts empty tree in `BossEncounter` normalizes to starters, displays 3 starter buttons, and `request_action(&"kurei_flame_burst")` succeeds.
+7. **Disposable Negative Control**:
+   - Recorded disposable negative control in `report/neg_empty_equipped_loadout.log` proving validator catches `equipped_skills: []` with `ERR_INVALID_DATA`.
+
+### Verification Table
+
+| Test Scope / Invocation | Result | Evidence |
+|---|---|---|
+| `run_headless_tests.ps1 -Suite kurei_tree_test` | Exit 0 | Verified empty array validator rejection, atomic deserialize failure state preservation, legacy profile defaulting to starters without write-on-load, and in-memory starter normalization. |
+| `run_headless_tests.ps1 -Suite kurei_combat_test` | Exit 0 | Verified BattleFixture dynamic menu displays starter buttons on empty tree via normalization and request_action succeeds without rejection. |
+| `run_headless_tests.ps1 -Suite boss_combat_test` | Exit 0 | Verified BossEncounter dynamic menu displays starter buttons on empty tree via normalization and request_action succeeds without rejection. |
+| Disposable negative control: validator on empty equipped array | Exit 0 | Negative control proved validator catches empty equipped loadout with `ERR_INVALID_DATA` (`report/neg_empty_equipped_loadout.log`). |
+| Full headless runner (`run_headless_tests.ps1`) | Exit 0 (30/30 passed) | All 30 project headless suites pass cleanly with 0 Godot script/engine errors. |
+| Full release exporter (`run_headless_tests.ps1 -Export -Tier all`) | Exit 0 | Built and validated `Soulbound-AcademicMVP-Web.zip`, `Soulbound-Web.zip`, and `Soulbound-Windows-Portable.zip`; PCK gates passed; working tree verified byte-identical. |

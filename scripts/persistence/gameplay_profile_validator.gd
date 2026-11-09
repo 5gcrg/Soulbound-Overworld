@@ -142,7 +142,7 @@ static func _validate_character(character: Dictionary) -> Error:
 			if typeof(kt["equipped_skills"]) != TYPE_ARRAY:
 				return ERR_INVALID_DATA
 			var eq: Array = kt["equipped_skills"] as Array
-			if eq.size() > KureiTree.MAX_EQUIPPED_SKILLS:
+			if eq.is_empty() or eq.size() > KureiTree.MAX_EQUIPPED_SKILLS:
 				return ERR_INVALID_DATA
 			var unlocked_set := {}
 			if kt.has("unlocked_skills") and typeof(kt["unlocked_skills"]) == TYPE_ARRAY:

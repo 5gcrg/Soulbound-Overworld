@@ -181,6 +181,24 @@ func _run_test() -> void:
 
 	fixture_loadout.queue_free()
 
+	# Regression test: Empty equipped loadout normalization prevents visible-but-unusable menu
+	var fixture_empty: BattleFixture = BattleFixtureScene.instantiate() as BattleFixture
+	root.add_child(fixture_empty)
+	await process_frame
+
+	var empty_tree := KureiTree.new()
+	empty_tree.equipped_skills.clear()
+	fixture_empty.kurei_tree = empty_tree
+	fixture_empty.kurei_button.pressed.emit()
+	_check(fixture_empty.kurei_menu.visible == true, "Kurei menu visible with empty_tree")
+	_check(fixture_empty._active_skill_buttons.size() == 3, "Menu displays 3 starter buttons via normalization")
+
+	# Assert that visible button for Flame Burst is fully functional and request_action succeeds
+	var empty_cast_ok: bool = fixture_empty.request_action(&"kurei_flame_burst")
+	_check(empty_cast_ok == true, "request_action for visible flame_burst succeeds on normalized tree (no unusable menu defect)")
+	_check(fixture_empty.enemy_pips == 0, "flame_burst dealt 2 damage to enemy (pips: 0)")
+	fixture_empty.queue_free()
+
 	if _failures > 0:
 		printerr("KUREI COMBAT TESTS FAILED: ", _failures)
 		quit(1)

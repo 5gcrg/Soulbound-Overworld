@@ -314,6 +314,43 @@ func _run_test() -> void:
 	]
 	_check(GameplayProfileValidator.validate(big_profile) == ERR_INVALID_DATA, "Validator rejected >6 equipped skills")
 
+	# Validator rejects explicit empty equipped skills array
+	var empty_eq_profile: Dictionary = base_profile.duplicate(true)
+	empty_eq_profile["character"]["kurei_tree"]["equipped_skills"] = []
+	_check(GameplayProfileValidator.validate(empty_eq_profile) == ERR_INVALID_DATA, "Validator rejected explicit empty equipped skills array")
+
+	# Deserialization rejects explicit empty equipped skills array and preserves existing state atomically
+	var atom_tree := KureiTree.new()
+	atom_tree.sync_with_level(5)
+	atom_tree.unlock_skill(&"solar_flare")
+	var prev_unlocked := atom_tree.unlocked_skills.duplicate()
+	var prev_equipped := atom_tree.equipped_skills.duplicate()
+	var prev_spent := atom_tree.spent_talent_points
+	var des_err: Error = atom_tree.deserialize({
+		"unlocked_skills": ["flame_burst", "lumina_lance", "torrent_surge", "solar_flare"],
+		"equipped_skills": [],
+		"spent_talent_points": 1
+	})
+	_check(des_err == ERR_INVALID_DATA, "KureiTree.deserialize rejects explicit empty equipped array with ERR_INVALID_DATA")
+	_check(atom_tree.unlocked_skills == prev_unlocked, "Atomic deserialize failure preserved unlocked_skills")
+	_check(atom_tree.equipped_skills == prev_equipped, "Atomic deserialize failure preserved equipped_skills")
+	_check(atom_tree.spent_talent_points == prev_spent, "Atomic deserialize failure preserved spent_talent_points")
+
+	# Legacy profile lacking equipped_skills key passes validation and defaults to starter loadout in memory
+	var legacy_kurei_prof: Dictionary = base_profile.duplicate(true)
+	legacy_kurei_prof["character"]["kurei_tree"].erase("equipped_skills")
+	_check(GameplayProfileValidator.validate(legacy_kurei_prof) == OK, "Legacy profile lacking equipped_skills passes validation")
+	var leg_tree := KureiTree.new()
+	var leg_des_err: Error = leg_tree.deserialize(legacy_kurei_prof["character"]["kurei_tree"])
+	_check(leg_des_err == OK, "Legacy data deserialization returns OK")
+	_check(leg_tree.equipped_skills == KureiTree.STARTER_SKILLS, "Legacy data defaults equipped_skills in memory to STARTER_SKILLS")
+
+	# Normalization prevents visible-but-unusable loadout
+	var empty_tree := KureiTree.new()
+	empty_tree.equipped_skills.clear()
+	_check(empty_tree.get_equipped_active_skills() == KureiTree.STARTER_SKILLS, "get_equipped_active_skills normalizes empty equipped_skills to starters")
+	_check(empty_tree.is_skill_equipped(&"flame_burst") == true, "is_skill_equipped normalizes empty equipped_skills and returns true for starter")
+
 	# UI Equip/Unequip interaction in CharacterSheet
 	var ui_sheet: CharacterSheet = sheet_scene.instantiate() as CharacterSheet
 	root.add_child(ui_sheet)
