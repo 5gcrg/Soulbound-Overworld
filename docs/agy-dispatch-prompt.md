@@ -11,8 +11,7 @@ FIRST read, in this order:
 3. docs/agent-review-queue.md (review status and open findings)
 4. Soulbound_GDD_SRS.md sections for the requirement IDs named in the queue
 
-Then implement ALL tasks in docs/agy-next-queue.md, in the order given:
-SBL-VER-001, SBL-FIX-007, SBL-FIX-008, SBL-FIX-009, SBL-DOC-001, SBL-VER-002, SBL-MCP-001, SBL-DATA-001, and the non-image asset queue items that are actually actionable.
+Then implement ALL tasks in docs/agy-next-queue.md, in the order given. That file is the source of truth for the current batch; do not stop at the first task and do not skip a task because it looks blocked — record genuine blockers as PENDING with the attempted options named.
 
 Binding rules:
 - You implement only. You never review, never approve, never write REVIEWED, and never claim Codex review happened.
@@ -40,5 +39,7 @@ Definition of done per task: relevant suites green with real assertion evidence,
 
 ## Dispatch status
 
-- **9 November 2026:** the default model (Gemini 4 Argon) is quota-blocked (`RESOURCE_EXHAUSTED 429`, ~118h reset). Gemini 3.8 Flash still has quota, so the runner pins `--model gemini-3.8-flash-high --effort high`.
-- **Dispatched, in progress.** agy implements the queue; every commit stays `REVIEW_PENDING_CODEX`. `SBL-FIX-006` (`e25491d`) and the queue doc (`21b8ca1`) remain unreviewed.
+- **Batch 1 complete** (`e5f93e8..e2a68bd`): 9 tasks implemented, 24/24 suites green, export rebuilt, all `REVIEW_PENDING_CODEX`.
+- **Batch 2 dispatched:** `docs/agy-next-queue.md` now lists SBL-FIX-010, SBL-BLD-001, SBL-FIX-011, SBL-FIX-012, SBL-VER-003, SBL-MCP-002, SBL-DATA-003.
+- Runner pins `--model gemini-3.8-flash-high --effort high` because Gemini 4 Argon is quota-blocked.
+- No Codex CLI review has occurred on any queued commit.

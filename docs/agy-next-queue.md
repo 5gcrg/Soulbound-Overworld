@@ -1,100 +1,76 @@
-# agy Next Work Queue
+# agy Next Work Queue — Batch 2
 
-Plan owner: Codex. Implementation owner: agy. **agy never reviews.** Codex CLI is the only reviewer; while it is unavailable, agy implements and every commit stays `REVIEW_PENDING_CODEX`.
+Plan owner: Codex. Implementation owner: agy. **agy never reviews.** Codex CLI remains unavailable, so agy continues implementing under AGENTS.md Rule 5 and every commit stays `REVIEW_PENDING_CODEX`.
 
-## Current position
+## Position after batch 1
 
-- `SBL-FIX-006` is committed at `e25491d` and **not reviewed**: dimension collision/travel sync, persisted expedition resume, clipboard-free backup import, Web CSV download, live text scale/contrast, ending-modal input blocking.
-- The Codex CLI batch verdict on `SBL-W4-001`..`SBL-FIX-005` was `CHANGES_REQUESTED` (8 P1, 13 P2). Most code findings are addressed by `SBL-FIX-001`..`SBL-FIX-006`; several are addressed but **not yet pinned by a regression test**, which is what the next slice is for.
-- agy quota is exhausted (`RESOURCE_EXHAUSTED 429`). Start at Task 1 when it resets; do not re-litigate completed slices.
+- Implemented and independently verified: `SBL-VER-001`, `SBL-FIX-007`, `SBL-FIX-008`, `SBL-FIX-009`, `SBL-DOC-001`, `SBL-VER-002`, `SBL-MCP-001`, `SBL-DATA-001`, `SBL-DATA-002` (`e5f93e8..e2a68bd`).
+- Independent check: `--import` exit 0, 24/24 headless suites pass, `export_release.ps1` exit 0 (Web 10,643,529 B / Windows 86,515,950 B).
+- **Still unreviewed.** `SBL-FIX-006` and all batch-1 commits await Codex CLI.
 
-## Hard constraints for every task below
+## Batch 2 priorities
 
-1. Godot 4.7.2 Stable, Compatibility renderer, GDScript, Windows portable + single-threaded Web.
-2. Do not invent stats, coefficients, drop rates, story reveals, or integrations. Mark `TBD` and record the blocking `OD-###`.
-3. No image generation (Codex-exclusive). No silent substitution of another generator for audio.
-4. Preserve save-state invariants: secured gear/level/skills/story/education survive defeat; suspend is not extraction; reward transfer is exactly-once.
-5. Each task ends with the AGENTS.md report block, a commit suffixed `[REVIEW_PENDING_CODEX]`, and an entry in `docs/agent-review-queue.md`.
-6. Never mark work reviewed, never write `REVIEWED`, never skip human release sign-off.
+### 1. SBL-FIX-010 — Release-tier separation (highest priority, invariant gap)
 
-## Task 1 — SBL-VER-001: pin the five reproduced probe failures with regression tests
+AGENTS.md requires the 3-chapter academic MVP to stay separate from the 5-chapter 2-ending full release. Today `void_citadel` is registered unconditionally in `scripts/world/world_router.gd`, so an academic-MVP build can walk into Chapter V and trigger both endings.
 
-The batch review reproduced five concrete failures. Audit each against the current tree; where no automated assertion exists, add one that fails if the defect returns. Do not rewrite working code just to match the old report.
+- Add an explicit release-tier setting (for example `soulbound/release_tier` in `project.godot`) with tiers `academic_mvp` and `full_release`.
+- Gate: Void Citadel region/portal, both ending altars, the ending modal path, and the capstone question behind `full_release`. Keep chapter 4 (`ACADEMIC_COMPLETE`) as the academic MVP endpoint.
+- Default the checked-in value to the current behavior (`full_release`) so existing dev/evaluator flows keep working; **do not** silently choose the shipping default — record that as an open decision.
+- Tests: academic tier cannot reach Chapter V/endings (portal absent or refused, `open_ending_modal` no-ops), full tier still can. Existing `ending_chapter5_test` must pass in full tier.
+- No content deletion, no story rewrites.
 
-| Probe | Where to assert |
-| --- | --- |
-| Newer banked gear disappears on a quest checkpoint | `tests/headless/vertical_slice_loop_test.gd`: grant banked gear after the practice step, advance the quest, reload the profile, assert the gear is still banked. |
-| Imported inventory disappears on the next checkpoint | Same suite: import a backup profile mid-run, advance a stage, assert imported banked/satchel counts survive the merge. |
-| Incorrect answer leaves the required activity incomplete | `tests/headless/vertical_slice_test.gd` or the chapter suite: answer incorrectly, assert the activity is completion-gated (completable) while `first_attempt_correct` stays `false`. |
-| Fresh profile reaches final completion with no assessment records | Chapter progression suite: attempt final completion on a fresh profile, assert it is refused. |
-| Extraction reports success after an injected save failure | `tests/headless/dungeon_scene_test.gd`: inject a failing `commit_extraction`, assert `extraction_save_failed` fires, `expedition_completed` does not, and the satchel is unchanged. |
+### 2. SBL-BLD-001 — Canonical headless test runner
 
-Acceptance: all suites green, each probe has a named assertion, and the queue entry lists probe → test mapping.
+Every session hand-rolls the `Start-Process` loop, which is how the blank-exit-code trap keeps recurring.
 
-## Task 2 — SBL-FIX-007: extraction and defeat failure UX
+- `scripts/build/run_headless_tests.ps1`: runs `--import`, then every `tests/headless/*.gd`, captures per-suite logs under `report/` (already gitignored), prints a PASS/FAIL table, exits non-zero on any failure.
+- `-Export` switch chains `export_release.ps1`; `-Suite <name>` runs one suite.
+- Prove it: green run exits 0, and a deliberately broken temporary suite makes it exit non-zero. Remove the broken suite afterwards.
+- `docs/testing.md`: the exact command, why the console executable is used, and the expected suite count.
 
-- On `extraction_save_failed`, the expedition must stay open (or reopen) with a retry path and must not show a success status.
-- On defeat, a failed save must not claim the satchel was secured; surface the error and keep the run retryable.
-- Assert double-extraction and early-extraction requests are rejected without banking twice.
+### 3. SBL-FIX-011 — 960×540 layout and overflow audit
 
-Acceptance: headless test injects failures, asserts no success text, no bank duplication, and that a retry after recovery banks exactly once.
+Text scale up to 1.5× and high contrast are now applied live, but the logical resolution is 960×540 and the settings panel was already enlarged once.
 
-## Task 3 — SBL-FIX-008: terminal-state input exclusivity
+- Audit Settings, Inventory, Character, chapter dialog, academic modal, and ending modal at 960×540 with `text_scale` 1.0 and 1.5.
+- Add scroll containers / minimum-size guards where content can exceed the panel; never shrink text below the authored base.
+- Headless assertions: each modal's rect stays inside the viewport at both scales, and no scroll container reports clipped content at 1.0×.
+- Godot primitives only, no new art assets.
 
-- Boss encounter results, ending modal, academic completion modal, and chapter dialog must all consume `toggle_character`, `toggle_inventory`, `toggle_settings`, and `ui_cancel` while visible.
-- Assert no sheet or second modal can be instantiated on top of a results state, including via the evaluator debug bar.
+### 4. SBL-FIX-012 — Save compatibility and recovery UX
 
-Acceptance: one test drives real `InputEventAction`s and asserts `has_blocking_modal()` plus zero extra children on the sheet layer.
+- Fixture tests: a profile written before `active_expedition` existed loads cleanly; unknown extension keys survive a save cycle; a corrupt slot is recovered without losing the previous revision.
+- Surface recovery state: when `ProfileStore` reports `recovered`, the title screen must say so and offer backup export before any overwrite.
+- Keep schema-version rules exact; do not add leniency that accepts values which only round to the current version.
 
-## Task 4 — SBL-FIX-009: finish accessibility application
+### 5. SBL-VER-003 — Exported-artifact validator
 
-- Text scale and high contrast already apply to the live tree; add keyboard reachability: focus order, visible focus, and every button reachable without a mouse in Settings, Inventory, Character, and the chapter dialog.
-- Confirm reduced motion is honored where any animation exists; if none exists, document that explicitly instead of adding fake animation.
-- Extend high contrast beyond `modulate` where labels lose legibility (font color/shadow overrides), keeping authored values restorable.
+- `scripts/build/validate_release.ps1`: assert both zips contain the expected entry points (`index.html`, `index.wasm`, `index.pck`, `Soulbound.exe`, `Soulbound.pck`), that the Web preset stays single-threaded and Compatibility, that no editor/debug leftovers ship, and that pck sizes are plausible against the previous build.
+- Wire it into `export_release.ps1` so a bad build fails the export.
+- Report sizes in the queue entry.
 
-Acceptance: headless assertions for focus traversal and restore-to-authored values; a short manual visual checklist for the rest. `TC-ACC-001`, GDD-103.
+### 6. SBL-MCP-002 — Attempt a real Godot-compatible MCP adapter
 
-## Task 5 — SBL-DOC-001: reconcile the traceability matrix
+- Batch 1 only recorded `PENDING`. Now attempt an actual Godot-capable community adapter on a **disposable** project: list scene tree, create/edit a node, save the scene, inspect errors, run headless validation, capture evidence.
+- Name every adapter attempted with version and why it passed or failed. Never install the Unity package into Godot. If none works, keep `PENDING` with the evidence.
+- Do not point a third-party tool at the real project until it passes on the disposable one.
 
-- Add remediation rows/links for `SBL-FIX-001`..`SBL-FIX-006` against the requirement IDs they touch.
-- Replace stale `CHANGES_REQUESTED` review status with `REVIEW_PENDING_CODEX` where a later fix slice already landed, and keep `CHANGES_REQUESTED` where nothing landed.
-- No status may read `REVIEWED` without a Codex CLI session ID.
+### 7. SBL-DATA-003 — Decision-ready briefs for the combat ODs
 
-Acceptance: matrix and review queue agree row-for-row; no orphan requirement IDs.
+- For `OD-002` (initiative), `OD-003` (element/affinity and SP curves), `OD-004` (status stacking/duration): one page each with the options, what each option changes, what it unblocks, and the risk of each.
+- **No invented coefficients, percentages, or drop rates.** Options and consequences only; the human decides.
 
-## Task 6 — SBL-VER-002: Web/browser verification evidence
+## Blocked — do not attempt
 
-- Produce a Chromium and a Firefox smoke checklist: load, title screen, profile select, region transition, dimension shift, settings, backup export/import via text box, CSV download, single-thread confirmation.
-- Verify the Web preset is single-threaded and document required COOP/COEP headers if any are needed.
-- Record results as **pending human execution** unless a browser automation tool is actually available. Never report a browser pass that did not run.
+- Browser smoke execution: needs a human with Chromium/Firefox. Keep `PENDING HUMAN EXECUTION`.
+- Image assets: Codex-exclusive. Never route to agy or Gemini Flash.
+- Binary audio: Gemini Flash audio output pending; procedural SFX remains the shipping fallback.
+- Educator sign-off on assessed questions: `OD-012`, human gate.
+- Codex CLI review: unavailable. Never claim it happened.
 
-Acceptance: checklist committed, export preset flags verified in `export_presets.cfg`, results table with explicit `PENDING` rows.
+## Rules unchanged
 
-## Task 7 — SBL-MCP-001: Godot-compatible MCP proof
+Godot 4.7.2 Stable, Compatibility, GDScript, Windows portable + single-threaded Web; no invented numbers or story; save invariants preserved; per-task report block; commit suffix `[REVIEW_PENDING_CODEX]`; queue entry per task; no `REVIEWED` without a Codex session ID.
 
-Per AGENTS.md, prove a Godot-capable MCP/adapter on a **disposable** project: list scene tree, create/edit a node, save the scene, inspect errors, run headless validation, collect evidence. The referenced Unity plugin is not acceptable evidence. If no Godot-compatible adapter exists, record `PENDING` and keep using Godot-native files plus the headless CLI.
-
-Acceptance: evidence bundle or a documented `PENDING` with the attempted adapters named.
-
-## Task 8 — SBL-DATA-001: open-decisions ledger
-
-Create one table for `OD-001`..`OD-016`: decision needed, affected requirement IDs, current placeholder in code (`TBD`), who must decide, and what stays blocked. Do not fill any value yourself. Include the unresolved balance coefficients, initiative rule, save boundaries, and the educator review gate (`OD-012`).
-
-Acceptance: every `TBD` in code maps to an `OD-###`; no invented numbers.
-
-## Task 9 — non-image asset queue (Gemini Flash, not agy-authored)
-
-- Audio: finalize `docs/audio-spec.md` into a generation brief; if no Gemini Flash audio-output mode exists, mark the binaries `PENDING` and keep the procedural SFX as the shipping fallback.
-- Text: quest/dialogue/item/description copy review, and educator sign-off on assessed questions (`OD-012`) before any assessed use.
-
-Image assets (sprites, icons, tilesets, portraits, textures, image-based animation frames) stay **blocked for Codex** and must never be routed to agy or Gemini Flash.
-
-## Suggested order
-
-1. Task 1 (regression proof) and Task 5 (docs) — cheap, closes review noise.
-2. Tasks 2 and 3 — remaining correctness/input findings.
-3. Task 4 — accessibility completeness.
-4. Task 6 and Task 7 — verification gates, may stay `PENDING` with evidence.
-5. Task 8 and Task 9 — decision and asset ledger, unblocks human acceptance.
-
-Codex CLI review of `e25491d` and everything queued must happen before any of this is represented as reviewed.
+Use `scripts/agy/run_next_queue.ps1` (it reads `docs/agy-dispatch-prompt.md`).
