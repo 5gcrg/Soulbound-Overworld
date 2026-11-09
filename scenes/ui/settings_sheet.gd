@@ -5,6 +5,7 @@ extends Control
 ## Requirements: GDD-103, TC-ACC-001, AGENTS.md Invariants.
 
 signal closed
+signal backup_imported
 
 var settings: SettingsManager = null
 var profile_store: ProfileStore = null
@@ -138,10 +139,11 @@ func _on_import_backup_pressed() -> void:
 		if backup_status_label != null:
 			backup_status_label.text = "Clipboard is empty. Copy backup string first."
 		return
-	var err: Error = profile_store.import_backup(active_profile_id, txt)
+	var err: Error = profile_store.import_backup(active_profile_id, txt, GameplayProfileValidator.validate)
 	if err == OK:
 		if backup_status_label != null:
 			backup_status_label.text = "Profile imported successfully from clipboard!"
+		backup_imported.emit()
 	else:
 		if backup_status_label != null:
 			backup_status_label.text = "Import failed: %s (Invalid data)" % error_string(err)

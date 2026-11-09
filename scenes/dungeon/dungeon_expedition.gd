@@ -10,6 +10,7 @@ extends Control
 signal expedition_completed(extracted_items: Dictionary)
 signal expedition_failed(lost_items: Dictionary)
 signal expedition_cancelled
+signal extraction_save_failed(error: Error)
 
 const ROOM_SIZE: Vector2 = Vector2(180, 120)
 const ROOM_SPACING: Vector2 = Vector2(240, 180)
@@ -21,6 +22,8 @@ var is_active: bool = false
 var extraction_portal: Area2D = null
 var expedition_path: Array[int] = []
 var current_step: int = 0
+var commit_extraction: Callable = Callable()
+var _is_extracting: bool = false
 
 @onready var rooms_container: Node2D = $RoomsContainer
 @onready var corridors_container: Node2D = $CorridorsContainer
@@ -61,6 +64,7 @@ func setup(seed_val: int = 1337, room_count: int = 6) -> bool:
 	expedition_path = _calculate_path()
 	current_step = 0
 	is_active = true
+	_is_extracting = false
 
 	if is_inside_tree():
 		refresh_ui()
@@ -131,10 +135,16 @@ func _spawn_extraction_portal(pos: Vector2) -> void:
 	extraction_portal = portal
 
 func _on_portal_entered(body: Node2D) -> void:
-	if not is_active:
+	if not is_active or _is_extracting:
 		return
 	if body is PlayerCharacter or body.name == "Player":
 		extract_now()
+
+func is_at_extraction_chamber() -> bool:
+	if expedition_path.is_empty():
+		return false
+	var curr_room_id: int = expedition_path[current_step] if current_step < expedition_path.size() else generator.spawn_id
+	return current_step >= expedition_path.size() - 1 or curr_room_id == generator.extraction_id
 
 func _calculate_path() -> Array[int]:
 	# BFS shortest path from spawn_id to extraction_id
@@ -202,7 +212,7 @@ func refresh_ui() -> void:
 	room_path_label.text = "  ➔  ".join(trail)
 
 	# Descriptions
-	var is_at_extraction: bool = (current_step >= expedition_path.size() - 1 or curr_room_id == generator.extraction_id)
+	var is_at_extraction: bool = is_at_extraction_chamber()
 	if current_step == 0:
 		room_description_label.text = "You stand at the threshold of the Abyssal depths. Proceed deeper to find ancient relic fragments, or step back to the overworld."
 	elif is_at_extraction:
@@ -230,6 +240,8 @@ func refresh_ui() -> void:
 	retreat_btn.visible = (current_step > 0)
 
 func _on_advance_pressed() -> void:
+	if not is_active or _is_extracting:
+		return
 	if current_step < expedition_path.size() - 1:
 		current_step += 1
 		var curr_room_id: int = expedition_path[current_step]
@@ -241,6 +253,8 @@ func _on_advance_pressed() -> void:
 		refresh_ui()
 
 func _on_extract_pressed() -> void:
+	if commit_extraction.is_valid() and not is_at_extraction_chamber():
+		return
 	extract_now()
 
 func _on_retreat_pressed() -> void:
@@ -250,22 +264,60 @@ func _on_step_back_pressed() -> void:
 	cancel_expedition()
 
 func cancel_expedition() -> void:
+	if not is_active or _is_extracting:
+		return
 	is_active = false
 	expedition_cancelled.emit()
 
 func extract_now() -> Dictionary:
+	if not is_active or _is_extracting:
+		return {}
+
+	# Enforce reaching actual extraction chamber on game-backed calls
+	if commit_extraction.is_valid() and not is_at_extraction_chamber():
+		return {}
+
+	_is_extracting = true
+
+	# Deep clone candidate inventory via serialize/deserialize
+	var candidate: InventoryManager = InventoryManager.new()
+	candidate.deserialize(inventory.serialize())
+
+	# Move candidate satchel to bank
+	var extracted: Dictionary = candidate.extract_satchel_to_bank()
+
+	# Call commit_extraction if valid
+	if commit_extraction.is_valid():
+		var err: Error = commit_extraction.call(candidate)
+		if err != OK:
+			_is_extracting = false
+			if room_description_label != null:
+				room_description_label.text = "Extraction save failed (error %d). Satchel remains secured at portal. Please retry extraction." % err
+			if extract_btn != null:
+				extract_btn.disabled = false
+				extract_btn.text = "Retry Extraction"
+				extract_btn.grab_focus()
+			extraction_save_failed.emit(err)
+			return {}
+
+	# On success publish candidate state to same live inventory instance, set inactive, emit completion once
+	inventory.deserialize(candidate.serialize())
 	is_active = false
-	var extracted: Dictionary = inventory.extract_satchel_to_bank()
+	_is_extracting = false
 	expedition_completed.emit(extracted)
 	return extracted
 
 func fail_now() -> Dictionary:
+	if not is_active or _is_extracting:
+		return {}
 	is_active = false
 	var lost: Dictionary = inventory.handle_expedition_defeat()
 	expedition_failed.emit(lost)
 	return lost
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _is_extracting:
+		return
 	if event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
 		if current_step == 0:

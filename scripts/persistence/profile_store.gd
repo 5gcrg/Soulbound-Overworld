@@ -60,7 +60,7 @@ func load_profile(profile_id: String) -> Dictionary:
 	var rec: Dictionary = _load_active_record(profile_id)
 	return {"error": rec["error"], "profile": rec.get("data", {}), "recovered": rec.get("recovered", false)}
 
-func import_backup(profile_id: String, text: String) -> Error:
+func import_backup(profile_id: String, text: String, validate: Callable = Callable()) -> Error:
 	if not _is_valid_profile_id(profile_id):
 		return ERR_INVALID_PARAMETER
 	var raw_bytes: PackedByteArray = text.to_utf8_buffer()
@@ -71,6 +71,14 @@ func import_backup(profile_id: String, text: String) -> Error:
 	var dec: Dictionary = _decode(text, profile_id)
 	if dec["error"] != OK:
 		return dec["error"]
+	if validate.is_valid():
+		var val_res: Variant = validate.call(dec["data"])
+		if val_res is int:
+			if (val_res as int) != OK:
+				return val_res as Error
+		elif val_res is bool:
+			if not (val_res as bool):
+				return ERR_INVALID_DATA
 	return _commit_profile(profile_id, text)
 
 func export_backup(profile_id: String) -> Dictionary:

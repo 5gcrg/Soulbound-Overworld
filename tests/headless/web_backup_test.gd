@@ -130,6 +130,8 @@ func _run_test() -> void:
 	# Clean up temporary test profiles
 	_cleanup_dir(_test_root)
 
+	await _test_live_restore()
+
 	print("--- Web Save Backup & Export Verification Complete. Failures: %d ---" % _failures)
 	if _failures == 0:
 		print("ALL WEB BACKUP & EXPORT CHECKS PASSED (100% SUCCESS)")
@@ -152,3 +154,34 @@ func _cleanup_dir(path: String) -> void:
 			for f in dir.get_files():
 				dir.remove(f)
 		DirAccess.remove_absolute(global_path)
+
+func _test_live_restore() -> void:
+	var fixture_root := "user://test_gr_backup_%d_%d" % [OS.get_process_id(), Time.get_ticks_usec()]
+	var store := ProfileStore.new(fixture_root)
+	var baseline := store.new_profile("profile_01")
+	_check(store.save_profile("profile_01", baseline) == OK, "seed baseline")
+	var original: String = store.export_backup("profile_01")["text"]
+	var game = preload("res://scenes/main/game_root.tscn").instantiate()
+	game.profile_store = store
+	root.add_child(game)
+	game._toggle_settings_sheet()
+	var sheet: SettingsSheet = game._settings_sheet
+	var malformed := baseline.duplicate(true)
+	malformed["education"]["records"] = {"q_dec_01": null}
+	sheet.last_exported_backup = JSON.stringify(malformed)
+	sheet.import_backup_btn.pressed.emit()
+	_check(sheet.backup_status_label.text.contains("Import failed"), "invalid nested record rejected")
+	_check(store.export_backup("profile_01")["text"] == original, "rejected import preserves active revision")
+	var good := baseline.duplicate(true)
+	var inventory := InventoryManager.new()
+	inventory.add_banked_item("iron_sword", 1)
+	good["inventory"] = inventory.serialize()
+	sheet.last_exported_backup = JSON.stringify(good)
+	sheet.import_backup_btn.pressed.emit()
+	_check(game.inventory_manager.banked_items.get("iron_sword", 0) == 1, "successful import activates restored inventory")
+	game._close_settings_sheet()
+	_check(game.slice_progress.accept_quest() == OK, "quest checkpoint after restore succeeds")
+	_check(store.load_profile("profile_01")["profile"]["inventory"].get("banked", {}).get("iron_sword", 0) == 1, "quest save preserves restored gear")
+	game.queue_free()
+	await process_frame
+	_cleanup_dir(fixture_root)

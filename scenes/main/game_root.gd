@@ -30,6 +30,7 @@ var _settings_sheet: SettingsSheet = null
 var _previous_input_frozen: bool = false
 
 var profile_store: ProfileStore = null
+var _profile_slot: String = "profile_01"
 var slice_progress: SliceProgress = null
 var dimension_manager: DimensionManager = DimensionManager.new()
 var inventory_manager: InventoryManager = InventoryManager.new()
@@ -73,6 +74,7 @@ func _ready() -> void:
 			push_error("Failed to initialize starting region: %s at spawn %s" % [DEFAULT_START_REGION, DEFAULT_START_SPAWN])
 
 func _init_slice_progress(store: ProfileStore = null, slot: String = "profile_01") -> void:
+	_profile_slot = slot
 	if store != null:
 		profile_store = store
 	elif profile_store == null:
@@ -366,15 +368,19 @@ func _try_open_expedition(gateway_id: int) -> bool:
 	instance.expedition_completed.connect(_on_expedition_completed)
 	instance.expedition_failed.connect(_on_expedition_failed)
 	instance.expedition_cancelled.connect(_on_expedition_cancelled)
+	instance.commit_extraction = _commit_extraction
 	target_layer.add_child(_expedition)
 	instance.setup(1337, 6)
 	if status_label != null:
 		status_label.text = "Expedition active: Reach Extraction Portal"
 	return true
 
+func _commit_extraction(candidate: InventoryManager) -> Error:
+	if profile_store == null:
+		return ERR_UNCONFIGURED
+	return candidate.save_to_store(profile_store, _profile_slot)
+
 func _on_expedition_completed(extracted_items: Dictionary) -> void:
-	if profile_store != null:
-		inventory_manager.save_to_store(profile_store, "profile_01")
 	if status_label != null:
 		status_label.text = "Expedition Cleared! Extracted %d item types to Bank." % extracted_items.size()
 	_close_expedition()
@@ -511,7 +517,8 @@ func _toggle_settings_sheet() -> void:
 		return
 	_settings_sheet = sheet
 	sheet.set_settings(settings_manager)
-	sheet.set_profile_context(profile_store, "profile_01")
+	sheet.set_profile_context(profile_store, _profile_slot)
+	sheet.backup_imported.connect(_reload_imported_profile)
 	sheet.closed.connect(_close_settings_sheet)
 	target_layer.add_child(sheet)
 
@@ -526,6 +533,9 @@ func _close_settings_sheet() -> void:
 
 	if _character_sheet == null and _inventory_sheet == null and _battle == null and _dialog == null and _expedition == null and _academic_modal == null:
 		_restore_combat_movement()
+
+func _reload_imported_profile() -> void:
+	_init_slice_progress(profile_store, _profile_slot)
 
 # ==============================================================================
 # Academic Completion Portal (Chapter III Sanctum)

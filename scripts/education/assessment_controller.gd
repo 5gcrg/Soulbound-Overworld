@@ -20,6 +20,10 @@ func submit_answer(question_id: String, selected_index: int) -> Dictionary:
 	if q.is_empty():
 		return {"error": ERR_DOES_NOT_EXIST}
 
+	var options: Array = q.get("options", [])
+	if selected_index < 0 or selected_index >= options.size():
+		return {"error": ERR_INVALID_PARAMETER}
+
 	var correct_idx: int = int(q.get("correct_index", -1))
 	var is_correct: bool = (selected_index == correct_idx)
 
@@ -32,18 +36,24 @@ func submit_answer(question_id: String, selected_index: int) -> Dictionary:
 		"total_attempts": 0,
 		"completed": false,
 		"timestamp": Time.get_unix_time_from_system()
-	})
+	}).duplicate(true)
 
-	var is_first: bool = not rec.get("first_attempt_recorded", false)
+	var is_first: bool = not rec.get("first_attempt_recorded", false) and int(rec.get("total_attempts", 0)) == 0
 	rec["total_attempts"] = int(rec.get("total_attempts", 0)) + 1
 	rec["timestamp"] = Time.get_unix_time_from_system()
 
 	if is_first:
 		rec["first_attempt_correct"] = is_correct
 		rec["first_attempt_recorded"] = true
+		rec["first_response"] = {
+			"selected_index": selected_index,
+			"index": selected_index,
+			"is_correct": is_correct,
+			"correct": is_correct
+		}
 
-	if is_correct:
-		rec["completed"] = true
+	# Every valid option completes (completion-gated, not pass-score-gated)
+	rec["completed"] = true
 
 	records[question_id] = rec
 
@@ -110,9 +120,115 @@ func serialize() -> Dictionary:
 	}
 
 func deserialize(data: Dictionary) -> Error:
-	if not data.has("records") or typeof(data["records"]) != TYPE_DICTIONARY:
+	if not data.has("records"):
+		records = {}
+		return OK
+
+	if typeof(data["records"]) != TYPE_DICTIONARY:
 		return ERR_INVALID_DATA
-	records = (data["records"] as Dictionary).duplicate(true)
+
+	var raw_records: Dictionary = data["records"] as Dictionary
+	var validated_records: Dictionary = {}
+
+	for q_id_var: Variant in raw_records.keys():
+		if typeof(q_id_var) != TYPE_STRING:
+			return ERR_INVALID_DATA
+		var q_id: String = String(q_id_var)
+
+		# Validate known question ID
+		if not QuestionBank.QUESTIONS.has(q_id):
+			return ERR_INVALID_DATA
+
+		var rec_val: Variant = raw_records[q_id_var]
+		if typeof(rec_val) != TYPE_DICTIONARY:
+			return ERR_INVALID_DATA
+		var rec: Dictionary = (rec_val as Dictionary).duplicate(true)
+
+		var q_def: Dictionary = QuestionBank.get_question(q_id)
+
+		# Validate matching question metadata when provided
+		if rec.has("question_id"):
+			if typeof(rec["question_id"]) != TYPE_STRING or rec["question_id"] != q_id:
+				return ERR_INVALID_DATA
+		else:
+			rec["question_id"] = q_id
+
+		if rec.has("competency"):
+			if typeof(rec["competency"]) != TYPE_STRING or rec["competency"] != String(q_def.get("competency", "")):
+				return ERR_INVALID_DATA
+
+		if rec.has("difficulty"):
+			if typeof(rec["difficulty"]) != TYPE_STRING or rec["difficulty"] != String(q_def.get("difficulty", "")):
+				return ERR_INVALID_DATA
+
+		# Validate bool fields
+		if not rec.has("completed") or typeof(rec["completed"]) != TYPE_BOOL:
+			return ERR_INVALID_DATA
+
+		if not rec.has("first_attempt_correct") or typeof(rec["first_attempt_correct"]) != TYPE_BOOL:
+			return ERR_INVALID_DATA
+
+		if rec.has("first_attempt_recorded") and typeof(rec["first_attempt_recorded"]) != TYPE_BOOL:
+			return ERR_INVALID_DATA
+
+		# Validate valid positive integral total_attempts
+		if not rec.has("total_attempts"):
+			return ERR_INVALID_DATA
+		var attempts_val: Variant = rec["total_attempts"]
+		if typeof(attempts_val) != TYPE_INT and typeof(attempts_val) != TYPE_FLOAT:
+			return ERR_INVALID_DATA
+		if typeof(attempts_val) == TYPE_FLOAT and (not is_finite(attempts_val) or attempts_val != floor(attempts_val)):
+			return ERR_INVALID_DATA
+		var attempts_int: int = int(attempts_val)
+		if attempts_int <= 0 or attempts_int > 9007199254740991:
+			return ERR_INVALID_DATA
+
+		# Existing records can contain fractional Unix timestamps.
+		if rec.has("timestamp"):
+			var timestamp: Variant = rec["timestamp"]
+			if not (timestamp is int or timestamp is float):
+				return ERR_INVALID_DATA
+			if not is_finite(float(timestamp)) or float(timestamp) < 0.0 or float(timestamp) > 9007199254740991.0:
+				return ERR_INVALID_DATA
+
+		# Validate optional first_response; legacy missing first_response accepted
+		if rec.has("first_response"):
+			var fr_val: Variant = rec["first_response"]
+			if typeof(fr_val) != TYPE_DICTIONARY:
+				return ERR_INVALID_DATA
+			var fr: Dictionary = fr_val as Dictionary
+
+			var has_idx: bool = fr.has("selected_index") or fr.has("index")
+			if not has_idx:
+				return ERR_INVALID_DATA
+			var idx_val: Variant = fr.get("selected_index", fr.get("index"))
+			if typeof(idx_val) != TYPE_INT and typeof(idx_val) != TYPE_FLOAT:
+				return ERR_INVALID_DATA
+			if typeof(idx_val) == TYPE_FLOAT and (not is_finite(idx_val) or idx_val != floor(idx_val)):
+				return ERR_INVALID_DATA
+			var idx_int: int = int(idx_val)
+			var options: Array = q_def.get("options", [])
+			if idx_int < 0 or idx_int >= options.size():
+				return ERR_INVALID_DATA
+
+			var has_corr: bool = fr.has("is_correct") or fr.has("correct")
+			if not has_corr:
+				return ERR_INVALID_DATA
+			if fr.has("is_correct") and typeof(fr["is_correct"]) != TYPE_BOOL:
+				return ERR_INVALID_DATA
+			if fr.has("correct") and typeof(fr["correct"]) != TYPE_BOOL:
+				return ERR_INVALID_DATA
+			var corr_val: bool = bool(fr.get("is_correct", fr.get("correct")))
+			if corr_val != rec["first_attempt_correct"]:
+				return ERR_INVALID_DATA
+			var expected_corr: bool = (idx_int == int(q_def.get("correct_index", -1)))
+			if corr_val != expected_corr:
+				return ERR_INVALID_DATA
+
+		validated_records[q_id] = rec
+
+	# Validate before replacing live records
+	records = validated_records
 	return OK
 
 func load_from_store(store: ProfileStore, slot: String = "profile_01") -> Error:
@@ -137,7 +253,21 @@ func save_to_store(store: ProfileStore, slot: String = "profile_01") -> Error:
 		prof = (res["profile"] as Dictionary).duplicate(true)
 	else:
 		return res["error"]
-	prof["education"] = serialize()
+
+	var edu: Dictionary = {}
+	if prof.has("education") and typeof(prof["education"]) == TYPE_DICTIONARY:
+		edu = (prof["education"] as Dictionary).duplicate(true)
+
+	var existing_records: Dictionary = {}
+	if edu.has("records") and typeof(edu["records"]) == TYPE_DICTIONARY:
+		existing_records = (edu["records"] as Dictionary).duplicate(true)
+
+	for q_id: String in records.keys():
+		existing_records[q_id] = (records[q_id] as Dictionary).duplicate(true)
+
+	edu["records"] = existing_records
+	prof["education"] = edu
+
 	return store.save_profile(slot, prof)
 
 # ==============================================================================
