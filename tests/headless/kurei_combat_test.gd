@@ -122,6 +122,65 @@ func _run_test() -> void:
 
 	fixture_mastery.queue_free()
 
+	# ==========================================================================
+	# SBL-REV-006: Dynamic Kurei Menu & Six-Slot Combat Enforcement in BattleFixture
+	# ==========================================================================
+	print("--- Running SBL-REV-006 Dynamic Kurei Menu in BattleFixture ---")
+	var fixture_loadout: BattleFixture = BattleFixtureScene.instantiate() as BattleFixture
+	root.add_child(fixture_loadout)
+	await process_frame
+
+	var combat_tree := KureiTree.new()
+	combat_tree.sync_with_level(20)
+	combat_tree.unlock_skill(&"solar_flare")
+	combat_tree.unlock_skill(&"celestial_prism")
+	combat_tree.unlock_skill(&"glacial_aegis")
+	combat_tree.unlock_skill(&"void_shift") # 7th active skill, unequipped
+	combat_tree.unlock_skill(&"phase_mastery") # Expands capacity to 4
+	_check(combat_tree.equipped_skills.size() == 6, "combat_tree has 6 equipped skills")
+	_check(combat_tree.is_skill_equipped(&"void_shift") == false, "void_shift is unequipped in combat_tree")
+
+	fixture_loadout.kurei_tree = combat_tree
+	fixture_loadout._update_ui()
+	_check(fixture_loadout.max_sp == 4, "BattleFixture max_sp is 4 with phase_mastery")
+
+	# Open Kurei Menu
+	fixture_loadout.kurei_button.pressed.emit()
+	_check(fixture_loadout.kurei_menu.visible == true, "Kurei menu opened on button press")
+	_check(fixture_loadout._active_skill_buttons.size() == 6, "Menu contains exactly 6 dynamic buttons for 6 equipped skills")
+	_check(fixture_loadout._active_skill_buttons.has(&"solar_flare"), "Menu contains solar_flare button")
+	_check(fixture_loadout._active_skill_buttons.has(&"celestial_prism"), "Menu contains celestial_prism button")
+	_check(fixture_loadout._active_skill_buttons.has(&"glacial_aegis"), "Menu contains glacial_aegis button")
+	_check(fixture_loadout._active_skill_buttons.has(&"void_shift") == false, "Unequipped void_shift has NO button in menu")
+
+	# Cancel via CancelKureiButton
+	fixture_loadout.cancel_kurei_btn.pressed.emit()
+	_check(fixture_loadout.kurei_menu.visible == false, "Cancel button closed Kurei menu")
+
+	# Reopen and cancel via Escape (ui_cancel)
+	fixture_loadout.kurei_button.pressed.emit()
+	_check(fixture_loadout.kurei_menu.visible == true, "Kurei menu reopened")
+	var esc_event := InputEventAction.new()
+	esc_event.action = "ui_cancel"
+	esc_event.pressed = true
+	fixture_loadout._input(esc_event)
+	_check(fixture_loadout.kurei_menu.visible == false, "Escape (ui_cancel) dismissed Kurei menu")
+
+	# Direct request for unequipped skill is rejected
+	var unequipped_blocked: bool = fixture_loadout.request_action(&"kurei_void_shift")
+	_check(unequipped_blocked == false, "Direct request_action for unequipped void_shift is rejected")
+	_check(fixture_loadout.ren_sp == 2, "Rejected unequipped action does not consume ren_sp")
+	_check(fixture_loadout.phase == BattleFixture.Phase.PLAYER, "Rejected unequipped action does not advance phase")
+
+	# Direct request for equipped skill succeeds
+	fixture_loadout.ren_sp = 3
+	var equipped_ok: bool = fixture_loadout.request_action(&"kurei_solar_flare")
+	_check(equipped_ok == true, "Direct request_action for equipped solar_flare succeeds")
+	_check(fixture_loadout.enemy_statuses.has_status(StatusEngine.EFFECT_BURN), "Solar Flare inflicted burn on enemy")
+	_check(fixture_loadout.last_player_action == &"kurei_solar_flare", "last_player_action set to kurei_solar_flare")
+
+	fixture_loadout.queue_free()
+
 	if _failures > 0:
 		printerr("KUREI COMBAT TESTS FAILED: ", _failures)
 		quit(1)

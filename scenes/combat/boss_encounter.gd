@@ -111,11 +111,18 @@ var boss_statuses: StatusEngine = StatusEngine.new()
 @onready var item_btn: Button = $VBoxContainer/Actions/ItemButton
 @onready var continue_btn: Button = $VBoxContainer/ContinueButton
 
-@onready var kurei_menu: HBoxContainer = $VBoxContainer/KureiMenu
-@onready var flame_burst_btn: Button = $VBoxContainer/KureiMenu/FlameBurstButton
-@onready var lumina_lance_btn: Button = $VBoxContainer/KureiMenu/LuminaLanceButton
-@onready var torrent_surge_btn: Button = $VBoxContainer/KureiMenu/TorrentSurgeButton
+@onready var kurei_menu: Container = $VBoxContainer/KureiMenu
+@onready var flame_burst_btn: Button = _find_menu_button("FlameBurstButton")
+@onready var lumina_lance_btn: Button = _find_menu_button("LuminaLanceButton")
+@onready var torrent_surge_btn: Button = _find_menu_button("TorrentSurgeButton")
 @onready var cancel_kurei_btn: Button = $VBoxContainer/KureiMenu/CancelKureiButton
+
+var _active_skill_buttons: Dictionary = {} # StringName -> Button
+
+func _find_menu_button(btn_name: String) -> Button:
+	if has_node("VBoxContainer/KureiMenu/" + btn_name):
+		return get_node("VBoxContainer/KureiMenu/" + btn_name) as Button
+	return null
 
 func _ready() -> void:
 	if attack_btn != null:
@@ -130,19 +137,21 @@ func _ready() -> void:
 		continue_btn.pressed.connect(_on_continue_pressed)
 
 	if cancel_kurei_btn != null:
-		cancel_kurei_btn.pressed.connect(func() -> void: kurei_menu.visible = false)
-	if flame_burst_btn != null:
-		flame_burst_btn.pressed.connect(func() -> void: request_action(&"kurei_flame_burst"))
-	if lumina_lance_btn != null:
-		lumina_lance_btn.pressed.connect(func() -> void: request_action(&"kurei_lumina_lance"))
-	if torrent_surge_btn != null:
-		torrent_surge_btn.pressed.connect(func() -> void: request_action(&"kurei_torrent_surge"))
+		cancel_kurei_btn.pressed.connect(_on_cancel_kurei_pressed)
 
 	apply_kurei_tree_capacity()
+	_rebuild_kurei_menu()
 	_update_ui()
+
+func _on_cancel_kurei_pressed() -> void:
+	if kurei_menu != null:
+		kurei_menu.visible = false
+	if kurei_btn != null and not kurei_btn.disabled:
+		kurei_btn.grab_focus()
 
 func _on_kurei_tree_updated(_arg = null) -> void:
 	apply_kurei_tree_capacity()
+	_rebuild_kurei_menu()
 
 func apply_kurei_tree_capacity() -> void:
 	if kurei_tree != null and kurei_tree.has_phase_mastery():
@@ -155,21 +164,101 @@ func apply_kurei_tree_capacity() -> void:
 func is_boss_skill_supported(skill_id: StringName) -> bool:
 	return SUPPORTED_BOSS_SKILLS.has(skill_id)
 
+func get_equipped_active_skills() -> Array[StringName]:
+	if kurei_tree != null and not kurei_tree.equipped_skills.is_empty():
+		var list: Array[StringName] = []
+		for sid in kurei_tree.equipped_skills:
+			if kurei_tree.is_skill_active(sid):
+				list.append(sid)
+		return list
+	var defaults: Array[StringName] = []
+	for sid in KureiTree.STARTER_SKILLS:
+		defaults.append(sid)
+	return defaults
+
+func _rebuild_kurei_menu() -> void:
+	if kurei_menu == null:
+		return
+
+	for sid in _active_skill_buttons.keys():
+		var b: Button = _active_skill_buttons[sid]
+		if b != null and is_instance_valid(b):
+			if b.get_parent() != null:
+				b.get_parent().remove_child(b)
+			b.queue_free()
+	_active_skill_buttons.clear()
+
+	for child in kurei_menu.get_children():
+		if child != cancel_kurei_btn and child is Button and not child.name.begins_with("SkillBtn_"):
+			kurei_menu.remove_child(child)
+			child.queue_free()
+
+	var skills := get_equipped_active_skills()
+	for sid in skills:
+		var btn := Button.new()
+		btn.name = "SkillBtn_" + String(sid)
+		btn.custom_minimum_size = Vector2(120, 36)
+		btn.add_theme_font_size_override("font_size", 10)
+		btn.pressed.connect(func() -> void: request_action("kurei_" + String(sid)))
+		kurei_menu.add_child(btn)
+		if cancel_kurei_btn != null:
+			kurei_menu.move_child(btn, cancel_kurei_btn.get_index())
+		_active_skill_buttons[sid] = btn
+
+	if _active_skill_buttons.has(&"flame_burst"):
+		flame_burst_btn = _active_skill_buttons[&"flame_burst"]
+	if _active_skill_buttons.has(&"lumina_lance"):
+		lumina_lance_btn = _active_skill_buttons[&"lumina_lance"]
+	if _active_skill_buttons.has(&"torrent_surge"):
+		torrent_surge_btn = _active_skill_buttons[&"torrent_surge"]
+
+	_update_kurei_buttons()
+
 func _on_kurei_toggle() -> void:
 	if is_terminal():
 		return
 	kurei_menu.visible = not kurei_menu.visible
+	if kurei_menu.visible:
+		_rebuild_kurei_menu()
+		_focus_first_kurei_button()
 	_update_kurei_buttons()
 
+func _focus_first_kurei_button() -> void:
+	for sid in _active_skill_buttons.keys():
+		var btn: Button = _active_skill_buttons[sid]
+		if btn != null and not btn.disabled:
+			btn.grab_focus()
+			return
+	if cancel_kurei_btn != null and not cancel_kurei_btn.disabled:
+		cancel_kurei_btn.grab_focus()
+
 func _update_kurei_buttons() -> void:
-	if not kurei_menu.visible:
+	if not is_inside_tree() or kurei_menu == null or not kurei_menu.visible:
 		return
-	if flame_burst_btn != null:
-		flame_burst_btn.disabled = not kurei.can_cast(&"flame_burst", ren_sp)
-	if lumina_lance_btn != null:
-		lumina_lance_btn.disabled = not kurei.can_cast(&"lumina_lance", ren_sp)
-	if torrent_surge_btn != null:
-		torrent_surge_btn.disabled = not kurei.can_cast(&"torrent_surge", ren_sp)
+	for sid in _active_skill_buttons.keys():
+		var btn: Button = _active_skill_buttons[sid]
+		if btn == null or not is_instance_valid(btn):
+			continue
+		var sname: String = String(KureiTree.SKILL_NODES.get(sid, {}).get("name", String(sid)))
+		var cost: int = int(kurei.get_skill(sid).get("pip_cost", 1))
+		var cd: int = int(kurei.cooldowns.get(sid, 0))
+
+		# Explicit OD-003/004 boundary:
+		if not is_boss_skill_supported(sid):
+			btn.text = "%s (Boss effect pending design approval)" % sname
+			btn.disabled = true
+		elif cd > 0:
+			btn.text = "%s (CD: %d)" % [sname, cd]
+			btn.disabled = true
+		elif ren_sp < cost:
+			btn.text = "%s (%d SP)" % [sname, cost]
+			btn.disabled = true
+		elif is_terminal():
+			btn.text = "%s (%d SP)" % [sname, cost]
+			btn.disabled = true
+		else:
+			btn.text = "%s (%d SP)" % [sname, cost]
+			btn.disabled = false
 
 func is_terminal() -> bool:
 	return current_phase == BossPhase.VICTORY or current_phase == BossPhase.DEFEAT
@@ -218,6 +307,8 @@ func request_action(action: StringName) -> bool:
 		if kurei_tree != null and kurei_tree.is_skill_passive(skill_id):
 			return false
 		if skill_id == &"phase_mastery":
+			return false
+		if kurei_tree != null and not kurei_tree.is_skill_equipped(skill_id):
 			return false
 		if not is_boss_skill_supported(skill_id):
 			return false
@@ -390,6 +481,10 @@ func _on_continue_pressed() -> void:
 
 func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree():
+		return
+	if kurei_menu != null and kurei_menu.visible and event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		_on_cancel_kurei_pressed()
 		return
 	if event.is_action_pressed("toggle_character") or event.is_action_pressed("toggle_inventory") \
 			or event.is_action_pressed("toggle_settings") or event.is_action_pressed("ui_cancel"):

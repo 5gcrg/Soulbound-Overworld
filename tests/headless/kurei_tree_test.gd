@@ -176,6 +176,193 @@ func _run_test() -> void:
 	sheet.queue_free()
 	battle.queue_free()
 
+	# 8. SBL-REV-006: Six-Slot Equip Lifecycle & Loadout Invariants
+	var eq_tree := KureiTree.new()
+	_check(eq_tree.equipped_skills.size() == 3, "New tree defaults to 3 equipped skills")
+	_check(eq_tree.is_skill_equipped(&"flame_burst"), "Starter flame_burst is equipped")
+	_check(eq_tree.is_skill_equipped(&"lumina_lance"), "Starter lumina_lance is equipped")
+	_check(eq_tree.is_skill_equipped(&"torrent_surge"), "Starter torrent_surge is equipped")
+
+	# Validation: cannot unequip down to 0
+	_check(eq_tree.can_unequip_skill(&"flame_burst") == true, "Can unequip when 3 skills equipped")
+	_check(eq_tree.unequip_skill(&"flame_burst") == OK, "Unequipped flame_burst")
+	_check(eq_tree.equipped_skills.size() == 2, "2 skills equipped after unequip")
+	_check(eq_tree.unequip_skill(&"lumina_lance") == OK, "Unequipped lumina_lance")
+	_check(eq_tree.equipped_skills.size() == 1, "1 skill equipped after unequip")
+	_check(eq_tree.can_unequip_skill(&"torrent_surge") == false, "Cannot unequip last remaining active skill")
+	_check(eq_tree.unequip_skill(&"torrent_surge") == FAILED, "unequip_skill rejected on last active skill")
+	_check(eq_tree.equipped_skills.size() == 1, "Equipped count remains 1 (minimum invariant)")
+
+	# Cannot equip locked skill
+	_check(eq_tree.can_equip_skill(&"solar_flare") == false, "Cannot equip locked skill solar_flare")
+	_check(eq_tree.equip_skill(&"solar_flare") == FAILED, "equip_skill rejected locked skill")
+
+	# Re-equip flame_burst
+	_check(eq_tree.can_equip_skill(&"flame_burst") == true, "Can re-equip unlocked flame_burst")
+	_check(eq_tree.equip_skill(&"flame_burst") == OK, "Re-equipped flame_burst")
+	# Cannot equip duplicate
+	_check(eq_tree.can_equip_skill(&"flame_burst") == false, "Cannot equip already equipped skill")
+	_check(eq_tree.equip_skill(&"flame_burst") == FAILED, "equip_skill rejected duplicate")
+
+	# Re-equip lumina_lance
+	eq_tree.equip_skill(&"lumina_lance")
+	_check(eq_tree.equipped_skills.size() == 3, "Equipped count back to 3")
+
+	# Unlock active skills: auto-equip up to 6
+	eq_tree.sync_with_level(15)
+	eq_tree.unlock_skill(&"solar_flare")
+	_check(eq_tree.equipped_skills.size() == 4, "solar_flare auto-equipped (slot 4)")
+	_check(eq_tree.is_skill_equipped(&"solar_flare"), "solar_flare is equipped")
+
+	eq_tree.unlock_skill(&"celestial_prism")
+	_check(eq_tree.equipped_skills.size() == 5, "celestial_prism auto-equipped (slot 5)")
+
+	eq_tree.unlock_skill(&"glacial_aegis")
+	_check(eq_tree.equipped_skills.size() == 6, "glacial_aegis auto-equipped (slot 6)")
+
+	# Unlock 7th active skill (void_shift) when 6 slots are already filled
+	eq_tree.unlock_skill(&"void_shift")
+	_check(eq_tree.is_skill_unlocked(&"void_shift"), "void_shift unlocked")
+	_check(eq_tree.equipped_skills.size() == 6, "Equipped count remains exactly 6 at maximum capacity")
+	_check(eq_tree.is_skill_equipped(&"void_shift") == false, "7th active skill void_shift left unequipped")
+	_check(eq_tree.can_equip_skill(&"void_shift") == false, "can_equip_skill returns false when slots full (6/6)")
+	_check(eq_tree.equip_skill(&"void_shift") == FAILED, "equip_skill rejects when slots full")
+
+	# Unlock passive phase_mastery (requires void_shift): must NOT be equipped
+	eq_tree.unlock_skill(&"phase_mastery")
+	_check(eq_tree.has_phase_mastery(), "phase_mastery unlocked")
+	_check(eq_tree.is_skill_equipped(&"phase_mastery") == false, "Passive phase_mastery is NOT equipped")
+	_check(eq_tree.can_equip_skill(&"phase_mastery") == false, "can_equip_skill rejects passive phase_mastery")
+	_check(eq_tree.equip_skill(&"phase_mastery") == FAILED, "equip_skill rejects passive phase_mastery")
+
+	# Swap skills: unequip glacial_aegis, equip void_shift
+	_check(eq_tree.unequip_skill(&"glacial_aegis") == OK, "Unequipped glacial_aegis")
+	_check(eq_tree.equipped_skills.size() == 5, "Equipped count is now 5")
+	_check(eq_tree.can_equip_skill(&"void_shift") == true, "can_equip_skill now true for void_shift")
+	_check(eq_tree.equip_skill(&"void_shift") == OK, "Equipped void_shift")
+	_check(eq_tree.is_skill_equipped(&"void_shift") == true, "void_shift is now equipped")
+	_check(eq_tree.equipped_skills.size() == 6, "Equipped count back to 6")
+
+	# Respec resets equipped skills to the 3 starters
+	eq_tree.respec_talents()
+	_check(eq_tree.equipped_skills.size() == 3, "Respec reset equipped skills to 3 starters")
+	_check(eq_tree.is_skill_equipped(&"flame_burst"), "flame_burst equipped after respec")
+	_check(eq_tree.is_skill_equipped(&"lumina_lance"), "lumina_lance equipped after respec")
+	_check(eq_tree.is_skill_equipped(&"torrent_surge"), "torrent_surge equipped after respec")
+
+	# Serialization & Deserialization of equipped loadout
+	eq_tree.sync_with_level(15)
+	eq_tree.unlock_skill(&"solar_flare")
+	eq_tree.unlock_skill(&"void_shift")
+	var serialized_loadout := eq_tree.serialize()
+	_check(serialized_loadout.has("equipped_skills"), "Serialized dictionary includes equipped_skills")
+	var loaded_tree := KureiTree.new()
+	var deser_err := loaded_tree.deserialize(serialized_loadout)
+	_check(deser_err == OK, "Deserialized tree successfully")
+	_check(loaded_tree.equipped_skills.size() == eq_tree.equipped_skills.size(), "Deserialized loadout size matches")
+	for sid in eq_tree.equipped_skills:
+		_check(loaded_tree.is_skill_equipped(sid), "Deserialized loadout contains %s" % sid)
+
+	# GameplayProfileValidator preflight checks
+	var base_profile: Dictionary = {
+		"character": {
+			"level": 1,
+			"xp": 0,
+			"vitality": 10,
+			"resonance": 10,
+			"agility": 10,
+			"focus": 10,
+			"unspent_points": 0,
+			"max_hp": 100,
+			"spirit_power": 50,
+			"kurei_tree": {
+				"unlocked_skills": ["flame_burst", "lumina_lance", "torrent_surge", "solar_flare"],
+				"equipped_skills": ["flame_burst", "lumina_lance", "torrent_surge", "solar_flare"]
+			}
+		},
+		"inventory": {},
+		"world": {},
+		"education": {}
+	}
+	_check(GameplayProfileValidator.validate(base_profile) == OK, "Valid profile with equipped_skills accepted by validator")
+
+	# Validator rejects duplicate equipped skills
+	var dup_profile: Dictionary = base_profile.duplicate(true)
+	dup_profile["character"]["kurei_tree"]["equipped_skills"] = ["flame_burst", "flame_burst"]
+	_check(GameplayProfileValidator.validate(dup_profile) == ERR_INVALID_DATA, "Validator rejected duplicate equipped skill")
+
+	# Validator rejects unknown equipped skill
+	var unk_profile: Dictionary = base_profile.duplicate(true)
+	unk_profile["character"]["kurei_tree"]["equipped_skills"] = ["flame_burst", "mega_blast"]
+	_check(GameplayProfileValidator.validate(unk_profile) == ERR_INVALID_DATA, "Validator rejected unknown equipped skill")
+
+	# Validator rejects locked equipped skill
+	var lck_profile: Dictionary = base_profile.duplicate(true)
+	lck_profile["character"]["kurei_tree"]["equipped_skills"] = ["flame_burst", "void_shift"]
+	_check(GameplayProfileValidator.validate(lck_profile) == ERR_INVALID_DATA, "Validator rejected locked equipped skill")
+
+	# Validator rejects passive equipped skill
+	var pas_profile: Dictionary = base_profile.duplicate(true)
+	pas_profile["character"]["kurei_tree"]["unlocked_skills"].append("phase_mastery")
+	pas_profile["character"]["kurei_tree"]["equipped_skills"] = ["flame_burst", "phase_mastery"]
+	_check(GameplayProfileValidator.validate(pas_profile) == ERR_INVALID_DATA, "Validator rejected passive equipped skill")
+
+	# Validator rejects >6 equipped skills
+	var big_profile: Dictionary = base_profile.duplicate(true)
+	big_profile["character"]["kurei_tree"]["equipped_skills"] = [
+		"flame_burst", "lumina_lance", "torrent_surge", "solar_flare", "celestial_prism", "glacial_aegis", "void_shift"
+	]
+	_check(GameplayProfileValidator.validate(big_profile) == ERR_INVALID_DATA, "Validator rejected >6 equipped skills")
+
+	# UI Equip/Unequip interaction in CharacterSheet
+	var ui_sheet: CharacterSheet = sheet_scene.instantiate() as CharacterSheet
+	root.add_child(ui_sheet)
+	await process_frame
+	stats.level = 20
+	ui_sheet.set_stats(stats)
+	var ui_tree := KureiTree.new()
+	ui_sheet.set_kurei_tree(ui_tree)
+	ui_sheet.refresh()
+
+	_check(ui_sheet.equipped_header.text.contains("3/6"), "EquippedHeader displays 3/6 initial slots")
+	_check(ui_sheet._dynamic_equip_buttons.size() == 3, "3 unequip buttons in CharacterSheet for starters")
+
+	# Unlock 7th active skill via UI to test feedback label
+	ui_tree.sync_with_level(20)
+	ui_tree.unlock_skill(&"solar_flare")
+	ui_tree.unlock_skill(&"celestial_prism")
+	ui_tree.unlock_skill(&"glacial_aegis")
+	ui_sheet.refresh()
+	_check(ui_sheet.equipped_header.text.contains("6/6"), "EquippedHeader displays 6/6 slots full")
+
+	# Unlock 7th active skill
+	ui_sheet._on_unlock_skill(&"void_shift")
+	_check(ui_sheet.feedback_label.visible == true, "Feedback label visible when 7th skill unlocked with full slots")
+	_check(ui_sheet.feedback_label.text == "Unlocked — equip in Character", "Feedback label displays 'Unlocked — equip in Character'")
+
+	# Click unequip button on one skill
+	var unequip_clicked := false
+	for btn in ui_sheet._dynamic_equip_buttons:
+		if btn.name.begins_with("UnequipBtn_"):
+			btn.pressed.emit()
+			unequip_clicked = true
+			break
+	_check(unequip_clicked, "Unequip button clicked in CharacterSheet")
+	_check(ui_tree.equipped_skills.size() == 5, "Equipped skills reduced to 5 after UI unequip click")
+
+	# Now equip the unequipped void_shift via UI Equip button
+	var equip_clicked := false
+	for btn in ui_sheet._dynamic_equip_buttons:
+		if btn.name == "EquipBtn_void_shift":
+			btn.pressed.emit()
+			equip_clicked = true
+			break
+	_check(equip_clicked, "EquipBtn_void_shift clicked in CharacterSheet")
+	_check(ui_tree.is_skill_equipped(&"void_shift"), "void_shift is now equipped after UI equip click")
+	_check(ui_tree.equipped_skills.size() == 6, "Equipped skills count restored to 6")
+
+	ui_sheet.queue_free()
+
 	if _failures == 0:
 		print("--- SBL-W11-003 Kurei Art Skill Tree Test Suite PASSED ---")
 		quit(0)

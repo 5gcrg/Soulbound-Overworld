@@ -175,6 +175,79 @@ func _run_test() -> void:
 	game_root.queue_free()
 	boss_mastery.queue_free()
 
+	# ==========================================================================
+	# SBL-REV-006: Dynamic Kurei Menu & OD-003/004 Boss Boundary in BossEncounter
+	# ==========================================================================
+	print("--- Running SBL-REV-006 Dynamic Kurei Menu in BossEncounter ---")
+	var boss_dyn: BossEncounter = boss_scene.instantiate() as BossEncounter
+	root.add_child(boss_dyn)
+	await process_frame
+
+	var dyn_tree := KureiTree.new()
+	dyn_tree.sync_with_level(20)
+	dyn_tree.unlock_skill(&"solar_flare")
+	dyn_tree.unlock_skill(&"celestial_prism")
+	dyn_tree.unlock_skill(&"glacial_aegis")
+	dyn_tree.unlock_skill(&"void_shift") # 7th active skill, unequipped
+	dyn_tree.unlock_skill(&"phase_mastery")
+
+	boss_dyn.kurei_tree = dyn_tree
+	boss_dyn._update_ui()
+
+	# Open Kurei menu
+	boss_dyn.kurei_btn.pressed.emit()
+	_check(boss_dyn.kurei_menu.visible == true, "Boss Kurei menu visible after toggle")
+	_check(boss_dyn._active_skill_buttons.size() == 6, "Boss Kurei menu has 6 dynamic buttons for 6 equipped skills")
+	_check(boss_dyn._active_skill_buttons.has(&"void_shift") == false, "Unequipped void_shift not in Boss menu")
+
+	# Check starter buttons are enabled
+	var fb_btn: Button = boss_dyn._active_skill_buttons[&"flame_burst"]
+	var ll_btn: Button = boss_dyn._active_skill_buttons[&"lumina_lance"]
+	var ts_btn: Button = boss_dyn._active_skill_buttons[&"torrent_surge"]
+	_check(fb_btn != null and fb_btn.disabled == false, "Starter flame_burst button enabled in BossEncounter")
+	_check(ll_btn != null and ll_btn.disabled == false, "Starter lumina_lance button enabled in BossEncounter")
+	_check(ts_btn != null and ts_btn.disabled == false, "Starter torrent_surge button enabled in BossEncounter")
+
+	# Check advanced buttons are disabled with explicit OD-003/004 notice
+	var sf_btn: Button = boss_dyn._active_skill_buttons[&"solar_flare"]
+	var cp_btn: Button = boss_dyn._active_skill_buttons[&"celestial_prism"]
+	var ga_btn: Button = boss_dyn._active_skill_buttons[&"glacial_aegis"]
+	_check(sf_btn != null and sf_btn.disabled == true, "Advanced solar_flare button disabled in BossEncounter")
+	_check(sf_btn.text.contains("Boss effect pending design approval"), "solar_flare button shows 'Boss effect pending design approval'")
+	_check(cp_btn != null and cp_btn.disabled == true, "Advanced celestial_prism button disabled in BossEncounter")
+	_check(cp_btn.text.contains("Boss effect pending design approval"), "celestial_prism button shows 'Boss effect pending design approval'")
+	_check(ga_btn != null and ga_btn.disabled == true, "Advanced glacial_aegis button disabled in BossEncounter")
+	_check(ga_btn.text.contains("Boss effect pending design approval"), "glacial_aegis button shows 'Boss effect pending design approval'")
+
+	# Cancel via Cancel button
+	boss_dyn.cancel_kurei_btn.pressed.emit()
+	_check(boss_dyn.kurei_menu.visible == false, "Cancel button closed Boss Kurei menu")
+
+	# Reopen and cancel via Escape (ui_cancel)
+	boss_dyn.kurei_btn.pressed.emit()
+	_check(boss_dyn.kurei_menu.visible == true, "Boss Kurei menu reopened")
+	var boss_esc := InputEventAction.new()
+	boss_esc.action = "ui_cancel"
+	boss_esc.pressed = true
+	boss_dyn._input(boss_esc)
+	_check(boss_dyn.kurei_menu.visible == false, "Escape dismissed Boss Kurei menu")
+
+	# Direct request for unequipped skill is rejected with zero mutation
+	var boss_unequipped_ok: bool = boss_dyn.request_action(&"kurei_void_shift")
+	_check(boss_unequipped_ok == false, "Direct request for unequipped void_shift rejected in BossEncounter")
+	_check(boss_dyn.ren_sp == 3, "ren_sp unchanged after rejected unequipped action")
+	_check(boss_dyn.turn_counter == 1, "turn_counter unchanged after rejected unequipped action")
+
+	# Direct request for equipped starter skill succeeds
+	var initial_boss_hp: int = boss_dyn.boss_hp
+	var starter_cast_ok: bool = boss_dyn.request_action(&"kurei_flame_burst")
+	_check(starter_cast_ok == true, "Starter flame_burst request accepted in BossEncounter")
+	_check(boss_dyn.boss_hp < initial_boss_hp, "Flame Burst reduced boss HP")
+	_check(boss_dyn.boss_statuses.has_status(StatusEngine.EFFECT_BURN), "Flame Burst inflicted burn on Boss")
+	_check(boss_dyn.last_player_action == &"kurei_flame_burst", "last_player_action set to kurei_flame_burst")
+
+	boss_dyn.queue_free()
+
 	if _failures == 0:
 		print("--- SBL-W11-002 Multi-Phase Boss Encounter Test Suite PASSED ---")
 		quit(0)

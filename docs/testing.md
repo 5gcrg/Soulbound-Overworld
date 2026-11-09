@@ -51,7 +51,7 @@ At current development baseline (Batch 2), there are **25 headless test suites**
 | `vertical_slice_loop_test.gd` | Full vertical slice loop: NPC -> practice -> combat -> turn-in -> ProfileStore |
 | `m3_systems_test.gd` | Character leveling, inventory defeat wipe vs. bank preservation, Kurei 6-spell pips, BFS dungeon reachability |
 | `dimension_test.gd` | Physical/spirit plane shifting, player collision mask sync, zero-embed safety |
-| `kurei_combat_test.gd` | In-battle Kurei spell menu, SP pip consumption, cooldown tracking, SBL-REV-005 Phase Mastery 4 SP capacity, unchanged starting SP, no-stack/no-refill, and Solar Flare 3 SP cast |
+| `kurei_combat_test.gd` | In-battle Kurei spell menu, SP pip consumption, cooldown tracking, SBL-REV-005 Phase Mastery 4 SP capacity, SBL-REV-006 dynamic 6-slot menu generation, rejection of unequipped skills, casting of equipped skills, cancel and Escape dismissal |
 | `dungeon_scene_test.gd` | Procedural room layout, at-risk satchel, commit-first suspend/resume, session callback guarding, exact-once extraction |
 | `overworld_gateway_test.gd` | Overworld dungeon shrine entrance, town bank transfers, defeat wipes |
 | `education_report_test.gd` | Question bank, immutable first-attempt tracking, RFC-4180 CSV export |
@@ -65,8 +65,8 @@ At current development baseline (Batch 2), there are **25 headless test suites**
 | `evaluator_debug_bar_test.gd` | F1 debug tools, warps, instant cheats, terminal modal input exclusivity |
 | `title_screen_audio_test.gd` | Procedural AudioStreamWAV synthesis, 9 sound cues, title screen slot selection, SBL-REV-002 Title Settings and Backup layer 9 overlay, SBL-REV-004 idempotent bus creation, routing to Master, player SFX assignment |
 | `ending_chapter5_test.gd` | Chapter V Void Citadel warp, dual-ending altars (A & B), capstone question |
-| `boss_combat_test.gd` | Void Sovereign multi-phase combat, Astral Shield, Cataclysm 2-turn telegraph, SBL-REV-005 Phase Mastery 4 SP capacity, passive rejection, and unsupported skill rejection without mutation |
-| `kurei_tree_test.gd` | 4-branch 2-tier skill tree, talent points, tier prerequisites, respec refund, SBL-REV-005 Phase Mastery unlock, active/passive classification, capacity 4 persistence across reload, and respec restoration |
+| `boss_combat_test.gd` | Void Sovereign multi-phase combat, Astral Shield, Cataclysm 2-turn telegraph, SBL-REV-005 Phase Mastery 4 SP capacity, SBL-REV-006 dynamic spell menu, starter functionality, OD-003/004 advanced skill disabled state with notice, and zero mutation on unsupported skills |
+| `kurei_tree_test.gd` | 4-branch 2-tier skill tree, talent points, tier prerequisites, respec refund, SBL-REV-005 Phase Mastery unlock, SBL-REV-006 6-slot equip lifecycle, minimum 1 skill invariant, auto-equip to 6, 7th unequipped, validator preflight checks, CharacterSheet UI slot counter and button clicks |
 | `release_tier_test.gd` | SBL-FIX-010 3-chapter academic MVP vs. full release tier separation |
 | `save_compatibility_recovery_test.gd` | SBL-FIX-012/SBL-REV-001 Legacy profile compatibility, revision recovery, snapshot non-clamping validation |
 | `profile_activation_test.gd` | SBL-REV-003 / SBL-REV-003-FIX Empty-slot new journey picker, non-launching profile selection, safe profile activation, defense demo title-selected activation & failure safety, world/dimension reset |

@@ -27,6 +27,12 @@ var kurei_tree: KureiTree = null
 @onready var close_btn: Button = $Panel/Margin/VBox/CloseButton
 
 @onready var kurei_header: Label = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/KureiSection/KureiHeader", "Panel/Margin/VBox/KureiSection/KureiHeader"]) as Label
+@onready var equipped_header: Label = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/KureiSection/EquippedHeader"]) as Label
+@onready var feedback_label: Label = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/KureiSection/FeedbackLabel"]) as Label
+@onready var equipped_container: GridContainer = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/KureiSection/EquippedContainer"]) as GridContainer
+@onready var available_box: VBoxContainer = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/KureiSection/AvailableBox"]) as VBoxContainer
+@onready var available_container: GridContainer = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/KureiSection/AvailableBox/AvailableContainer"]) as GridContainer
+
 @onready var btn_solar: Button = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/KureiSection/SkillGrid/BtnSolarFlare", "Panel/Margin/VBox/KureiSection/SkillGrid/BtnSolarFlare"]) as Button
 @onready var btn_prism: Button = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/KureiSection/SkillGrid/BtnCelestialPrism", "Panel/Margin/VBox/KureiSection/SkillGrid/BtnCelestialPrism"]) as Button
 @onready var btn_aegis: Button = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/KureiSection/SkillGrid/BtnGlacialAegis", "Panel/Margin/VBox/KureiSection/SkillGrid/BtnGlacialAegis"]) as Button
@@ -34,10 +40,17 @@ var kurei_tree: KureiTree = null
 @onready var btn_mastery: Button = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/KureiSection/SkillGrid/BtnPhaseMastery", "Panel/Margin/VBox/KureiSection/SkillGrid/BtnPhaseMastery"]) as Button
 @onready var btn_respec: Button = _find_node(["Panel/Margin/VBox/Scroll/ContentBox/KureiSection/RespecButton", "Panel/Margin/VBox/KureiSection/RespecButton"]) as Button
 
+var _dynamic_equip_buttons: Array[Button] = []
+
 func _find_node(paths: Array) -> Node:
 	for p in paths:
 		if has_node(String(p)):
 			return get_node(String(p))
+	for p in paths:
+		var node_name: String = String(p).get_file()
+		var found := find_child(node_name, true, false)
+		if found != null:
+			return found
 	return null
 
 func _ready() -> void:
@@ -70,7 +83,12 @@ func get_focusable_controls() -> Array[Control]:
 		vit_btn,
 		res_btn,
 		agi_btn,
-		foc_btn,
+		foc_btn
+	]
+	for btn in _dynamic_equip_buttons:
+		if btn != null and is_instance_valid(btn):
+			list.append(btn)
+	list.append_array([
 		btn_solar,
 		btn_prism,
 		btn_aegis,
@@ -78,7 +96,7 @@ func get_focusable_controls() -> Array[Control]:
 		btn_mastery,
 		btn_respec,
 		close_btn
-	]
+	])
 	var res: Array[Control] = []
 	for c in list:
 		if c != null and is_instance_valid(c):
@@ -87,6 +105,8 @@ func get_focusable_controls() -> Array[Control]:
 
 func setup_focus() -> void:
 	var controls := get_focusable_controls()
+	if controls.is_empty():
+		return
 	for i in range(controls.size()):
 		var c := controls[i]
 		c.focus_mode = Control.FOCUS_ALL
@@ -95,10 +115,13 @@ func setup_focus() -> void:
 		c.focus_next = next_ctrl.get_path()
 		c.focus_previous = prev_ctrl.get_path()
 		_apply_visible_focus(c)
-	for c in controls:
-		if not c.disabled:
-			c.grab_focus()
-			break
+
+	var focused := get_viewport().gui_get_focus_owner() if get_viewport() != null else null
+	if focused == null or not is_ancestor_of(focused):
+		for c in controls:
+			if not c.disabled:
+				c.grab_focus()
+				break
 
 static func _apply_visible_focus(control: Control) -> void:
 	var focus_box := StyleBoxFlat.new()
@@ -153,6 +176,62 @@ func refresh() -> void:
 		_update_skill_button(btn_aegis, &"glacial_aegis")
 		_update_skill_button(btn_void_shift, &"void_shift")
 		_update_skill_button(btn_mastery, &"phase_mastery")
+		_refresh_equipped_section()
+
+func _refresh_equipped_section() -> void:
+	if kurei_tree == null:
+		return
+	if equipped_header != null:
+		equipped_header.text = "Equipped Spells (%d/%d Slots Used)" % [kurei_tree.equipped_skills.size(), KureiTree.MAX_EQUIPPED_SKILLS]
+
+	if feedback_label != null:
+		feedback_label.visible = not feedback_label.text.is_empty()
+
+	_dynamic_equip_buttons.clear()
+	if equipped_container != null:
+		for child in equipped_container.get_children():
+			equipped_container.remove_child(child)
+			child.queue_free()
+		for sid: StringName in kurei_tree.equipped_skills:
+			var sname: String = String(KureiTree.SKILL_NODES.get(sid, {}).get("name", String(sid)))
+			var unequip_btn := Button.new()
+			unequip_btn.name = "UnequipBtn_" + String(sid)
+			unequip_btn.text = "Unequip: %s" % sname
+			unequip_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			unequip_btn.add_theme_font_size_override("font_size", 10)
+			unequip_btn.custom_minimum_size = Vector2(100, 22)
+			unequip_btn.disabled = not kurei_tree.can_unequip_skill(sid)
+			unequip_btn.pressed.connect(_on_unequip_skill.bind(sid))
+			equipped_container.add_child(unequip_btn)
+			_dynamic_equip_buttons.append(unequip_btn)
+
+	var unequipped_active: Array[StringName] = []
+	for sid: StringName in kurei_tree.unlocked_skills:
+		if kurei_tree.is_skill_active(sid) and not kurei_tree.is_skill_equipped(sid):
+			unequipped_active.append(sid)
+
+	if available_box != null:
+		available_box.visible = not unequipped_active.is_empty()
+
+	if available_container != null:
+		for child in available_container.get_children():
+			available_container.remove_child(child)
+			child.queue_free()
+		var slots_full: bool = (kurei_tree.equipped_skills.size() >= KureiTree.MAX_EQUIPPED_SKILLS)
+		for sid: StringName in unequipped_active:
+			var sname: String = String(KureiTree.SKILL_NODES.get(sid, {}).get("name", String(sid)))
+			var equip_btn := Button.new()
+			equip_btn.name = "EquipBtn_" + String(sid)
+			equip_btn.text = "Equip: %s" % sname
+			equip_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			equip_btn.add_theme_font_size_override("font_size", 10)
+			equip_btn.custom_minimum_size = Vector2(100, 22)
+			equip_btn.disabled = slots_full
+			equip_btn.pressed.connect(_on_equip_skill.bind(sid))
+			available_container.add_child(equip_btn)
+			_dynamic_equip_buttons.append(equip_btn)
+
+	setup_focus()
 
 func _update_skill_button(btn: Button, skill_id: StringName) -> void:
 	if btn == null or kurei_tree == null:
@@ -172,12 +251,38 @@ func _update_skill_button(btn: Button, skill_id: StringName) -> void:
 		btn.disabled = true
 
 func _on_unlock_skill(skill_id: StringName) -> void:
-	if kurei_tree != null and kurei_tree.unlock_skill(skill_id) == OK:
+	if kurei_tree != null:
+		var err: Error = kurei_tree.unlock_skill(skill_id)
+		if err == OK:
+			if kurei_tree.is_skill_active(skill_id):
+				if kurei_tree.is_skill_equipped(skill_id):
+					if feedback_label != null:
+						feedback_label.text = ""
+				else:
+					if feedback_label != null:
+						feedback_label.text = "Unlocked — equip in Character"
+			else:
+				if feedback_label != null:
+					feedback_label.text = ""
+			refresh()
+
+func _on_equip_skill(skill_id: StringName) -> void:
+	if kurei_tree != null and kurei_tree.can_equip_skill(skill_id):
+		kurei_tree.equip_skill(skill_id)
+		if feedback_label != null:
+			feedback_label.text = ""
+		refresh()
+
+func _on_unequip_skill(skill_id: StringName) -> void:
+	if kurei_tree != null and kurei_tree.can_unequip_skill(skill_id):
+		kurei_tree.unequip_skill(skill_id)
 		refresh()
 
 func _on_respec() -> void:
 	if kurei_tree != null:
 		kurei_tree.respec_talents()
+		if feedback_label != null:
+			feedback_label.text = ""
 		refresh()
 
 func _on_allocate(attr: StringName) -> void:

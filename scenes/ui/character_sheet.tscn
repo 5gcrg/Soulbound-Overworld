@@ -37,13 +37,13 @@ grow_vertical = 2
 [node name="Margin" type="MarginContainer" parent="Panel"]
 layout_mode = 2
 theme_override_constants/margin_left = 18
-theme_override_constants/margin_top = 10
+theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 18
-theme_override_constants/margin_bottom = 10
+theme_override_constants/margin_bottom = 8
 
 [node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 4
 
 [node name="Title" type="Label" parent="Panel/Margin/VBox"]
 layout_mode = 2
@@ -61,18 +61,25 @@ horizontal_scroll_mode = 0
 [node name="ContentBox" type="VBoxContainer" parent="Panel/Margin/VBox/Scroll"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 8
+theme_override_constants/separation = 4
 
 [node name="HeaderBox" type="VBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 2
 
-[node name="LevelLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/HeaderBox"]
+[node name="HeaderRow" type="HBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/HeaderBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+
+[node name="LevelLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/HeaderBox/HeaderRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
 text = "Level 1"
 
-[node name="XpLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/HeaderBox"]
+[node name="Spacer" type="Control" parent="Panel/Margin/VBox/Scroll/ContentBox/HeaderBox/HeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="XpLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/HeaderBox/HeaderRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "XP: 0 / 100"
@@ -80,7 +87,7 @@ text = "XP: 0 / 100"
 [node name="UnspentLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/HeaderBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.85, 0.6, 1)
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 12
 text = "Available Attribute Points: 0"
 
 [node name="HSeparator" type="HSeparator" parent="Panel/Margin/VBox/Scroll/ContentBox"]
@@ -88,7 +95,7 @@ layout_mode = 2
 
 [node name="Grid" type="VBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 3
 
 [node name="VitRow" type="HBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid"]
 layout_mode = 2
@@ -105,7 +112,7 @@ text = "10"
 horizontal_alignment = 1
 
 [node name="AddButton" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid/VitRow"]
-custom_minimum_size = Vector2(32, 28)
+custom_minimum_size = Vector2(28, 22)
 layout_mode = 2
 text = "+"
 
@@ -124,7 +131,7 @@ text = "10"
 horizontal_alignment = 1
 
 [node name="AddButton" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid/ResRow"]
-custom_minimum_size = Vector2(32, 28)
+custom_minimum_size = Vector2(28, 22)
 layout_mode = 2
 text = "+"
 
@@ -143,7 +150,7 @@ text = "10"
 horizontal_alignment = 1
 
 [node name="AddButton" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid/AgiRow"]
-custom_minimum_size = Vector2(32, 28)
+custom_minimum_size = Vector2(28, 22)
 layout_mode = 2
 text = "+"
 
@@ -163,7 +170,7 @@ horizontal_alignment = 1
 
 [node name="AddButton" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/Grid/FocRow"]
 custom_override_constants/outline_size = 0
-custom_minimum_size = Vector2(32, 28)
+custom_minimum_size = Vector2(28, 22)
 layout_mode = 2
 text = "+"
 
@@ -177,12 +184,9 @@ theme_override_font_sizes/font_size = 12
 text = "Max HP: 100   |   Spirit Power: 50"
 horizontal_alignment = 1
 
-[node name="HSeparator3" type="HSeparator" parent="Panel/Margin/VBox/Scroll/ContentBox"]
-layout_mode = 2
-
 [node name="KureiSection" type="VBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 3
 
 [node name="KureiHeader" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/KureiSection"]
 layout_mode = 2
@@ -191,9 +195,54 @@ theme_override_font_sizes/font_size = 12
 text = "Kurei Art Skill Tree (Talent Points: 0)"
 horizontal_alignment = 1
 
+[node name="EquippedHeader" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/KureiSection"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.85, 0.6, 1)
+theme_override_font_sizes/font_size = 11
+text = "Equipped Spells (3/6 Slots Used)"
+horizontal_alignment = 1
+
+[node name="FeedbackLabel" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/KureiSection"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.7, 0.2, 1)
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 1
+
+[node name="EquippedContainer" type="GridContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/KureiSection"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 3
+
+[node name="AvailableBox" type="VBoxContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/KureiSection"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 3
+
+[node name="AvailableHeader" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/KureiSection/AvailableBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.85, 0.95, 1)
+theme_override_font_sizes/font_size = 11
+text = "Available to Equip:"
+
+[node name="AvailableContainer" type="GridContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/KureiSection/AvailableBox"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 3
+
+[node name="SkillTreeHeader" type="Label" parent="Panel/Margin/VBox/Scroll/ContentBox/KureiSection"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.8, 0.4, 1)
+theme_override_font_sizes/font_size = 11
+text = "Talent Unlocks:"
+
 [node name="SkillGrid" type="GridContainer" parent="Panel/Margin/VBox/Scroll/ContentBox/KureiSection"]
 layout_mode = 2
 columns = 2
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 3
 
 [node name="BtnSolarFlare" type="Button" parent="Panel/Margin/VBox/Scroll/ContentBox/KureiSection/SkillGrid"]
 layout_mode = 2
@@ -232,6 +281,6 @@ theme_override_font_sizes/font_size = 10
 text = "Reset Talent Points"
 
 [node name="CloseButton" type="Button" parent="Panel/Margin/VBox"]
-custom_minimum_size = Vector2(0, 32)
+custom_minimum_size = Vector2(0, 26)
 layout_mode = 2
 text = "Close Sheet [C]"

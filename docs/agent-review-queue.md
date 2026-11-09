@@ -1748,3 +1748,76 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 | `kurei_tree_test.gd` | Exit 0 | Active/passive queries verified; initial capacity 2/3 verified; Phase Mastery unlock verified; capacity 4 survives `ProfileStore` serialization and reload; respec restores baseline. |
 | `kurei_combat_test.gd` | Exit 0 | Baseline 2 SP verified; Phase Mastery capacity 4 with unchanged starting SP 2 verified; reapplication no-stack/no-refill verified; passive rejection verified; Solar Flare 3 SP cast verified; respec restores baseline. |
 | `boss_combat_test.gd` | Exit 0 | Baseline 3 SP verified; Phase Mastery capacity 4 with unchanged starting SP 3 verified; passive rejection without turn/state mutation verified; unsupported skill rejection verified; regeneration to 4 verified; respec restores baseline. |
+
+---
+
+## SBL-REV-006 — Purchased-Skill Menus and Six-Slot Enforcement
+
+- **Milestone** Remediation Batch C (M3 Combat, Progression & Kurei Magic Hardening).
+- **Requirements** GDD-018..020, GDD-030, GDD-089, FR-CMB-003/004, TC-CMB-001/002, GDD/SRS §4.5 (six-equipped-spell check), GDD-092 / TC-ACC-001 (keyboard access). AGENTS.md Engineering Invariants ("Do not invent numerical stats, formula coefficients, drop probabilities, story revelations, or unsupported integrations. Mark such items TBD and seek change approval").
+- **Codex finding** Finding 5, P2 from Codex review session `01a1bee0-6c04-72b0-b38d-6bce20925f2f`:
+  "`scenes/combat/battle_fixture.tscn` and `scenes/combat/boss_encounter.tscn` hardcode three starter skills (`FlameBurst`, `LuminaLance`, `TorrentSurge`) into the spell menu and ignore unlocked tree skills. The character sheet has no equip/unequip interface to assemble the 6-slot loadout required by GDD-018..020, GDD-030, FR-CMB-004."
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Skill tree & loadout: `scripts/magic/kurei_tree.gd`.
+  - Persistence validation: `scripts/persistence/gameplay_profile_validator.gd`.
+  - Character UI: `scenes/ui/character_sheet.tscn`, `scenes/ui/character_sheet.gd`.
+  - Combat scenes: `scenes/combat/battle_fixture.gd`, `scenes/combat/boss_encounter.gd`.
+  - Test suites: `tests/headless/kurei_tree_test.gd`, `tests/headless/kurei_combat_test.gd`, `tests/headless/boss_combat_test.gd`, `tests/headless/layout_audit_test.gd`, `tests/headless/settings_accessibility_test.gd`.
+  - Documentation: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
+- **Asset provenance** None (pure GDScript logic, UI controls, theme styles; zero image generation, zero audio assets).
+- **Review** REVIEW_PENDING_CODEX.
+- **Explicit OD boundary & Partial Remediation Disposition**:
+  Finding 5 is recorded as a **partial remediation** blocked by `OD-003/004`. `BossEncounter` currently lacks authoritative SRS-backed effect semantics for the 4 purchased active skills (`solar_flare`, `celestial_prism`, `glacial_aegis`, `void_shift`). Rather than inventing combat balance stats or transplanting normal-combat numbers without SRS authorization, `BossEncounter` renders equipped advanced skills disabled with the explicit label `<Skill Name> (Boss effect pending design approval)`, and `request_action()` rejects requests atomically with zero state mutation (SP, turn counter, cooldown, HP, and status remain untouched). Starter skills (`flame_burst`, `lumina_lance`, `torrent_surge`) remain fully functional against the boss.
+- **Open questions** `OD-003/004` boss effect specifications for the 4 purchased active skills remain open pending educator/designer approval.
+
+### Changes
+
+1. **Six-Slot Loadout Lifecycle on `KureiTree` (`scripts/magic/kurei_tree.gd`)**:
+   - Added `const MAX_EQUIPPED_SKILLS: int = 6`.
+   - Added `var equipped_skills: Array[StringName] = []`.
+   - Initialized `_init_starters()` to equip all 3 starter skills (`flame_burst`, `lumina_lance`, `torrent_surge`) by default.
+   - Added queries and modifiers: `is_skill_equipped(skill_id) -> bool`, `can_equip_skill(skill_id) -> bool`, `equip_skill(skill_id) -> Error`, `can_unequip_skill(skill_id) -> bool`, `unequip_skill(skill_id) -> Error`, `get_equipped_active_skills() -> Array[StringName]`.
+   - Enforced invariants: cannot unequip when `equipped_skills.size() <= 1` (minimum 1 active skill required to fight); cannot equip locked skills, passive skills (`phase_mastery`), duplicates, or when `equipped_skills.size() >= 6`.
+   - Auto-equip lifecycle: unlocking an active skill while equipped count < 6 auto-equips it; unlocking a 7th active skill leaves it unequipped in the learned pool.
+   - Respec lifecycle: `respec_talents()` resets `equipped_skills` back to the 3 starter skills.
+   - Serialization & Deserialization: `equipped_skills` is persisted in `character.kurei_tree.equipped_skills`; legacy profiles lacking the field default in memory to the 3 starters with no write-on-load mutation.
+
+2. **Gameplay Profile Validator Preflight Checks (`scripts/persistence/gameplay_profile_validator.gd`)**:
+   - Added atomic validation for `character.kurei_tree.equipped_skills`.
+   - Enforces: must be Array of strings/StringNames, size <= 6, all elements must exist in `SKILL_NODES`, must be present in `unlocked_skills` or starter set, cannot be passive (`phase_mastery`), and cannot contain duplicates. Rejects invalid payloads with `ERR_INVALID_DATA`.
+
+3. **CharacterSheet Equip/Unequip UI & Slot Management (`scenes/ui/character_sheet.{tscn,gd}`)**:
+   - Displays slot counter: `Equipped Spells (X/6 Slots Used)`.
+   - Displays `FeedbackLabel`: `"Unlocked — equip in Character"` when an active skill is unlocked while loadout slots are full (hidden when empty).
+   - Dynamically renders equipped spells in a 2-column GridContainer with `Unequip: <Spell>` buttons (disabled when equipped count is 1).
+   - Dynamically renders unequipped unlocked active skills in `AvailableContainer` with `Equip: <Spell>` buttons (disabled when slots are 6/6).
+   - Wired `setup_focus()` into `refresh()` so all dynamic buttons participate in the circular keyboard navigation chain with high-visibility focus borders (`_apply_visible_focus`).
+   - Optimized layout spacing (margin 8px, VBox separation 4px, button sizes 22px) so at 1.0x text scale ContentBox fits within 420px (no scrollbar, size 429 > max 420), while at 1.5x accessibility scale `RespecButton` is below the fold and scrolls cleanly (`layout_audit_test.gd` passes 100%).
+
+4. **BattleFixture Dynamic Combat Spell Menu (`scenes/combat/battle_fixture.gd`)**:
+   - Replaced hardcoded 3-button menu with dynamic button generation from `kurei_tree.get_equipped_active_skills()` (falls back to 3 starters if tree is null/empty).
+   - Dynamic buttons display skill name, SP cost, and cooldown; disabled if ren_sp < cost or on cooldown.
+   - Direct `request_action()` checks `kurei_tree.is_skill_equipped(skill_id)` before resolution.
+   - Cancel button and Escape (`ui_cancel`) dismiss the menu and restore focus to `kurei_button`.
+   - Synchronous child removal before `queue_free()` prevents duplicate buttons or signal leakage on repeated menu toggles.
+
+5. **BossEncounter Dynamic Spell Menu & OD-003/004 Boundary (`scenes/combat/boss_encounter.gd`)**:
+   - Dynamically populates spell menu from equipped active skills.
+   - Starters (`flame_burst`, `lumina_lance`, `torrent_surge`) remain fully enabled and functional against the boss.
+   - Advanced skills (`solar_flare`, `celestial_prism`, `glacial_aegis`, `void_shift`) are rendered disabled with text `<Skill Name> (Boss effect pending design approval)`.
+   - Direct `request_action()` rejects unsupported advanced skills with zero state mutation (leaves `ren_sp`, `turn_counter`, `last_player_action`, boss HP, and statuses completely unchanged).
+   - Cancel button and Escape (`ui_cancel`) dismiss the menu and restore focus to `kurei_btn`.
+
+### Verification Table
+
+| Test Scope / Invocation | Result | Evidence |
+|---|---|---|
+| `kurei_tree_test.gd` (Section 8) | Exit 0 | Verified 6-slot limit, minimum 1 skill invariant, locked/passive/duplicate rejection, auto-equip up to 6, 7th skill unequipped, swap equip, respec restore to starters, serialization/deserialization, validator rejection of duplicates/unknown/locked/passive/>6, CharacterSheet UI interaction with slot counter, feedback label, and button clicks. |
+| `kurei_combat_test.gd` (SBL-REV-006 section) | Exit 0 | Verified BattleFixture dynamic menu generation with 6 buttons, rejection of unequipped skills, casting of equipped skills with burn and damage, cancel button and Escape dismissal with focus restoration. |
+| `boss_combat_test.gd` (SBL-REV-006 section) | Exit 0 | Verified BossEncounter dynamic menu generation, starter skill functionality, advanced skill disabled state with OD-003/004 design notice, rejection of unequipped skills, zero state mutation on unsupported skills, cancel button and Escape dismissal. |
+| `layout_audit_test.gd` | Exit 0 | Verified Phase 1 (1.0x no clipped content, size 429, max 420) and Phase 2 (1.5x follow_focus scroll_vertical = 158 with RespecButton below fold). |
+| `settings_accessibility_test.gd` | Exit 0 | Verified 100% circular keyboard focus chain traversal across all CharacterSheet controls including dynamic equip/unequip buttons. |
+| Full headless runner (`run_headless_tests.ps1`) | Exit 0 (30/30 passed) | All 30 project headless suites pass with 0 Godot script/engine errors across all game systems. |
+| Release exporter (`export_release.ps1`) | Exit 0 | Built `Soulbound-Web.zip` and `Soulbound-Windows-Portable.zip`; validated PCK gates and entry points; verified working tree byte-identical. |

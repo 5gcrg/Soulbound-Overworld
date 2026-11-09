@@ -11,7 +11,11 @@ extends RefCounted
 ## - Void Branch: Void Shift (T1) -> Phase Mastery (T2)
 
 signal skill_unlocked(skill_id: StringName)
+signal skill_equipped(skill_id: StringName)
+signal skill_unequipped(skill_id: StringName)
 signal talents_reset()
+
+const MAX_EQUIPPED_SKILLS: int = 6
 
 const STARTER_SKILLS: Array[StringName] = [
 	&"flame_burst",
@@ -98,6 +102,7 @@ const SKILL_NODES: Dictionary = {
 const AUTHORED_PHASE_MASTERY_MAX_SP: int = 4
 
 var unlocked_skills: Array[StringName] = []
+var equipped_skills: Array[StringName] = []
 var total_talent_points: int = 0
 var spent_talent_points: int = 0
 
@@ -108,6 +113,9 @@ func _init_starters() -> void:
 	unlocked_skills.clear()
 	for s: StringName in STARTER_SKILLS:
 		unlocked_skills.append(s)
+	equipped_skills.clear()
+	for s: StringName in STARTER_SKILLS:
+		equipped_skills.append(s)
 	spent_talent_points = 0
 
 func sync_with_level(ren_level: int) -> void:
@@ -137,6 +145,37 @@ func is_skill_passive(skill_id: StringName) -> bool:
 func is_skill_active(skill_id: StringName) -> bool:
 	return SKILL_NODES.has(skill_id) and not is_skill_passive(skill_id)
 
+func is_skill_equipped(skill_id: StringName) -> bool:
+	return equipped_skills.has(skill_id)
+
+func can_equip_skill(skill_id: StringName) -> bool:
+	if not SKILL_NODES.has(skill_id):
+		return false
+	if is_skill_passive(skill_id):
+		return false
+	if not is_skill_unlocked(skill_id):
+		return false
+	if is_skill_equipped(skill_id):
+		return false
+	return equipped_skills.size() < MAX_EQUIPPED_SKILLS
+
+func equip_skill(skill_id: StringName) -> Error:
+	if not can_equip_skill(skill_id):
+		return FAILED
+	equipped_skills.append(skill_id)
+	skill_equipped.emit(skill_id)
+	return OK
+
+func can_unequip_skill(skill_id: StringName) -> bool:
+	return is_skill_equipped(skill_id) and equipped_skills.size() > 1
+
+func unequip_skill(skill_id: StringName) -> Error:
+	if not can_unequip_skill(skill_id):
+		return FAILED
+	equipped_skills.erase(skill_id)
+	skill_unequipped.emit(skill_id)
+	return OK
+
 func can_unlock_skill(skill_id: StringName) -> bool:
 	if not SKILL_NODES.has(skill_id):
 		return false
@@ -155,6 +194,9 @@ func unlock_skill(skill_id: StringName) -> Error:
 	var cost: int = int(SKILL_NODES[skill_id].get("cost", 0))
 	unlocked_skills.append(skill_id)
 	spent_talent_points += cost
+	if is_skill_active(skill_id) and equipped_skills.size() < MAX_EQUIPPED_SKILLS:
+		equipped_skills.append(skill_id)
+		skill_equipped.emit(skill_id)
 	skill_unlocked.emit(skill_id)
 	return OK
 
@@ -166,8 +208,12 @@ func serialize() -> Dictionary:
 	var string_skills: Array[String] = []
 	for s: StringName in unlocked_skills:
 		string_skills.append(String(s))
+	var string_equipped: Array[String] = []
+	for s: StringName in equipped_skills:
+		string_equipped.append(String(s))
 	return {
 		"unlocked_skills": string_skills,
+		"equipped_skills": string_equipped,
 		"spent_talent_points": spent_talent_points,
 		"total_talent_points": total_talent_points
 	}
@@ -187,6 +233,36 @@ func deserialize(data: Dictionary) -> Error:
 			unlocked_skills.append(s)
 	spent_talent_points = maxi(0, int(data.get("spent_talent_points", 0)))
 	total_talent_points = maxi(0, int(data.get("total_talent_points", 0)))
+
+	# Equipped skills: optional array, maximum six, unique ordered active unlocked IDs
+	if data.has("equipped_skills"):
+		if typeof(data["equipped_skills"]) != TYPE_ARRAY:
+			return ERR_INVALID_DATA
+		var eq_list: Array = data["equipped_skills"] as Array
+		if eq_list.size() > MAX_EQUIPPED_SKILLS:
+			return ERR_INVALID_DATA
+		var seen := {}
+		var valid_equipped: Array[StringName] = []
+		for item: Variant in eq_list:
+			if typeof(item) != TYPE_STRING and typeof(item) != TYPE_STRING_NAME:
+				return ERR_INVALID_DATA
+			var sid: StringName = StringName(String(item))
+			if seen.has(sid):
+				return ERR_INVALID_DATA
+			seen[sid] = true
+			if not SKILL_NODES.has(sid):
+				return ERR_INVALID_DATA
+			if is_skill_passive(sid):
+				return ERR_INVALID_DATA
+			if not is_skill_unlocked(sid):
+				return ERR_INVALID_DATA
+			valid_equipped.append(sid)
+		equipped_skills = valid_equipped
+	else:
+		# Legacy data without the field defaults in memory to the existing three starter skills; no write-on-load migration
+		equipped_skills.clear()
+		for s: StringName in STARTER_SKILLS:
+			equipped_skills.append(s)
 	return OK
 
 func load_from_store(store: ProfileStore, slot: String = "profile_01") -> Error:

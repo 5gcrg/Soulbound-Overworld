@@ -134,6 +134,39 @@ static func _validate_character(character: Dictionary) -> Error:
 		if not _is_bounded_int(character["spirit_power"], 0, MAX_SAFE_INT):
 			return ERR_INVALID_DATA
 
+	if character.has("kurei_tree"):
+		if typeof(character["kurei_tree"]) != TYPE_DICTIONARY:
+			return ERR_INVALID_DATA
+		var kt: Dictionary = character["kurei_tree"] as Dictionary
+		if kt.has("equipped_skills"):
+			if typeof(kt["equipped_skills"]) != TYPE_ARRAY:
+				return ERR_INVALID_DATA
+			var eq: Array = kt["equipped_skills"] as Array
+			if eq.size() > KureiTree.MAX_EQUIPPED_SKILLS:
+				return ERR_INVALID_DATA
+			var unlocked_set := {}
+			if kt.has("unlocked_skills") and typeof(kt["unlocked_skills"]) == TYPE_ARRAY:
+				for u in kt["unlocked_skills"]:
+					if typeof(u) == TYPE_STRING or typeof(u) == TYPE_STRING_NAME:
+						unlocked_set[String(u)] = true
+			for st in KureiTree.STARTER_SKILLS:
+				unlocked_set[String(st)] = true
+			var seen := {}
+			for item in eq:
+				if typeof(item) != TYPE_STRING and typeof(item) != TYPE_STRING_NAME:
+					return ERR_INVALID_DATA
+				var sid_str: String = String(item)
+				if seen.has(sid_str):
+					return ERR_INVALID_DATA
+				seen[sid_str] = true
+				var sid := StringName(sid_str)
+				if not KureiTree.SKILL_NODES.has(sid):
+					return ERR_INVALID_DATA
+				if sid == &"phase_mastery" or KureiTree.SKILL_NODES[sid].get("passive", false):
+					return ERR_INVALID_DATA
+				if not unlocked_set.has(sid_str):
+					return ERR_INVALID_DATA
+
 	return OK
 
 static func _validate_inventory(inventory: Dictionary) -> Error:
