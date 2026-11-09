@@ -39,9 +39,10 @@ Definition of done per task: relevant suites green with real assertion evidence,
 
 ## Dispatch status
 
-- **Batch 1 complete** (`e5f93e8..e2a68bd`), **batch 2 complete** (`f263001..6f6efa5`), **batch 3 complete** (`9040561..5e81a04`), and **batch 4 complete** (`0b7e85f..b2b45a4`): 22 tasks implemented, 29/29 suites green.
+- **Batch 1 complete** (`e5f93e8..e2a68bd`), **batch 2 complete** (`f263001..6f6efa5`), **batch 3 complete** (`9040561..5e81a04`), **batch 4 complete** (`0b7e85f..b2b45a4`), **batch 5 complete** (`e0ed0b5`): 23 tasks implemented, 29/29 suites green.
 - **Codex CLI review of `e25491d..5e81a04`** (session `01a1be9a-5583-7252-b082-ebd436372c80`): CHANGES_REQUESTED, three P2 findings.
-- **Codex CLI re-review of `b2ddee1..b2b45a4`** (session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`): the three findings are cleared; one new P2 remains in the failure-restoration test. All batch 1-4 entries except `SBL-BLD-003` are now `REVIEWED`.
-- **Batch 5 complete:** SBL-BLD-004 (deterministic export-failure injection and non-vacuous restoration proof) implemented and verified. 29/29 suites green, export pipeline validated, negative control confirmed. Marked `REVIEW_PENDING_CODEX` awaiting Codex CLI re-review.
+- **Codex CLI re-review of `b2ddee1..b2b45a4`** (session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0`): the three findings cleared; one new P2 in the failure-restoration test.
+- **Codex CLI re-review of `81d613e..e0ed0b5`** (session `01a1becc-d949-7cc3-867d-a0a8ede9510b`): APPROVED for the patch, no actionable defects. The failure-injection P2 is fixed.
+- **Every implementation entry from `e25491d..e0ed0b5` is `REVIEWED`.** Only `SBL-FIX-001..005`, which predate `e25491d`, remain `REVIEW_PENDING_CODEX`.
+- **Next gate is human**: milestone/release acceptance, `OD-017` shipping tier, browser smoke, educator sign-off (`OD-012`), audio binaries, and Codex-only image assets.
 - Runner pins `--model gemini-3.8-flash-high --effort high` because Gemini 4 Argon is quota-blocked until ~14 Nov 09:21.
-- `SBL-BLD-003` is the only `CHANGES_REQUESTED` entry; nothing else may be represented as unreviewed.

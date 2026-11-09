@@ -1264,7 +1264,7 @@ The `SliceProgress: Invalid data` warning seen when mounting a packed build came
   - Build automation & tests: `scripts/build/test_export_failure_restoration.ps1`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (PowerShell build automation, git ignore configuration, and failure regression tests).
-- **Review** CHANGES_REQUESTED. Re-review session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0` found one P2: `test_export_failure_restoration.ps1` does not reliably fail after `project.godot` and `build_tier.txt` are mutated, so it can pass without exercising the restoration block.
+- **Review** REVIEWED by Codex CLI session `01a1becc-d949-7cc3-867d-a0a8ede9510b` (re-review of `81d613e..e0ed0b5`); the failure-injection finding is fixed and no actionable defects remain. Human release acceptance remains pending.
 - **Open questions** `OD-017`: Default shipping release tier remains deferred to human release authority sign-off; checked-in `project.godot` maintains `release_tier="full_release"`.
 
 ### Changes
@@ -1325,7 +1325,7 @@ The `SliceProgress: Invalid data` warning seen when mounting a packed build came
   - Regression test: `scripts/build/test_export_failure_restoration.ps1`.
   - Process: `docs/agent-review-queue.md`.
 - **Asset provenance** None (PowerShell build scripts and test harnesses; zero image or audio assets).
-- **Review** REVIEW_PENDING_CODEX. Work submitted for Codex CLI review per AGENTS.md.
+- **Review** REVIEWED by Codex CLI session `01a1becc-d949-7cc3-867d-a0a8ede9510b`; no actionable defects. Human release acceptance remains pending.
 - **Open questions** `OD-017`: Default shipping release tier remains deferred to human release authority sign-off; checked-in `project.godot` maintains `release_tier="full_release"`.
 
 ### Changes
@@ -1372,3 +1372,18 @@ The `SliceProgress: Invalid data` warning seen when mounting a packed build came
 | `builds/web/index.wasm` | 39,514,754 B | ~37.68 MB |
 | `builds/windows/Soulbound.pck` | 516,992 B | ~504 KB |
 | `builds/windows/Soulbound.exe` | 180,717,576 B | ~172.35 MB |
+
+
+---
+
+## Codex CLI re-review of the batch 5 fix
+
+- **Snapshot** `feature/w4-5-vertical-slice`, `81d613e..e0ed0b5`.
+- **Review** APPROVED for the patch. Codex CLI `0.167.0`, model `gpt-6.1-sol`, session `01a1becc-d949-7cc3-867d-a0a8ede9510b`, exit 0, 9 November 2026.
+- **Verdict** No actionable defects introduced by the patch. The standard restoration test passed and the disabled-restoration negative control failed as expected; both left the working tree clean.
+- **Resolved** The P2 from session `01a1bebf-6857-7dd3-8fb0-fb78d93f13e0` is fixed: the failure is injected after `project.godot` and `build_tier.txt` are mutated, and the test asserts mutation-before-failure plus byte-identical restoration.
+- **Independent verification** 29/29 suites PASS; export chain exit 0; all three archive-contained PCKs gated; `project.godot` restored byte-identically; `-DisableRestore` control exits 1 with a genuinely dirty tree.
+
+### Status
+
+Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human milestone and release acceptance remain the open gate. `SBL-FIX-001` through `SBL-FIX-005` predate `e25491d` and remain `REVIEW_PENDING_CODEX`.
