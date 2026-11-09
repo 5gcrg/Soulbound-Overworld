@@ -153,6 +153,7 @@ The save suite uses disposable test roots. It verifies slot isolation, nested da
 - **Snapshot** `feature/w4-5-vertical-slice`, nine agy commits from `b427fed..e9824a7`.
 - **Review** CHANGES_REQUESTED. Codex CLI session `01a1bd84-e6f1-7722-ae1b-6c1710b56c8e` finished and reported 8 P1 and 13 P2 findings. Human acceptance remains pending.
 - **Verification** Windows Godot 4.7.2 Stable `ed1daf0bf` imported and booted the committed snapshot and passed all 18 existing headless suites with zero engine errors. The copy used a separate user-data directory. Chromium and Firefox were outside this verification.
+- **Review gate 9 November 2026, 12:13** `codex --version` reported `codex-cli 0.167.0` and the `review` subcommand is present, but `codex exec --sandbox read-only "Reply with exactly: OK"` exited 1 with `You've hit your usage limit ... try again at 12:35 PM`. No review ran. The queued scope is now `e25491d..0d58f0b` (32 commits) and every entry remains `REVIEW_PENDING_CODEX`.
 
 | Scope | Changes requested |
 | --- | --- |
