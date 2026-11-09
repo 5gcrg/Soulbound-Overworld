@@ -1567,5 +1567,9 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 | `title_screen_audio_test.gd` | Exit 0 | Regression suite passed; title screen audio cues, settings overlay, defense demo, and slot selection verified. |
 | `transition_test.gd` | Exit 0 | Regression suite passed with 0 errors; spawn bounds, portal transitions, and footprint validation verified. |
 | `dimension_test.gd` | Exit 0 | Regression suite passed; collision mask updates and physical/spirit dimension shifts verified. |
+| `overworld_gateway_test.gd` | Exit 0 | Regression verified; uncommitted gateway extraction failure preserves unwritten profile files without generating phantom saves. |
+| `vertical_slice_loop_test.gd` | Exit 0 | Regression verified; full vertical slice loop, quest dialogue resumption, and mid-game backup reloads pass cleanly. |
+| Full headless test runner (`run_headless_tests.ps1`) | Exit 0 (30/30 passed) | All 30 project headless suites pass with 0 Godot script/engine errors. |
+| Release exporter (`export_release.ps1`) | Exit 0 | Full release export validated; generated `Soulbound-Windows-Portable.zip` and `Soulbound-Web.zip` (single-threaded Web); PCK headless gate validation succeeded on both packages; project.godot restored byte-identical. |
 | Negative control: wire New Journey to Continue | Exit 1 | Demonstrated that if New Journey button directly reloads the occupied slot, new game picker is bypassed and test fails. |
 | Negative control: skip world/dimension reset | Exit 1 | Demonstrated that skipping dimension reset leaves early profile in prior profile's Spirit dimension and test fails. |
