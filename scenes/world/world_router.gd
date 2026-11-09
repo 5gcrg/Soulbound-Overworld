@@ -219,7 +219,9 @@ func _execute_transition(emitter_id: int, original_active_region_id: int, target
 	is_transition_in_flight = false
 	region_transition_completed.emit(active_region_id, target_spawn_id)
 
-func debug_warp(target_region_id: String, target_spawn_id: String = "default") -> bool:
+## Validated world reset path for safe profile activation (SBL-REV-003).
+## Preflights candidate region, candidate spawn, obstacle collision, and bounds before teardown.
+func reset_to_starting_region(target_region_id: String, target_spawn_id: String = "default") -> bool:
 	if world_container == null or player == null:
 		return false
 	if not REGION_REGISTRY.has(target_region_id):
@@ -258,6 +260,9 @@ func debug_warp(target_region_id: String, target_spawn_id: String = "default") -
 	is_transition_in_flight = false
 	region_transition_completed.emit(active_region_id, target_spawn_id)
 	return true
+
+func debug_warp(target_region_id: String, target_spawn_id: String = "default") -> bool:
+	return reset_to_starting_region(target_region_id, target_spawn_id)
 
 func _get_spawn_world_pos(candidate: BaseRegion, spawn_id: String) -> Vector2:
 	var marker: Marker2D = candidate.get_spawn_point(spawn_id)

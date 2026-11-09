@@ -153,3 +153,59 @@ custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "<- Back to Title Menu"
+
+[node name="NewGameSelector" type="VBoxContainer" parent="CenterContainer/MainVBox"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Header" type="Label" parent="CenterContainer/MainVBox/NewGameSelector"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.85, 0.5, 1)
+theme_override_font_sizes/font_size = 13
+text = "Start New Journey — Choose an Empty Slot:"
+horizontal_alignment = 1
+
+[node name="NewSlot1Btn" type="Button" parent="CenterContainer/MainVBox/NewGameSelector"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Slot 1: [Empty Slot]"
+
+[node name="NewSlot2Btn" type="Button" parent="CenterContainer/MainVBox/NewGameSelector"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Slot 2: [Empty Slot]"
+
+[node name="NewSlot3Btn" type="Button" parent="CenterContainer/MainVBox/NewGameSelector"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Slot 3: [Empty Slot]"
+
+[node name="NoEmptySlotsLabel" type="Label" parent="CenterContainer/MainVBox/NewGameSelector"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 11
+text = "No empty profile slots. Select an existing profile to continue."
+horizontal_alignment = 1
+
+[node name="BackBtn" type="Button" parent="CenterContainer/MainVBox/NewGameSelector"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "<- Back to Title Menu"
+
+[node name="ErrorBox" type="VBoxContainer" parent="CenterContainer/MainVBox"]
+visible = false
+layout_mode = 2
+
+[node name="ErrorLabel" type="Label" parent="CenterContainer/MainVBox/ErrorBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
+theme_override_font_sizes/font_size = 11
+text = ""
+horizontal_alignment = 1
+autowrap_mode = 3

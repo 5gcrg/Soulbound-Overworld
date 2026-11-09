@@ -69,6 +69,7 @@ At current development baseline (Batch 2), there are **25 headless test suites**
 | `kurei_tree_test.gd` | 4-branch 2-tier skill tree, talent points, tier prerequisites, respec refund |
 | `release_tier_test.gd` | SBL-FIX-010 3-chapter academic MVP vs. full release tier separation |
 | `save_compatibility_recovery_test.gd` | SBL-FIX-012/SBL-REV-001 Legacy profile compatibility, revision recovery, snapshot non-clamping validation |
+| `profile_activation_test.gd` | SBL-REV-003 Empty-slot new journey picker, non-launching profile selection, safe profile activation and world/dimension reset |
 
 ## Verification & Exit Codes
 

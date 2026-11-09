@@ -110,17 +110,75 @@ func _ready() -> void:
 			push_error("Failed to initialize starting region: %s at spawn %s" % [DEFAULT_START_REGION, DEFAULT_START_SPAWN])
 
 func _init_slice_progress(store: ProfileStore = null, slot: String = "profile_01") -> void:
-	if _expedition != null and is_instance_valid(_expedition) and _expedition.is_active:
-		if slot != _profile_slot:
-			push_error("Cannot switch profile while an expedition is active. Suspend or retreat first.")
-			return
-	_session_generation += 1
-	_suspended_expedition.clear()
-	_profile_slot = slot
 	if store != null:
 		profile_store = store
 	elif profile_store == null:
 		profile_store = ProfileStore.new()
+	var loaded := profile_store.load_profile(slot)
+	if loaded.get("error") == ERR_FILE_NOT_FOUND:
+		var new_p := profile_store.new_profile(slot)
+		profile_store.save_profile(slot, new_p)
+	activate_profile(slot, false)
+
+func activate_profile(slot_id: String, is_new: bool = false) -> Error:
+	# 1. Reject activation during active expedition, unresolved encounter, or in-flight transition
+	if _expedition != null and is_instance_valid(_expedition) and _expedition.is_active:
+		push_error("Cannot switch profile while an expedition is active. Suspend or retreat first.")
+		return ERR_BUSY
+	if (_battle != null and is_instance_valid(_battle)) or (_boss_encounter != null and is_instance_valid(_boss_encounter)):
+		push_error("Cannot switch profile while combat is active.")
+		return ERR_BUSY
+	if world_router != null and world_router.is_transition_in_flight:
+		push_error("Cannot switch profile during region transition.")
+		return ERR_BUSY
+
+	if profile_store == null:
+		profile_store = ProfileStore.new()
+
+	# 2. Preflight profile validation
+	var loaded := profile_store.load_profile(slot_id)
+	if loaded.get("error") != OK:
+		push_error("Cannot activate profile '%s': load error %s" % [slot_id, error_string(loaded.get("error"))])
+		return loaded.get("error")
+
+	var prof_dict: Dictionary = loaded.get("profile", {})
+	var val_res: Variant = GameplayProfileValidator.validate(prof_dict)
+	if val_res is int and (val_res as int) != OK:
+		push_error("Cannot activate profile '%s': validation failed with error %s" % [slot_id, error_string(val_res as int)])
+		return val_res as Error
+	elif val_res is bool and not (val_res as bool):
+		push_error("Cannot activate profile '%s': validation failed" % slot_id)
+		return ERR_INVALID_DATA
+
+	# 3. Preflight & reset world to DEFAULT_START_REGION and DEFAULT_START_SPAWN
+	if world_router != null and world_router.world_container != null and player != null:
+		var reset_ok: bool = world_router.reset_to_starting_region(DEFAULT_START_REGION, DEFAULT_START_SPAWN)
+		if not reset_ok:
+			push_error("Cannot activate profile '%s': world router failed to reset to starting region %s" % [slot_id, DEFAULT_START_REGION])
+			return ERR_CANT_CREATE
+		_current_region_id = DEFAULT_START_REGION
+
+	# 4. Set physical dimension and synchronize collision masks and region visibility
+	if dimension_manager != null:
+		dimension_manager.current_dimension = DimensionManager.Dimension.PHYSICAL
+		_sync_dimension_state()
+
+	# 5. Invalidate previous session callbacks, reset transient state & player velocity
+	_session_generation += 1
+	_suspended_expedition.clear()
+	_battle_pending = false
+	_dialog_pending = false
+	_chapter_dialog_pending = false
+	_expedition_pending = false
+	_pending_return_to_alpha = false
+
+	if player != null and is_instance_valid(player):
+		player.velocity = Vector2.ZERO
+		if _title_screen != null and is_instance_valid(_title_screen):
+			player.freeze_movement()
+
+	# 6. Load selected profile's consumers
+	_profile_slot = slot_id
 	if slice_progress == null:
 		slice_progress = SliceProgress.new()
 	var err: Error = slice_progress.configure(profile_store, _profile_slot)
@@ -140,19 +198,21 @@ func _init_slice_progress(store: ProfileStore = null, slot: String = "profile_01
 	kurei_tree.load_from_store(profile_store, _profile_slot)
 	kurei_tree.sync_with_level(character_stats.level)
 
-	var loaded := profile_store.load_profile(_profile_slot)
-	var prof_dict: Dictionary = loaded.get("profile", {})
 	if prof_dict.has("world") and prof_dict["world"] is Dictionary and prof_dict["world"].has("ending"):
 		ending_manager.deserialize(prof_dict["world"]["ending"])
 	else:
 		ending_manager = EndingManager.new()
 
 	_validate_and_clamp_progress()
+	_bind_region_fixtures()
 	_sync_chapter_gates()
 	_update_objective()
+	_sync_debug_bar()
 
 	_chapter_baseline = JSON.stringify(prof_dict.get("world", {}).get("chapter_progress", {}))
 	_load_active_expedition()
+
+	return OK
 
 func _on_region_transition_completed(region_id: String, spawn_id: String) -> void:
 	_current_region_id = region_id
@@ -1646,6 +1706,8 @@ func open_title_screen() -> void:
 	_title_screen = title_inst
 	_title_layer.add_child(_title_screen)
 	_title_screen.setup_profiles(profile_store, _profile_slot)
+	_title_screen.continue_requested.connect(_on_title_continue_requested)
+	_title_screen.new_journey_requested.connect(_on_title_new_journey_requested)
 	_title_screen.game_started.connect(_on_title_game_started)
 	_title_screen.settings_requested.connect(_on_title_settings_requested)
 	_title_screen.backup_requested.connect(_on_title_backup_requested)
@@ -1662,11 +1724,57 @@ func _close_title_screen() -> void:
 	if not has_blocking_modal():
 		_restore_combat_movement()
 
-func _on_title_game_started(slot_id: String) -> void:
-	_init_slice_progress(profile_store, slot_id)
-	_close_title_screen()
-	if audio_manager != null:
-		audio_manager.play_cue("portal")
+func _on_title_continue_requested(slot_id: String) -> void:
+	if profile_store == null:
+		profile_store = ProfileStore.new()
+
+	var check := profile_store.load_profile(slot_id)
+	if check.get("error") != OK:
+		push_error("Cannot continue journey: slot '%s' load error %s" % [slot_id, error_string(check.get("error"))])
+		if _title_screen != null and is_instance_valid(_title_screen):
+			_title_screen.show_error("Cannot load profile '%s'." % slot_id)
+		return
+
+	var act_err: Error = activate_profile(slot_id, false)
+	if act_err == OK:
+		_close_title_screen()
+		if audio_manager != null:
+			audio_manager.play_cue("portal")
+	else:
+		if _title_screen != null and is_instance_valid(_title_screen):
+			_title_screen.show_error("Failed to activate profile: %s" % error_string(act_err))
+
+func _on_title_new_journey_requested(slot_id: String) -> void:
+	if profile_store == null:
+		profile_store = ProfileStore.new()
+
+	# Recheck slot emptiness immediately before creating
+	var check := profile_store.load_profile(slot_id)
+	if check.get("error") != ERR_FILE_NOT_FOUND:
+		push_error("Cannot start new journey: slot '%s' is not empty." % slot_id)
+		if _title_screen != null and is_instance_valid(_title_screen):
+			_title_screen.show_error("Slot '%s' is not empty." % slot_id)
+		return
+
+	var new_prof := profile_store.new_profile(slot_id)
+	var save_err: Error = profile_store.save_profile(slot_id, new_prof)
+	if save_err != OK:
+		push_error("Failed to write new profile for slot '%s': %s" % [slot_id, error_string(save_err)])
+		if _title_screen != null and is_instance_valid(_title_screen):
+			_title_screen.show_error("Failed to create profile: %s" % error_string(save_err))
+		return
+
+	var act_err: Error = activate_profile(slot_id, true)
+	if act_err == OK:
+		_close_title_screen()
+		if audio_manager != null:
+			audio_manager.play_cue("portal")
+	else:
+		if _title_screen != null and is_instance_valid(_title_screen):
+			_title_screen.show_error("Failed to activate new profile: %s" % error_string(act_err))
+
+func _on_title_game_started(_slot_id: String) -> void:
+	pass
 
 func _on_title_defense_demo() -> void:
 	_on_debug_complete_activities()

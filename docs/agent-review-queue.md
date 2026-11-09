@@ -1514,3 +1514,58 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 | `settings_accessibility_test.gd` (Part 6) | Exit 0 | Verified Escape (`ui_cancel`) dismisses Title Settings overlay; TitleScreen remains open; Ren movement remains frozen; originating focus restored; duplicate open requests create zero duplicate sheets. |
 | `web_backup_test.gd` (REV-002 section) | Exit 0 | Verified title Backup targets title-selected slot (`profile_01`) while gameplay slot (`profile_02`) is active; export produces `profile_01` data; title text import updates `profile_01` on disk; active gameplay slot (`profile_02`) and gameplay inventory remain unmutated. |
 | Negative control: generic modal blocking on title settings | Exit 1 | Demonstrated that if `has_blocking_modal()` unconditionally blocked title settings, title settings failed to open. |
+
+---
+
+## SBL-REV-003 — Distinct New Journey and Safe Profile Activation
+
+- **Milestone** Remediation Batch A (M1, M2 & M6 Hardening).
+- **Requirements** GDD-015, GDD-098, FR-SAV-001, FR-WLD-001/002, TC-SAV-001/002, TC-WLD-001, TC-DIM-001, AGENTS.md Invariants ("every explicit title activation returns to existing DEFAULT_START_REGION / DEFAULT_START_SPAWN in the physical dimension", "Preserve chapter progress, inventory, educational records and any suspended expedition. Returning to the starting region is not extraction").
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Scene definitions: `scenes/ui/title_screen.tscn`.
+  - Scene scripts: `scenes/ui/title_screen.gd`, `scenes/main/game_root.gd`, `scenes/world/world_router.gd`.
+  - Headless test suites: `tests/headless/profile_activation_test.gd`, `tests/headless/title_screen_audio_test.gd`, `tests/headless/transition_test.gd`, `tests/headless/dimension_test.gd`.
+  - Process: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
+- **Asset provenance** None (pure code and UI scene hierarchy; zero image or audio generation).
+- **Review** REVIEW_PENDING_CODEX (Codex Findings 3 & 4, P2).
+- **Open questions** None.
+
+### Changes
+
+1. **Distinct Start Signals & Non-Launching Profile Selection (`title_screen.gd`)**:
+   - Replaced ambiguous start signal flow with `continue_requested(slot_id)` and `new_journey_requested(slot_id)`. Retained `game_started(slot_id)` for backwards compatibility.
+   - Slot selection in `ProfileSelector` updates `current_slot`, refreshes title labels, and focuses `continue_btn` without immediately launching gameplay.
+2. **Dedicated Empty-Slot New Journey Picker (`title_screen.tscn` & `title_screen.gd`)**:
+   - Added `NewGameSelector` container displaying slot buttons and `NoEmptySlotsLabel`.
+   - "Start New Journey" displays only genuinely missing profiles (`ERR_FILE_NOT_FOUND`) as clickable. Occupied, recovered, corrupt, unreadable and unsupported-version slots are disabled and labeled `[Occupied]`.
+   - If all slots are occupied/unavailable, displays "No empty profile slots", focuses Back button, and allows safe return to title menu.
+   - Continue button on an empty slot redirects directly to the new-game picker.
+3. **Preflight Emptiness Recheck & Creation Guard (`title_screen.gd` & `game_root.gd`)**:
+   - Rechecks slot emptiness immediately before writing profile to protect against concurrent/stale creation.
+   - On creation or save failure, shows `ErrorBox` on TitleScreen and leaves TitleScreen open.
+4. **Validated World Reset Production API (`world_router.gd`)**:
+   - Added `reset_to_starting_region(target_region_id, target_spawn_id)` on `WorldRouter`.
+   - Preflights candidate region, candidate spawn, obstacle collision, and bounds before tearing down active region.
+   - Refactored `debug_warp` to delegate to `reset_to_starting_region`.
+5. **Shared Safe Profile Activation Path (`game_root.gd`)**:
+   - Implemented `activate_profile(slot_id, is_new)`:
+     - Rejects activation during live expedition (`ERR_BUSY`), active combat (`ERR_BUSY`), or in-flight transition (`ERR_BUSY`).
+     - Preflights selected profile with `GameplayProfileValidator.validate`.
+     - Resets world to `DEFAULT_START_REGION` at `DEFAULT_START_SPAWN` via validated `reset_to_starting_region`.
+     - Resets dimension to `PHYSICAL` and synchronizes collision masks and region visibility.
+     - Invalidate session callbacks (`_session_generation += 1`), clears transient flags, and zeroes player velocity.
+     - Loads consumers (character stats, inventory, chapter progress, education, Kurei tree, ending manager) and applies chapter gates.
+     - Dismisses TitleScreen only after activation succeeds; on failure, preserves TitleScreen and prior profile files.
+
+### Verification Table
+
+| Test Scope / Invocation | Result | Evidence |
+|---|---|---|
+| `profile_activation_test.gd` (Parts 1–6) | Exit 0 | Verified empty-slot selection: occupied slot 1 and corrupt slot 2 disabled; only empty slot 3 enabled; Back restores focus to NewGameBtn. Verified all-occupied state disables slots and focuses Back. Verified slot selection updates labels without starting gameplay. Verified Continue on empty slot redirects to new-game picker. Verified late-game profile 1 (Spirit dimension, non-zero pos/vel, suspended run, unlocked beta/whispering grove) cleanly isolates from fresh profile 3 (reset to physical, test_region_alpha, zero vel, locked whispering grove, no leaked snapshot). Verified activation during combat rejected with `ERR_BUSY`. Verified corrupt profile activation keeps TitleScreen open with error. |
+| `title_screen_audio_test.gd` | Exit 0 | Regression suite passed; title screen audio cues, settings overlay, defense demo, and slot selection verified. |
+| `transition_test.gd` | Exit 0 | Regression suite passed with 0 errors; spawn bounds, portal transitions, and footprint validation verified. |
+| `dimension_test.gd` | Exit 0 | Regression suite passed; collision mask updates and physical/spirit dimension shifts verified. |
+| Negative control: wire New Journey to Continue | Exit 1 | Demonstrated that if New Journey button directly reloads the occupied slot, new game picker is bypassed and test fails. |
+| Negative control: skip world/dimension reset | Exit 1 | Demonstrated that skipping dimension reset leaves early profile in prior profile's Spirit dimension and test fails. |
