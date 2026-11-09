@@ -63,6 +63,9 @@ func _run_test() -> void:
 	# Run SBL-P1-C Expedition Suspend & Resume Test
 	_test_expedition_suspend_and_resume()
 
+	# Run SBL-FIX-007 Defeat Failure UX & Retry Test
+	_test_sbl_fix_007_defeat_failure_and_retry()
+
 	# Run SBL-FIX-006 persisted suspend snapshot test
 	await _test_game_persisted_expedition_resume()
 
@@ -308,6 +311,89 @@ func _test_game_persisted_expedition_resume() -> void:
 	resumed.queue_free()
 	fresh.queue_free()
 	await process_frame
+	_cleanup_dir(test_root)
+
+func _test_sbl_fix_007_defeat_failure_and_retry() -> void:
+	print("--- Running SBL-FIX-007 Defeat Failure UX & Retry Test ---")
+	var test_root: String = "user://test_dungeon_defeat_%d_%d" % [OS.get_process_id(), Time.get_ticks_usec()]
+	var test_store: ProfileStore = ProfileStore.new(test_root)
+
+	var expedition: DungeonExpedition = DungeonExpeditionScene.instantiate() as DungeonExpedition
+	root.add_child(expedition)
+
+	var live_inv: InventoryManager = expedition.inventory
+	live_inv.banked_items["ancient_relic_fragment"] = 10
+	var ok: bool = expedition.setup(9999, 5)
+	_check(ok == true, "Defeat test setup succeeded")
+
+	var initial_satchel: int = live_inv.satchel_items.get("ancient_relic_fragment", 0)
+	_check(initial_satchel > 0, "Satchel has initial items")
+
+	# Save baseline
+	var save_err: Error = live_inv.save_to_store(test_store, "profile_01")
+	_check(save_err == OK, "Baseline inventory saved")
+
+	var callback_state: Dictionary = {"calls": 0, "fail": true}
+	var failed_signals: Array[Dictionary] = []
+	var error_signals: Array[Error] = []
+
+	expedition.commit_defeat = func(candidate: InventoryManager, _lost: Dictionary) -> Error:
+		callback_state["calls"] += 1
+		if callback_state["fail"]:
+			return ERR_FILE_CANT_WRITE
+		return candidate.save_to_store(test_store, "profile_01")
+
+	expedition.expedition_failed.connect(func(lost: Dictionary):
+		failed_signals.append(lost)
+	)
+	expedition.defeat_save_failed.connect(func(err: Error):
+		error_signals.append(err)
+	)
+
+	# 1. Trigger fail_now with injected commit failure
+	var fail_res: Dictionary = expedition.fail_now()
+	_check(fail_res.is_empty(), "fail_now returns empty Dictionary on save failure")
+	_check(callback_state["calls"] == 1, "commit_defeat was called once")
+	_check(error_signals.size() == 1, "defeat_save_failed emitted once")
+	_check(error_signals[0] == ERR_FILE_CANT_WRITE, "defeat_save_failed error matches injected error")
+	_check(failed_signals.is_empty(), "expedition_failed was NOT emitted on failure (no premature defeat/loss)")
+	_check(expedition.is_active == true, "Expedition remains active on defeat failure")
+	_check(live_inv.satchel_items.get("ancient_relic_fragment", 0) == initial_satchel, "Satchel NOT wiped in memory on failure")
+	_check(live_inv.banked_items.get("ancient_relic_fragment", 0) == 10, "Bank items preserved on failure")
+	_check(expedition.room_description_label.text.find("failed") != -1, "Error message shown in room description label")
+	_check(expedition.retreat_btn.disabled == false, "Retreat button enabled for retry")
+
+	# Check disk state is unchanged
+	var check_inv := InventoryManager.new()
+	var check_load_err: Error = check_inv.load_from_store(test_store, "profile_01")
+	_check(check_load_err == OK, "Loaded profile store for failure verification")
+	_check(check_inv.satchel_items.get("ancient_relic_fragment", 0) == initial_satchel, "Satchel NOT wiped on disk on failure")
+	_check(check_inv.banked_items.get("ancient_relic_fragment", 0) == 10, "Bank items untouched on disk")
+
+	# 2. Retry retreat/defeat after error cleared
+	callback_state["fail"] = false
+	var retry_res: Dictionary = expedition.fail_now()
+	_check(retry_res.get("ancient_relic_fragment", 0) == initial_satchel, "fail_now returns lost items on successful retry")
+	_check(callback_state["calls"] == 2, "commit_defeat called second time on retry")
+	_check(failed_signals.size() == 1, "expedition_failed emitted exactly once on success")
+	_check(expedition.is_active == false, "Expedition deactivated on defeat")
+	_check(live_inv.satchel_items.is_empty(), "Satchel wiped on successful defeat commit")
+	_check(live_inv.banked_items.get("ancient_relic_fragment", 0) == 10, "Bank strictly preserved")
+
+	# Check disk state is updated
+	var check_inv_post := InventoryManager.new()
+	var post_load_err: Error = check_inv_post.load_from_store(test_store, "profile_01")
+	_check(post_load_err == OK, "Loaded post-defeat profile")
+	_check(check_inv_post.satchel_items.is_empty(), "Satchel wiped on disk")
+	_check(check_inv_post.banked_items.get("ancient_relic_fragment", 0) == 10, "Bank preserved on disk")
+
+	# 3. Duplicate defeat call rejected
+	var dup_res: Dictionary = expedition.fail_now()
+	_check(dup_res.is_empty(), "Duplicate fail_now call on inactive expedition rejected")
+	_check(callback_state["calls"] == 2, "commit_defeat was NOT called again")
+	_check(failed_signals.size() == 1, "expedition_failed was NOT emitted again")
+
+	expedition.queue_free()
 	_cleanup_dir(test_root)
 
 func _cleanup_dir(path: String) -> void:

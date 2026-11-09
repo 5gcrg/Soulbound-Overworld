@@ -533,6 +533,9 @@ func _try_open_expedition(gateway_id: int) -> bool:
 	player.freeze_movement()
 	instance.inventory = inventory_manager
 	instance.commit_extraction = _commit_extraction
+	instance.commit_defeat = _commit_defeat
+	instance.extraction_save_failed.connect(_on_extraction_save_failed)
+	instance.defeat_save_failed.connect(_on_defeat_save_failed)
 	instance.expedition_completed.connect(_on_expedition_completed)
 	instance.expedition_failed.connect(_on_expedition_failed)
 	instance.expedition_cancelled.connect(_on_expedition_cancelled)
@@ -562,6 +565,26 @@ func _commit_extraction(candidate: InventoryManager) -> Error:
 		_suspended_expedition.clear()
 	return err
 
+func _commit_defeat(candidate: InventoryManager, _lost: Dictionary) -> Error:
+	if profile_store == null or candidate == null:
+		return ERR_UNCONFIGURED
+	var err: Error = _mutate_profile(func(profile: Dictionary) -> Error:
+		profile["inventory"] = candidate.serialize()
+		_clear_active_expedition_record(profile)
+		return OK)
+	if err == OK:
+		inventory_manager.load_from_store(profile_store, _profile_slot)
+		_suspended_expedition.clear()
+	return err
+
+func _on_extraction_save_failed(err: Error) -> void:
+	if status_label != null:
+		status_label.text = "Extraction save failed (error %d). Expedition remains open for retry." % err
+
+func _on_defeat_save_failed(err: Error) -> void:
+	if status_label != null:
+		status_label.text = "Expedition defeat save failed (error %d). Expedition remains open for retry." % err
+
 func _on_expedition_completed(extracted_items: Dictionary) -> void:
 	_suspended_expedition.clear()
 	if status_label != null:
@@ -570,15 +593,6 @@ func _on_expedition_completed(extracted_items: Dictionary) -> void:
 
 func _on_expedition_failed(lost_items: Dictionary) -> void:
 	_suspended_expedition.clear()
-	if profile_store != null:
-		var err: Error = _mutate_profile(func(profile: Dictionary) -> Error:
-			profile["inventory"] = inventory_manager.serialize()
-			_clear_active_expedition_record(profile)
-			return OK)
-		if err != OK and status_label != null:
-			status_label.text = "Expedition defeat save failed (error %d)." % err
-			_close_expedition()
-			return
 	if status_label != null:
 		status_label.text = "Expedition Defeat! Satchel lost (%d items); bank secured." % lost_items.size()
 	_close_expedition()
@@ -1262,6 +1276,9 @@ func _on_debug_dungeon() -> void:
 		player.freeze_movement()
 	instance.inventory = inventory_manager
 	instance.commit_extraction = _commit_extraction
+	instance.commit_defeat = _commit_defeat
+	instance.extraction_save_failed.connect(_on_extraction_save_failed)
+	instance.defeat_save_failed.connect(_on_defeat_save_failed)
 	instance.expedition_completed.connect(_on_expedition_completed)
 	instance.expedition_failed.connect(_on_expedition_failed)
 	instance.expedition_cancelled.connect(_on_expedition_cancelled)

@@ -12,6 +12,7 @@ signal expedition_failed(lost_items: Dictionary)
 signal expedition_cancelled
 signal expedition_suspended(state: Dictionary)
 signal extraction_save_failed(error: Error)
+signal defeat_save_failed(error: Error)
 
 const ROOM_SIZE: Vector2 = Vector2(180, 120)
 const ROOM_SPACING: Vector2 = Vector2(240, 180)
@@ -24,6 +25,7 @@ var extraction_portal: Area2D = null
 var expedition_path: Array[int] = []
 var current_step: int = 0
 var commit_extraction: Callable = Callable()
+var commit_defeat: Callable = Callable()
 var _is_extracting: bool = false
 
 @onready var rooms_container: Node2D = $RoomsContainer
@@ -370,8 +372,29 @@ func extract_now() -> Dictionary:
 func fail_now() -> Dictionary:
 	if not is_active or _is_extracting:
 		return {}
+
+	_is_extracting = true
+
+	var candidate: InventoryManager = InventoryManager.new()
+	candidate.deserialize(inventory.serialize())
+	var lost: Dictionary = candidate.handle_expedition_defeat()
+
+	if commit_defeat.is_valid():
+		var err: Error = commit_defeat.call(candidate, lost)
+		if err != OK:
+			_is_extracting = false
+			if room_description_label != null:
+				room_description_label.text = "Defeat save failed (error %d). Satchel remains at risk. Please retry retreat." % err
+			if retreat_btn != null:
+				retreat_btn.disabled = false
+				retreat_btn.text = "Retry Retreat"
+				retreat_btn.grab_focus()
+			defeat_save_failed.emit(err)
+			return {}
+
+	inventory.deserialize(candidate.serialize())
 	is_active = false
-	var lost: Dictionary = inventory.handle_expedition_defeat()
+	_is_extracting = false
 	expedition_failed.emit(lost)
 	return lost
 

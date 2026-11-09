@@ -504,4 +504,34 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | `tests/headless/dungeon_scene_test.gd` | Exit 0. Probe 5 passed with explicit assertions. |
 | `tests/headless/vertical_slice_test.gd` | Exit 0. Completion-gating not score-gating verified. |
 
+---
+
+## SBL-FIX-007 — Extraction & Defeat Failure UX, Retry Pathways, and Anti-Duplication Guards
+
+- **Milestone** M3 Hardening (Dungeon Expedition & Persistence Failure Invariants).
+- **Requirements** GDD-031..035, GDD-098..103, FR-DNG-001/002, FR-SAV-001, AGENTS.md Invariants ("Preserve secured gear, level/skills, story and educational records after expedition defeat; lose only approved unbanked items and temporary upgrades", "Suspend/resume an expedition does not count as extraction; validate exactly-once reward transfer").
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Scene/Scripts: `scenes/dungeon/dungeon_expedition.gd`, `scenes/main/game_root.gd`.
+  - Tests: `tests/headless/dungeon_scene_test.gd`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None (pure code and UI controls only).
+- **Review** REVIEW_PENDING_CODEX.
+- **Open questions** None.
+
+### Changes
+
+1. **Extraction Failure UX & Retry Path.** `DungeonExpedition.extract_now()` protects candidate inventory in a staged clone, emits `extraction_save_failed`, surfaces error in `room_description_label` and `status_label` without claiming success, keeps the expedition active, and enables the extract button for retry. `GameRoot` binds `_on_extraction_save_failed` to surface non-success status.
+2. **Defeat Failure UX & Retry Path.** Added `commit_defeat: Callable` and `signal defeat_save_failed(error: Error)` to `DungeonExpedition`. On defeat commit failure, `is_active` remains true, satchel items are not wiped prematurely in memory or on disk, `room_description_label` and `GameRoot.status_label` surface the defeat save failure rather than claiming bank secured, and `retreat_btn` remains enabled as "Retry Retreat".
+3. **Double and Early Extraction / Defeat Guards.** Re-asserted early extraction rejection before reaching the extraction chamber. Verified that duplicate extraction and duplicate defeat calls while inactive or committing are strictly rejected, preventing any double banking or duplicate callbacks.
+4. **Recovery Retry Banking Invariant.** Upon save recovery, subsequent retry commits satchel to bank (or satchel wipe on defeat) exactly once.
+
+### Verification Table
+
+| Suite | Result |
+| --- | --- |
+| `tests/headless/dungeon_scene_test.gd` | Exit 0. Verified atomic extraction failure & retry, early extraction rejection, duplicate extraction rejection, defeat commit failure with satchel retention & retry, and duplicate defeat rejection. |
+
+
 
