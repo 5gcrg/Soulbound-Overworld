@@ -65,11 +65,55 @@ func _run_test() -> void:
 	sm.set_high_contrast(true)
 	_check(sm.high_contrast == true, "High contrast set to true")
 
+	# SBL-REV-004: Bus routing and mute assertions
+	sm.apply_audio_buses()
+	var m_bus: int = AudioServer.get_bus_index("Master")
+	var music_bus: int = AudioServer.get_bus_index("Music")
+	var sfx_bus: int = AudioServer.get_bus_index("SFX")
+	_check(m_bus >= 0, "Master bus exists in AudioServer")
+	_check(music_bus >= 0, "Music bus exists in AudioServer")
+	_check(sfx_bus >= 0, "SFX bus exists in AudioServer")
+	_check(AudioServer.get_bus_send(music_bus) == &"Master", "Music bus sends to Master")
+	_check(AudioServer.get_bus_send(sfx_bus) == &"Master", "SFX bus sends to Master")
+
+	# SFX volume zero mutes SFX bus while Master and Music remain unchanged
+	sm.set_master_volume(1.0)
+	sm.set_music_volume(0.8)
+	sm.set_sfx_volume(0.0)
+	_check(AudioServer.is_bus_mute(sfx_bus) == true, "SFX volume 0.0 mutes SFX bus")
+	_check(AudioServer.get_bus_volume_db(sfx_bus) <= -80.0, "SFX bus volume set to <= -80.0 dB on zero")
+	_check(AudioServer.is_bus_mute(m_bus) == false, "Master bus remains unmuted when only SFX is zero")
+	_check(AudioServer.is_bus_mute(music_bus) == false, "Music bus remains unmuted when only SFX is zero")
+
+	# Restore positive SFX volume clears mute flag
+	sm.set_sfx_volume(0.7)
+	_check(AudioServer.is_bus_mute(sfx_bus) == false, "Positive SFX volume clears SFX mute flag")
+	_check(is_equal_approx(AudioServer.get_bus_volume_db(sfx_bus), linear_to_db(0.7)), "Positive SFX volume sets gain accurately")
+
+	# Master volume zero mutes Master bus, affecting all output while Music and SFX remain independent
+	sm.set_master_volume(0.0)
+	_check(AudioServer.is_bus_mute(m_bus) == true, "Master volume 0.0 mutes Master bus")
+	_check(AudioServer.get_bus_volume_db(m_bus) <= -80.0, "Master bus volume set to <= -80.0 dB on zero")
+	_check(AudioServer.is_bus_mute(sfx_bus) == false, "SFX bus mute flag independent of Master mute")
+	_check(AudioServer.is_bus_mute(music_bus) == false, "Music bus mute flag independent of Master mute")
+
+	# Restore Master volume positive
+	sm.set_master_volume(1.0)
+	_check(AudioServer.is_bus_mute(m_bus) == false, "Positive Master volume clears Master mute flag")
+
+	# Set zero master for file save test
+	sm.set_master_volume(0.0)
+	sm.set_sfx_volume(0.0)
+
 	sm.settings_changed.disconnect(on_changed)
 
 	# Round-trip Save and Load
 	var err_save: Error = sm.save_settings(_test_settings_path)
 	_check(err_save == OK, "Settings successfully saved to disk")
+
+	# Unmute buses in runtime to prove load_settings re-applies mute states
+	AudioServer.set_bus_mute(m_bus, false)
+	AudioServer.set_bus_mute(sfx_bus, false)
 
 	var sm_loaded: SettingsManager = SettingsManager.new()
 	var err_load: Error = sm_loaded.load_settings(_test_settings_path)
@@ -78,6 +122,9 @@ func _run_test() -> void:
 	_check(sm_loaded.high_contrast == true, "Loaded high_contrast matches saved")
 	_check(is_equal_approx(sm_loaded.text_scale, 1.5), "Loaded text_scale matches saved")
 	_check(is_equal_approx(sm_loaded.master_volume, 0.0), "Loaded master_volume matches saved")
+	_check(is_equal_approx(sm_loaded.sfx_volume, 0.0), "Loaded sfx_volume matches saved")
+	_check(AudioServer.is_bus_mute(m_bus) == true, "load_settings reapplied Master bus mute")
+	_check(AudioServer.is_bus_mute(sfx_bus) == true, "load_settings reapplied SFX bus mute")
 
 	# ==========================================================================
 	# Part 2: SettingsSheet UI Component Flow

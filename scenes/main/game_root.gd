@@ -77,6 +77,8 @@ func _ready() -> void:
 	if status_label != null:
 		status_label.text = ""
 
+	AudioManager.ensure_audio_buses()
+
 	audio_manager = AudioManager.new()
 	audio_manager.name = "AudioManager"
 	add_child(audio_manager)

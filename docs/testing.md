@@ -57,13 +57,13 @@ At current development baseline (Batch 2), there are **25 headless test suites**
 | `education_report_test.gd` | Question bank, immutable first-attempt tracking, RFC-4180 CSV export |
 | `ui_sheets_test.gd` | Character sheet, inventory sheet, hotkey toggles (`C` / `I`), gear equip |
 | `chapter_progression_test.gd` | 3-chapter lifecycle, completion gating, bramble dissolve, academic portal |
-| `settings_accessibility_test.gd` | Audio sliders, text scale (0.8–1.5x), high contrast overrides, keyboard navigation, SBL-REV-002 title settings overlay Escape & focus restoration |
+| `settings_accessibility_test.gd` | Audio sliders, text scale (0.8–1.5x), high contrast overrides, keyboard navigation, SBL-REV-002 title settings overlay Escape & focus restoration, SBL-REV-004 SFX bus routing, mute flags, and settings reload persistence |
 | `e2e_academic_playthrough_test.gd` | Complete student journey: Ch I -> Ch II -> Ch III -> Academic Modal -> CSV |
 | `educator_analytics_test.gd` | 12-student cohort batch simulation across archetypes, CSV generation |
 | `web_backup_test.gd` | Web profile JSON backup export/import, invalid JSON rejection, clipboard bridge, suspended run roundtrip, SBL-REV-002 title-selected slot context isolation |
 | `status_engine_test.gd` | DoT/HoT status ticks, shield absorption, stun/silence action blocking, serialization |
 | `evaluator_debug_bar_test.gd` | F1 debug tools, warps, instant cheats, terminal modal input exclusivity |
-| `title_screen_audio_test.gd` | Procedural AudioStreamWAV synthesis, 9 sound cues, title screen slot selection, SBL-REV-002 Title Settings and Backup layer 9 overlay |
+| `title_screen_audio_test.gd` | Procedural AudioStreamWAV synthesis, 9 sound cues, title screen slot selection, SBL-REV-002 Title Settings and Backup layer 9 overlay, SBL-REV-004 idempotent bus creation, routing to Master, player SFX assignment |
 | `ending_chapter5_test.gd` | Chapter V Void Citadel warp, dual-ending altars (A & B), capstone question |
 | `boss_combat_test.gd` | Void Sovereign multi-phase combat, Astral Shield, Cataclysm 2-turn telegraph |
 | `kurei_tree_test.gd` | 4-branch 2-tier skill tree, talent points, tier prerequisites, respec refund |

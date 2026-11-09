@@ -1631,3 +1631,67 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 | `title_screen_audio_test.gd` | Exit 0 | Regression suite passed; procedural audio, title settings overlay, defense demo quick-start, and evaluator reopening verified. |
 | Full headless test runner (`run_headless_tests.ps1`) | Exit 0 (30/30 passed) | All 30 project headless suites pass with 0 Godot script/engine errors across all game systems. |
 | Release exporter (`export_release.ps1`) | Exit 0 | Full release export validated; generated `Soulbound-Windows-Portable.zip` and `Soulbound-Web.zip`; PCK headless gate validation succeeded on both packages; project.godot restored byte-identical. |
+
+---
+
+## SBL-REV-004 — Effective SFX Bus Routing and Mute
+
+- **Milestone** Remediation Batch B (Audio Routing & Settings Hardening).
+- **Requirements** GDD-087, FR-SET-001, TC-ACC-001 (audio-controls portion), GDD-096.
+- **Codex finding** Finding 7, P2 from Codex review session `01a1bee0-6c04-72b0-b38d-6bce20925f2f`:
+  "`scripts/audio/audio_manager.gd:28-31`: No audio bus layout defines `SFX` and no code creates it, so the players fall back to Master and `apply_audio_buses()` skips SFX. Setting SFX volume to zero does not mute the new sound effects."
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - `scripts/audio/audio_manager.gd`
+  - `scripts/settings/settings_manager.gd`
+  - `scenes/main/game_root.gd`
+  - `tests/headless/title_screen_audio_test.gd`
+  - `tests/headless/settings_accessibility_test.gd`
+  - `docs/agent-review-queue.md`
+  - `docs/traceability-matrix.md`
+  - `docs/testing.md`
+- **Asset provenance** None (pure GDScript runtime bus configuration, AudioServer routing, and procedural AudioStreamWAV synthesis; zero image generation and zero binary audio assets).
+- **Review** REVIEW_PENDING_CODEX.
+- **Open questions** `OD-015`: binary audio asset specification remains pending human/Gemini Flash audio spec approval; procedural audio cues remain active runtime fallback.
+
+### Changes
+
+1. **Idempotent Bus Initialization Helper (`AudioManager.ensure_audio_buses()`)**:
+   - Added `static func ensure_audio_buses() -> void` to `AudioManager` with internal helper `_ensure_bus(bus_name, send_to)`.
+   - Reuses existing buses by name if already present in `AudioServer`, preserving bus indices and unrelated buses.
+   - If missing, adds `Music` and `SFX` buses and configures their sends strictly to `Master`.
+   - Idempotent: repeated calls do not duplicate, reorder, or overwrite buses.
+2. **Pre-Player Bus Creation & Strict Player Bus Assignment (`AudioManager._create_players()`)**:
+   - Invokes `ensure_audio_buses()` in `_init()` and `_ready()` before any player is created.
+   - Invokes `AudioManager.ensure_audio_buses()` at the very start of `GameRoot._ready()` before `AudioManager.new()`.
+   - In `_create_players()`, verifies that `SFX` bus exists (`sfx_idx >= 0`) before instantiating players.
+   - Explicitly assigns each `AudioStreamPlayer` to `BUS_SFX` and asserts `player.bus == BUS_SFX`, preventing silent fallback to `Master`. Added public `get_players()` method.
+3. **Mute Flag Application & Gain Management (`SettingsManager.apply_audio_buses()`)**:
+   - Updated `SettingsManager.apply_audio_buses()` to call `AudioManager.ensure_audio_buses()` before reading bus indices.
+   - For zero volume (`<= 0.001`), sets bus mute flag to `true` via `AudioServer.set_bus_mute(bus_idx, true)` in addition to setting gain to `-80.0 dB`.
+   - For positive volume (`> 0.001`), clears the bus mute flag (`AudioServer.set_bus_mute(bus_idx, false)`) and calculates gain via `linear_to_db(volume)`.
+   - Master volume zero mutes the `Master` bus, affecting all audio output, while `Music` and `SFX` buses maintain independent mute and volume states.
+   - SFX volume zero mutes the `SFX` bus while leaving `Master` and `Music` buses unaffected.
+   - Loading saved settings (`load_settings()`) re-applies both mute flags and dB levels to existing buses.
+4. **Automated Headless Regression & Acceptance Tests**:
+   - Extended `tests/headless/title_screen_audio_test.gd`: removes test `Music`/`SFX` buses, calls `ensure_audio_buses()`, asserts exactly one of each exists, routes to `Master`, instantiates `AudioManager`, asserts all 8 cue players report `SFX` bus (never `Master`), verifies reinitialization creates 0 duplicate buses, and verifies playback of all 9 procedural sound cues.
+   - Extended `tests/headless/settings_accessibility_test.gd`: asserts zero SFX volume mutes SFX bus without mutating Master/Music mute, positive SFX volume clears mute, zero Master volume mutes Master bus without mutating SFX/Music mute flags, and settings save/reload reapplies bus mute flags from file.
+5. **Negative Controls & Native Audio Verification**:
+   - Negative Control 1: Omitted SFX initialization / routed player to Master -> assertion failed with exit code 1 (`report/neg_sfx_routing_omit.log`).
+   - Negative Control 2: Initialized buses after player creation -> player-routing assertion caught fallback to `Master` and exited code 1 (`report/neg_sfx_init_after_players.log`).
+   - Negative Control 3: Removed SFX mute update on zero volume -> zero-volume mute assertion caught false mute flag and exited code 1 (`report/neg_sfx_mute_update_omitted.log`).
+   - Native Listening Check: Executed non-headless Godot script on Windows using official driver `WASAPI` -> verified AudioServer bus count 3, Master and SFX active, cues `button`, `strike`, `heal`, `correct` played cleanly without errors (`report/native_audio_listening_check.log`).
+
+### Verification Table
+
+| Test Scope / Invocation | Result | Evidence |
+|---|---|---|
+| `title_screen_audio_test.gd` (Part 1 bus routing) | Exit 0 | Bus removal and re-creation verified; exactly 1 Music and 1 SFX bus routing to Master; 8 players assigned to SFX; no duplicate buses on re-init; 9 procedural cues played. |
+| `settings_accessibility_test.gd` (Audio routing & mute) | Exit 0 | SFX zero volume mutes SFX bus; Master/Music unchanged; positive SFX unmutes; Master zero volume mutes Master; settings reload reapplies mute states. |
+| Native listening check (`native_audio_listening_check.gd`) | Exit 0 | Verified native audio driver `WASAPI` on Windows, AudioServer buses initialized, cues played cleanly. |
+| Negative control 1: Omit SFX initialization | Exit 1 | Player routing assertion caught player bus on Master; exited 1 (`report/neg_sfx_routing_omit.log`). |
+| Negative control 2: Init buses after players | Exit 1 | Player creation assertion caught fallback to Master; exited 1 (`report/neg_sfx_init_after_players.log`). |
+| Negative control 3: Omit mute update | Exit 1 | Zero-volume assertion caught mute flag false; exited 1 (`report/neg_sfx_mute_update_omitted.log`). |
+| Full headless runner (`run_headless_tests.ps1`) | Exit 0 (30/30 passed) | All 30 project headless suites pass with 0 Godot script/engine errors across all game systems. |
+| Release exporter (`export_release.ps1`) | Exit 0 | Built `Soulbound-Web.zip` and `Soulbound-Windows-Portable.zip`; validated PCK gates and entry points; verified working tree byte-identical. |

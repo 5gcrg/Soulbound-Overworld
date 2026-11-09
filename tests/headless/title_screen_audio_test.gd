@@ -18,13 +18,57 @@ func _run_test() -> void:
 	print("--- Running SBL-TITLE-001 Title Screen & Procedural Audio Test Suite ---")
 
 	# ==========================================================================
-	# Part 1: AudioManager Verification
+	# Part 1: AudioManager & SBL-REV-004 Bus Routing Verification
 	# ==========================================================================
+	# 1. Clean removal test: remove any pre-existing test Music/SFX buses
+	var sfx_initial: int = AudioServer.get_bus_index("SFX")
+	if sfx_initial >= 0:
+		AudioServer.remove_bus(sfx_initial)
+	var music_initial: int = AudioServer.get_bus_index("Music")
+	if music_initial >= 0:
+		AudioServer.remove_bus(music_initial)
+
+	_check(AudioServer.get_bus_index("SFX") < 0, "SFX bus removed for isolated initialization test")
+	_check(AudioServer.get_bus_index("Music") < 0, "Music bus removed for isolated initialization test")
+
+	# 2. Initialize buses and assert existence, single instances, and routing to Master
+	AudioManager.ensure_audio_buses()
+
+	var mus_idx: int = AudioServer.get_bus_index("Music")
+	var sfx_idx: int = AudioServer.get_bus_index("SFX")
+	_check(mus_idx >= 0, "Music bus created by AudioManager.ensure_audio_buses()")
+	_check(sfx_idx >= 0, "SFX bus created by AudioManager.ensure_audio_buses()")
+
+	var music_count: int = 0
+	var sfx_count: int = 0
+	for b in range(AudioServer.bus_count):
+		if AudioServer.get_bus_name(b) == "Music":
+			music_count += 1
+		elif AudioServer.get_bus_name(b) == "SFX":
+			sfx_count += 1
+
+	_check(music_count == 1, "Exactly one Music bus exists")
+	_check(sfx_count == 1, "Exactly one SFX bus exists")
+	_check(AudioServer.get_bus_send(mus_idx) == &"Master", "Music bus routes to Master")
+	_check(AudioServer.get_bus_send(sfx_idx) == &"Master", "SFX bus routes to Master")
+
+	# 3. Reinitialize and assert no duplicate buses
+	var bus_count_before: int = AudioServer.bus_count
+	AudioManager.ensure_audio_buses()
+	_check(AudioServer.bus_count == bus_count_before, "Re-initialization creates no duplicate buses")
+
+	# 4. Instantiate AudioManager and assert all cue players route to SFX (never Master)
 	var audio := AudioManager.new()
 	root.add_child(audio)
 	await process_frame
 
 	_check(audio._players.size() == 8, "AudioManager initialized with 8 audio players")
+	_check(audio.get_players().size() == 8, "get_players() returns 8 players")
+	for i in range(audio._players.size()):
+		var p: AudioStreamPlayer = audio._players[i]
+		_check(p.bus == AudioManager.BUS_SFX, "Player %d assigned to SFX bus (got: %s)" % [i, p.bus])
+		_check(p.bus != AudioManager.BUS_MASTER, "Player %d did not silently fall back to Master" % i)
+
 	_check(audio._cache.size() >= 9, "All 9 procedural sound cues pregenerated in memory")
 
 	var cues_to_test: Array[String] = [

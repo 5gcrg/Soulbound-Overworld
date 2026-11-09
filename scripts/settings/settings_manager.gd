@@ -43,15 +43,25 @@ func set_sfx_volume(vol: float) -> void:
 	settings_changed.emit()
 
 func apply_audio_buses() -> void:
+	AudioManager.ensure_audio_buses()
+
 	var m_bus: int = AudioServer.get_bus_index("Master")
 	if m_bus >= 0:
-		AudioServer.set_bus_volume_db(m_bus, linear_to_db(master_volume) if master_volume > 0.001 else -80.0)
+		var is_master_zero: bool = master_volume <= 0.001
+		AudioServer.set_bus_mute(m_bus, is_master_zero)
+		AudioServer.set_bus_volume_db(m_bus, linear_to_db(master_volume) if not is_master_zero else -80.0)
+
 	var music_bus: int = AudioServer.get_bus_index("Music")
 	if music_bus >= 0:
-		AudioServer.set_bus_volume_db(music_bus, linear_to_db(music_volume) if music_volume > 0.001 else -80.0)
+		var is_music_zero: bool = music_volume <= 0.001
+		AudioServer.set_bus_mute(music_bus, is_music_zero)
+		AudioServer.set_bus_volume_db(music_bus, linear_to_db(music_volume) if not is_music_zero else -80.0)
+
 	var sfx_bus: int = AudioServer.get_bus_index("SFX")
 	if sfx_bus >= 0:
-		AudioServer.set_bus_volume_db(sfx_bus, linear_to_db(sfx_volume) if sfx_volume > 0.001 else -80.0)
+		var is_sfx_zero: bool = sfx_volume <= 0.001
+		AudioServer.set_bus_mute(sfx_bus, is_sfx_zero)
+		AudioServer.set_bus_volume_db(sfx_bus, linear_to_db(sfx_volume) if not is_sfx_zero else -80.0)
 
 func apply_all_settings() -> void:
 	apply_audio_buses()

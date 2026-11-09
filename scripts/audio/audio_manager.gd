@@ -15,21 +15,56 @@ extends Node
 signal cue_played(cue_name: String)
 
 const SAMPLE_RATE: int = 22050
+const BUS_MASTER: StringName = &"Master"
+const BUS_MUSIC: StringName = &"Music"
 const BUS_SFX: StringName = &"SFX"
 
 var _cache: Dictionary = {}
 var _players: Array[AudioStreamPlayer] = []
 var _max_players: int = 8
 
+## Idempotent bus-initialization helper callable before player creation and before settings application.
+## Ensures Music and SFX buses exist and route to Master without duplicating or reordering buses.
+static func ensure_audio_buses() -> void:
+	_ensure_bus(BUS_MUSIC, BUS_MASTER)
+	_ensure_bus(BUS_SFX, BUS_MASTER)
+
+static func _ensure_bus(bus_name: StringName, send_to: StringName) -> int:
+	var idx: int = AudioServer.get_bus_index(bus_name)
+	if idx < 0:
+		AudioServer.add_bus()
+		idx = AudioServer.bus_count - 1
+		AudioServer.set_bus_name(idx, String(bus_name))
+	if AudioServer.get_bus_send(idx) != send_to:
+		AudioServer.set_bus_send(idx, send_to)
+	return idx
+
+func _init() -> void:
+	ensure_audio_buses()
+
 func _ready() -> void:
-	# Ensure SFX audio players exist
+	ensure_audio_buses()
+	if _players.is_empty():
+		_create_players()
+	_pregenerate_cues()
+
+func _create_players() -> void:
+	var sfx_idx: int = AudioServer.get_bus_index(BUS_SFX)
+	if sfx_idx < 0:
+		push_error("AudioManager: SFX bus does not exist before creating players")
+	assert(sfx_idx >= 0, "AudioManager: SFX bus must exist before creating players")
+
 	for i in range(_max_players):
 		var player := AudioStreamPlayer.new()
 		player.bus = BUS_SFX
+		if player.bus != BUS_SFX:
+			push_error("AudioManager: player bus fell back to %s instead of %s" % [player.bus, BUS_SFX])
+		assert(player.bus == BUS_SFX, "AudioManager: player bus must be SFX")
 		add_child(player)
 		_players.append(player)
 
-	_pregenerate_cues()
+func get_players() -> Array[AudioStreamPlayer]:
+	return _players
 
 func play_cue(cue_name: String) -> void:
 	if not _cache.has(cue_name):
