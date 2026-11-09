@@ -292,13 +292,29 @@ func serialize_expedition() -> Dictionary:
 func restore_expedition(data: Dictionary) -> bool:
 	if typeof(data) != TYPE_DICTIONARY or not data.get("is_active", false):
 		return false
-	var seed_val: int = int(data.get("seed", 1337))
+	if typeof(data.get("seed")) != TYPE_INT and typeof(data.get("seed")) != TYPE_FLOAT:
+		return false
+	if typeof(data.get("room_count")) != TYPE_INT and typeof(data.get("room_count")) != TYPE_FLOAT:
+		return false
 	var room_count: int = int(data.get("room_count", 6))
+	if room_count < 1 or room_count > 1024:
+		return false
+	var satchel: Variant = data.get("satchel_items", {})
+	if typeof(satchel) != TYPE_DICTIONARY:
+		return false
+	for item_id: Variant in (satchel as Dictionary).keys():
+		if typeof(item_id) != TYPE_STRING or String(item_id).is_empty():
+			return false
+		var count: Variant = (satchel as Dictionary)[item_id]
+		if typeof(count) != TYPE_INT and typeof(count) != TYPE_FLOAT:
+			return false
+		if int(count) <= 0:
+			return false
+	var seed_val: int = int(data.get("seed", 1337))
 	if not setup(seed_val, room_count):
 		return false
 	current_step = clampi(int(data.get("current_step", 0)), 0, maxi(0, expedition_path.size() - 1))
-	var satchel: Dictionary = data.get("satchel_items", {})
-	inventory.satchel_items = satchel.duplicate()
+	inventory.satchel_items = (satchel as Dictionary).duplicate()
 	is_active = true
 	_is_extracting = false
 	if is_inside_tree():

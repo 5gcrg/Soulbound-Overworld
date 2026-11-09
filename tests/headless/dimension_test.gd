@@ -51,6 +51,77 @@ func _run_test() -> void:
 	var mock_safe: bool = dm.can_shift_to(DimensionManager.Dimension.SPIRIT, Vector2(100, 100), shape, null)
 	_check(mock_safe == true, "Safe without direct obstacle hits")
 
+	# ==========================================================================
+	# Player collision mask follows the active plane
+	# ==========================================================================
+	var player: PlayerCharacter = preload("res://scenes/player/player.tscn").instantiate()
+	root.add_child(player)
+	dm.apply_player_collision(player)
+	_check(player.collision_mask == DimensionManager.COLLISION_MASK_PHYSICAL, "Player collides with physical layer in PHYSICAL")
+	dm.request_shift(player, null)
+	_check(player.collision_mask == DimensionManager.COLLISION_MASK_SPIRIT, "Player collides with spirit layer in SPIRIT")
+	dm.request_shift(player, null)
+	_check(player.collision_mask == DimensionManager.COLLISION_MASK_PHYSICAL, "Player mask restored on return to PHYSICAL")
+
+	# ==========================================================================
+	# Region-scoped visibility and collision toggling
+	# ==========================================================================
+	var region_a := Node2D.new()
+	var region_b := Node2D.new()
+	root.add_child(region_a)
+	root.add_child(region_b)
+
+	var physical_body := StaticBody2D.new()
+	physical_body.add_to_group("physical_only")
+	var physical_shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(24, 24)
+	physical_shape.shape = rect
+	physical_body.add_child(physical_shape)
+	region_a.add_child(physical_body)
+
+	var spirit_container := Node2D.new()
+	spirit_container.add_to_group("spirit_only")
+	var spirit_body := StaticBody2D.new()
+	var spirit_shape := CollisionShape2D.new()
+	spirit_shape.shape = rect
+	spirit_body.add_child(spirit_shape)
+	spirit_container.add_child(spirit_body)
+	region_a.add_child(spirit_container)
+
+	# A sibling region's node must never be touched by region_a's application.
+	var sibling_body := StaticBody2D.new()
+	sibling_body.add_to_group("physical_only")
+	var sibling_shape := CollisionShape2D.new()
+	sibling_shape.shape = rect
+	sibling_body.add_child(sibling_shape)
+	region_b.add_child(sibling_body)
+
+	dm.apply_dimension_to_region(region_a)
+	_check(physical_body.visible == true, "Physical group visible in PHYSICAL")
+	_check(physical_body.is_shape_owner_disabled(0) == false, "Physical collision enabled in PHYSICAL")
+	_check(spirit_container.visible == false, "Spirit group hidden in PHYSICAL")
+	_check(spirit_body.is_shape_owner_disabled(0) == true, "Nested spirit collision disabled in PHYSICAL")
+	_check(sibling_body.is_shape_owner_disabled(0) == false, "Sibling region untouched by scoped apply")
+
+	dm.request_shift(null, null)
+	dm.apply_dimension_to_region(region_a)
+	_check(physical_body.visible == false, "Physical group hidden in SPIRIT")
+	_check(physical_body.is_shape_owner_disabled(0) == true, "Physical collision disabled in SPIRIT")
+	_check(spirit_container.visible == true, "Spirit group visible in SPIRIT")
+	_check(spirit_body.is_shape_owner_disabled(0) == false, "Nested spirit collision enabled in SPIRIT")
+	_check(sibling_body.is_shape_owner_disabled(0) == false, "Sibling region still untouched in SPIRIT")
+
+	dm.request_shift(null, null)
+	dm.apply_dimension_to_region(region_a)
+	_check(physical_body.is_shape_owner_disabled(0) == false, "Physical collision restored after round trip")
+	_check(spirit_body.is_shape_owner_disabled(0) == true, "Spirit collision disabled after round trip")
+
+	player.queue_free()
+	region_a.queue_free()
+	region_b.queue_free()
+	await process_frame
+
 	if _failures > 0:
 		printerr("DIMENSION TESTS FAILED: ", _failures)
 		quit(1)

@@ -63,6 +63,9 @@ func _run_test() -> void:
 	# Run SBL-P1-C Expedition Suspend & Resume Test
 	_test_expedition_suspend_and_resume()
 
+	# Run SBL-FIX-006 persisted suspend snapshot test
+	await _test_game_persisted_expedition_resume()
+
 	if _failures > 0:
 		printerr("DUNGEON SCENE TESTS FAILED: ", _failures)
 		quit(1)
@@ -235,6 +238,77 @@ func _test_expedition_suspend_and_resume() -> void:
 	_check(resumed_expedition.inventory.satchel_items.is_empty(), "Satchel empty after extraction")
 
 	resumed_expedition.queue_free()
+
+## SBL-FIX-006: a suspend snapshot must survive a new GameRoot session, and extraction
+## must clear it in the same profile write so rewards cannot be banked twice.
+func _test_game_persisted_expedition_resume() -> void:
+	print("--- Running SBL-FIX-006 Persisted Expedition Resume Test ---")
+	var test_root: String = "user://test_dungeon_persist_%d_%d" % [OS.get_process_id(), Time.get_ticks_usec()]
+	var store: ProfileStore = ProfileStore.new(test_root)
+	var game = preload("res://scenes/main/game_root.tscn").instantiate()
+	game.profile_store = store
+	root.add_child(game)
+	game._init_slice_progress(store, "profile_01")
+	await process_frame
+
+	# Build a real suspended snapshot, then persist it through the GameRoot path.
+	var expedition: DungeonExpedition = DungeonExpeditionScene.instantiate() as DungeonExpedition
+	root.add_child(expedition)
+	_check(expedition.setup(777, 6), "Persist test expedition setup")
+	expedition._on_advance_pressed()
+	var suspended: Dictionary = expedition.suspend_expedition()
+	var satchel_count: int = expedition.inventory.satchel_items.get("ancient_relic_fragment", 0)
+	expedition.queue_free()
+	_check(satchel_count > 0, "Persist test gathered satchel loot")
+
+	game._on_expedition_suspended(suspended)
+	await process_frame
+	var persisted: Dictionary = store.load_profile("profile_01")
+	_check(persisted.get("error", ERR_UNCONFIGURED) == OK, "Persisted profile loads")
+	var persisted_profile: Dictionary = persisted.get("profile", {})
+	_check((persisted_profile.get("world", {}) as Dictionary).has("active_expedition"), "Suspend snapshot written to profile world")
+
+	# A fresh session must reload the snapshot for resume.
+	var resumed = preload("res://scenes/main/game_root.tscn").instantiate()
+	resumed.profile_store = store
+	root.add_child(resumed)
+	resumed._init_slice_progress(store, "profile_01")
+	await process_frame
+	_check(not resumed._suspended_expedition.is_empty(), "New session reloads suspended expedition")
+	_check(int(resumed._suspended_expedition.get("current_step", -1)) == 1, "Reloaded suspend step preserved")
+
+	# Malformed snapshots must be rejected by the backup preflight validator.
+	var bad_profile: Dictionary = persisted_profile.duplicate(true)
+	var bad_state: Dictionary = suspended.duplicate(true)
+	bad_state["satchel_items"] = {"ancient_relic_fragment": 0}
+	bad_profile["world"]["active_expedition"] = bad_state
+	_check(GameplayProfileValidator.validate(bad_profile) != OK, "Invalid active_expedition rejected by validator")
+
+	# Extraction clears the snapshot atomically with the bank transfer.
+	var candidate: InventoryManager = InventoryManager.new()
+	candidate.deserialize(resumed.inventory_manager.serialize())
+	candidate.satchel_items = suspended.get("satchel_items", {}).duplicate()
+	candidate.extract_satchel_to_bank()
+	var err: Error = resumed._commit_extraction(candidate)
+	_check(err == OK, "Atomic extraction commit succeeded")
+	var after: Dictionary = store.load_profile("profile_01")
+	var after_profile: Dictionary = after.get("profile", {})
+	_check(not (after_profile.get("world", {}) as Dictionary).has("active_expedition"), "Extraction clears persisted suspend snapshot")
+	_check(int(after_profile["inventory"]["banked"].get("ancient_relic_fragment", 0)) == satchel_count, "Extraction banks satchel exactly once")
+
+	# A subsequent session must not find a resumable run (no duplicate reward path).
+	var fresh = preload("res://scenes/main/game_root.tscn").instantiate()
+	fresh.profile_store = store
+	root.add_child(fresh)
+	fresh._init_slice_progress(store, "profile_01")
+	await process_frame
+	_check(fresh._suspended_expedition.is_empty(), "Cleared snapshot is not resumable")
+
+	game.queue_free()
+	resumed.queue_free()
+	fresh.queue_free()
+	await process_frame
+	_cleanup_dir(test_root)
 
 func _cleanup_dir(path: String) -> void:
 	var global_path: String = ProjectSettings.globalize_path(path)

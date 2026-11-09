@@ -20,6 +20,7 @@ const EXPECTED_ENCOUNTER_ID: StringName = &"combat_alpha_fixture"
 const EXPECTED_NPC_ID: StringName = &"quest_guide_alpha"
 const EXPECTED_GATEWAY_ID: StringName = &"expedition_shrine_alpha"
 const EXPECTED_ACADEMIC_PORTAL_ID: StringName = &"academic_mvp_sanctum"
+const ACTIVE_EXPEDITION_KEY: String = "active_expedition"
 
 var _battle: Control = null
 var _battle_pending: bool = false
@@ -80,6 +81,7 @@ func _ready() -> void:
 	if settings_manager != null:
 		settings_manager.load_settings()
 		settings_manager.settings_changed.connect(_apply_runtime_settings)
+		get_tree().node_added.connect(_on_ui_node_added)
 		_apply_runtime_settings()
 
 	_init_slice_progress()
@@ -141,11 +143,13 @@ func _init_slice_progress(store: ProfileStore = null, slot: String = "profile_01
 	_update_objective()
 
 	_chapter_baseline = JSON.stringify(prof_dict.get("world", {}).get("chapter_progress", {}))
+	_load_active_expedition()
 
 func _on_region_transition_completed(region_id: String, spawn_id: String) -> void:
 	_current_region_id = region_id
 	_bind_region_fixtures()
 	_sync_chapter_gates()
+	_sync_dimension_state()
 	if audio_manager != null:
 		audio_manager.play_cue("portal")
 	if status_label != null:
@@ -166,11 +170,13 @@ func _bind_region_fixtures() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("shift_dimension"):
-		if player != null and not player.input_frozen and world_router != null and world_router.active_region != null:
+		if player != null and not player.input_frozen and not has_blocking_modal() \
+				and world_router != null and world_router.active_region != null \
+				and not world_router.is_transition_in_flight:
 			var space: PhysicsDirectSpaceState2D = player.get_world_2d().direct_space_state if player.get_world_2d() != null else null
 			var err: Error = dimension_manager.request_shift(player, space)
 			if err == OK:
-				dimension_manager.apply_dimension_to_region(world_router.active_region)
+				_sync_dimension_state()
 				if audio_manager != null:
 					audio_manager.play_cue("shift")
 				if status_label != null:
@@ -191,6 +197,15 @@ func _unhandled_input(event: InputEvent) -> void:
 			if audio_manager != null:
 				audio_manager.play_cue("button")
 			_toggle_settings_sheet()
+
+## Re-applies the active dimension to the live region and player after a shift or travel.
+func _sync_dimension_state() -> void:
+	if dimension_manager == null:
+		return
+	if player != null and is_instance_valid(player):
+		dimension_manager.apply_player_collision(player)
+	if world_router != null and world_router.active_region != null and is_instance_valid(world_router.active_region):
+		dimension_manager.apply_dimension_to_region(world_router.active_region)
 
 func has_blocking_modal() -> bool:
 	return (_battle != null and is_instance_valid(_battle)) \
@@ -533,12 +548,18 @@ func _try_open_expedition(gateway_id: int) -> bool:
 			status_label.text = "Expedition active: Reach Extraction Portal"
 	return true
 
+## Extraction and the clearing of the active-expedition record are committed in a single
+## profile write, so a resumed save can never bank the same satchel twice.
 func _commit_extraction(candidate: InventoryManager) -> Error:
 	if profile_store == null or candidate == null:
 		return ERR_UNCONFIGURED
-	var err: Error = candidate.save_to_store(profile_store, _profile_slot)
+	var err: Error = _mutate_profile(func(profile: Dictionary) -> Error:
+		profile["inventory"] = candidate.serialize()
+		_clear_active_expedition_record(profile)
+		return OK)
 	if err == OK:
 		inventory_manager.load_from_store(profile_store, _profile_slot)
+		_suspended_expedition.clear()
 	return err
 
 func _on_expedition_completed(extracted_items: Dictionary) -> void:
@@ -550,21 +571,82 @@ func _on_expedition_completed(extracted_items: Dictionary) -> void:
 func _on_expedition_failed(lost_items: Dictionary) -> void:
 	_suspended_expedition.clear()
 	if profile_store != null:
-		inventory_manager.save_to_store(profile_store, _profile_slot)
+		var err: Error = _mutate_profile(func(profile: Dictionary) -> Error:
+			profile["inventory"] = inventory_manager.serialize()
+			_clear_active_expedition_record(profile)
+			return OK)
+		if err != OK and status_label != null:
+			status_label.text = "Expedition defeat save failed (error %d)." % err
+			_close_expedition()
+			return
 	if status_label != null:
 		status_label.text = "Expedition Defeat! Satchel lost (%d items); bank secured." % lost_items.size()
 	_close_expedition()
 
 func _on_expedition_cancelled() -> void:
+	var had_saved_state: bool = not _suspended_expedition.is_empty()
+	_suspended_expedition.clear()
+	if had_saved_state:
+		_persist_active_expedition({})
 	if status_label != null:
 		status_label.text = "Expedition cancelled. Returned to overworld."
 	_close_expedition()
 
 func _on_expedition_suspended(state: Dictionary) -> void:
 	_suspended_expedition = state.duplicate(true)
+	var err: Error = _persist_active_expedition(_suspended_expedition)
 	if status_label != null:
-		status_label.text = "Expedition suspended. Satchel preserved."
+		if err == OK:
+			status_label.text = "Expedition suspended. Satchel preserved for resume."
+		else:
+			status_label.text = "Expedition suspended in memory; resume save failed (error %d)." % err
 	_close_expedition()
+
+## Loads the persisted suspend snapshot so a resumed session can continue the same run.
+func _load_active_expedition() -> void:
+	_suspended_expedition = {}
+	if profile_store == null:
+		return
+	var loaded: Dictionary = profile_store.load_profile(_profile_slot)
+	if loaded["error"] != OK:
+		return
+	var profile: Dictionary = loaded["profile"] as Dictionary
+	var world: Dictionary = profile["world"] if profile.get("world") is Dictionary else {}
+	var state: Variant = world.get(ACTIVE_EXPEDITION_KEY, {})
+	if state is Dictionary and bool((state as Dictionary).get("is_active", false)):
+		_suspended_expedition = (state as Dictionary).duplicate(true)
+
+func _persist_active_expedition(state: Dictionary) -> Error:
+	return _mutate_profile(func(profile: Dictionary) -> Error:
+		var world: Dictionary = profile["world"] if profile.get("world") is Dictionary else {}
+		if state.is_empty():
+			world.erase(ACTIVE_EXPEDITION_KEY)
+		else:
+			world[ACTIVE_EXPEDITION_KEY] = state.duplicate(true)
+		profile["world"] = world
+		return OK)
+
+func _clear_active_expedition_record(profile: Dictionary) -> void:
+	var world: Dictionary = profile["world"] if profile.get("world") is Dictionary else {}
+	world.erase(ACTIVE_EXPEDITION_KEY)
+	profile["world"] = world
+
+## Load-modify-save against the newest revision so unrelated sections are never clobbered.
+func _mutate_profile(mutator: Callable) -> Error:
+	if profile_store == null:
+		return ERR_UNCONFIGURED
+	var loaded: Dictionary = profile_store.load_profile(_profile_slot)
+	var profile: Dictionary = {}
+	if loaded["error"] == ERR_FILE_NOT_FOUND:
+		profile = profile_store.new_profile(_profile_slot)
+	elif loaded["error"] == OK:
+		profile = (loaded["profile"] as Dictionary).duplicate(true)
+	else:
+		return loaded["error"]
+	var result: Variant = mutator.call(profile)
+	if result is int and int(result) != OK:
+		return int(result) as Error
+	return profile_store.save_profile(_profile_slot, profile)
 
 func _close_expedition() -> void:
 	if player != null and is_instance_valid(player):
@@ -729,19 +811,61 @@ func _close_settings_sheet() -> void:
 	if _character_sheet == null and _inventory_sheet == null and _battle == null and _boss_encounter == null and _dialog == null and _expedition == null and _academic_modal == null and _ending_modal == null and _chapter_dialog == null:
 		_restore_combat_movement()
 
+const _BASE_FONT_META: StringName = &"_base_font_size"
+const _BASE_FONT_OVERRIDE_META: StringName = &"_base_font_had_override"
+
 func _apply_runtime_settings() -> void:
 	if settings_manager == null:
 		return
 	settings_manager.apply_all_settings()
 	if world_container != null:
-		if settings_manager.high_contrast:
-			world_container.modulate = Color(1.15, 1.15, 1.15, 1.0)
+		world_container.modulate = Color(1.15, 1.15, 1.15, 1.0) if settings_manager.high_contrast else Color.WHITE
+	_apply_accessibility_tree(self)
+
+## Applies text scale and high-contrast presentation to the live UI (not just stored flags).
+func _apply_accessibility_tree(node: Node) -> void:
+	if node is Control:
+		_apply_text_scale(node as Control)
+		if node.get_parent() is CanvasLayer or node.get_parent() == self:
+			(node as Control).modulate = Color(1.2, 1.2, 1.2, 1.0) if settings_manager.high_contrast else Color.WHITE
+	for child in node.get_children():
+		_apply_accessibility_tree(child)
+
+## Scales each control from its authored font size. The authored size is captured once so
+## repeated settings changes never compound (e.g. 1.5x applied twice stays 1.5x, not 2.25x),
+## and returning to 1.0 restores the scene-authored size instead of forcing a theme default.
+func _apply_text_scale(control: Control) -> void:
+	if not control.has_meta(_BASE_FONT_META):
+		control.set_meta(_BASE_FONT_META, control.get_theme_font_size("font_size"))
+		control.set_meta(_BASE_FONT_OVERRIDE_META, control.has_theme_font_size_override("font_size"))
+	var base: int = int(control.get_meta(_BASE_FONT_META))
+	if is_equal_approx(settings_manager.text_scale, 1.0):
+		if bool(control.get_meta(_BASE_FONT_OVERRIDE_META)):
+			control.add_theme_font_size_override("font_size", base)
 		else:
-			world_container.modulate = Color(1.0, 1.0, 1.0, 1.0)
+			control.remove_theme_font_size_override("font_size")
+		return
+	var scaled: int = maxi(8, int(round(float(base) * settings_manager.text_scale)))
+	control.add_theme_font_size_override("font_size", scaled)
+
+func _on_ui_node_added(node: Node) -> void:
+	if settings_manager == null or not is_ancestor_of(node):
+		return
+	if node is Control:
+		var control: Control = node as Control
+		_apply_text_scale(control)
+		if control.get_parent() is CanvasLayer or control.get_parent() == self:
+			control.modulate = Color(1.2, 1.2, 1.2, 1.0) if settings_manager.high_contrast else Color.WHITE
 
 func _reload_imported_profile() -> void:
+	if profile_store == null:
+		return
+	# _init_slice_progress re-reads the imported profile into every live consumer
+	# (character, inventory, chapters, assessment, Kurei tree, ending) and refreshes the
+	# chapter baseline, so no pre-import state can be written back afterwards.
 	_init_slice_progress(profile_store, _profile_slot)
 	_pending_return_to_alpha = _is_current_location_locked()
+	_sync_dimension_state()
 
 func _defer_return_to_alpha() -> void:
 	if not _is_current_location_locked():
@@ -1176,7 +1300,7 @@ func _on_debug_dimension_shift() -> void:
 		var space: PhysicsDirectSpaceState2D = player.get_world_2d().direct_space_state if player.get_world_2d() != null else null
 		var err: Error = dimension_manager.request_shift(player, space)
 		if err == OK:
-			dimension_manager.apply_dimension_to_region(world_router.active_region)
+			_sync_dimension_state()
 			_sync_debug_bar()
 
 func _on_debug_grant_items() -> void:

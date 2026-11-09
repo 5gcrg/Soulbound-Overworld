@@ -24,8 +24,22 @@ const COLOR_SPIRIT_BG: Color = Color(0.07, 0.10, 0.25, 1.0)
 const COLLISION_MASK_PHYSICAL: int = 1
 const COLLISION_MASK_SPIRIT: int = 2
 
+## Metadata key used to remember a shape owner's authored disabled state while hidden.
+const DISABLED_META_PREFIX: String = "_dimension_disabled_owner_"
+
 var current_dimension: Dimension = Dimension.PHYSICAL
 var is_unlocked: bool = true
+
+## Collision mask the player must use in the current dimension. Physical obstacles live on
+## layer 1 and spirit obstacles on layer 2, so the player only collides with the active plane.
+func player_collision_mask() -> int:
+	return COLLISION_MASK_SPIRIT if current_dimension == Dimension.SPIRIT else COLLISION_MASK_PHYSICAL
+
+## Applies the active plane's collision mask to the player. Safe to call on every travel/shift.
+func apply_player_collision(player: PlayerCharacter) -> void:
+	if player == null or not is_instance_valid(player):
+		return
+	player.collision_mask = player_collision_mask()
 
 func can_shift_to(
 	target_dim: Dimension,
@@ -66,6 +80,7 @@ func request_shift(
 			return ERR_ALREADY_EXISTS
 
 	current_dimension = target_dim
+	apply_player_collision(player)
 	dimension_changed.emit(current_dimension)
 	return OK
 
@@ -78,18 +93,46 @@ func apply_dimension_to_region(region: Node2D) -> void:
 	if bg != null:
 		bg.color = COLOR_SPIRIT_BG if current_dimension == Dimension.SPIRIT else COLOR_PHYSICAL_BG
 
-	# Physical-only nodes
-	var physical_nodes: Array[Node] = region.get_tree().get_nodes_in_group("physical_only") if region.get_tree() != null else []
-	for node: Node in physical_nodes:
-		if node is CanvasItem:
-			(node as CanvasItem).visible = (current_dimension == Dimension.PHYSICAL)
-		if node is CollisionShape2D:
-			(node as CollisionShape2D).disabled = (current_dimension != Dimension.PHYSICAL)
+	# Scope group lookups to this region so neighbouring/queued regions are never toggled.
+	_apply_group_state(region, "physical_only", current_dimension == Dimension.PHYSICAL)
+	_apply_group_state(region, "spirit_only", current_dimension == Dimension.SPIRIT)
 
-	# Spirit-only nodes
-	var spirit_nodes: Array[Node] = region.get_tree().get_nodes_in_group("spirit_only") if region.get_tree() != null else []
-	for node: Node in spirit_nodes:
+## Toggles visibility and collision for every node in `group_name` beneath `region`.
+func _apply_group_state(region: Node2D, group_name: StringName, active: bool) -> void:
+	for node: Node in _nodes_in_group_under(region, group_name):
 		if node is CanvasItem:
-			(node as CanvasItem).visible = (current_dimension == Dimension.SPIRIT)
-		if node is CollisionShape2D:
-			(node as CollisionShape2D).disabled = (current_dimension != Dimension.SPIRIT)
+			(node as CanvasItem).visible = active
+		_set_branch_collision_active(node, active)
+
+## Recursively collects group members that are descendants of `root` (never siblings).
+func _nodes_in_group_under(root: Node, group_name: StringName) -> Array[Node]:
+	var found: Array[Node] = []
+	var stack: Array[Node] = [root]
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		if node != root and node.is_in_group(group_name):
+			found.append(node)
+		for child in node.get_children():
+			stack.append(child)
+	return found
+
+## Disables (or restores) every collision shape owned by the node or its descendants.
+## Group roots are often plain Node2D containers (e.g. a visual bridge), so the toggle
+## must reach nested StaticBody2D/CollisionShape2D children as well as direct shapes.
+func _set_branch_collision_active(root: Node, active: bool) -> void:
+	var stack: Array[Node] = [root]
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		if node is CollisionObject2D:
+			var body: CollisionObject2D = node as CollisionObject2D
+			for owner_id in body.get_shape_owners():
+				var meta_key: String = DISABLED_META_PREFIX + str(owner_id)
+				if active:
+					if body.has_meta(meta_key):
+						body.shape_owner_set_disabled(owner_id, bool(body.get_meta(meta_key)))
+						body.remove_meta(meta_key)
+				else:
+					body.set_meta(meta_key, body.is_shape_owner_disabled(owner_id))
+					body.shape_owner_set_disabled(owner_id, true)
+		for child in node.get_children():
+			stack.append(child)

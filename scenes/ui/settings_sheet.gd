@@ -29,6 +29,8 @@ var last_exported_backup: String = ""
 
 @onready var export_backup_btn: Button = $Panel/Margin/VBox/BackupRow/ExportBackupBtn
 @onready var import_backup_btn: Button = $Panel/Margin/VBox/BackupRow/ImportBackupBtn
+@onready var import_text_btn: Button = $Panel/Margin/VBox/BackupRow/ImportTextBtn
+@onready var backup_text_field: TextEdit = $Panel/Margin/VBox/BackupTextField
 @onready var backup_status_label: Label = $Panel/Margin/VBox/BackupStatusLabel
 
 @onready var close_btn: Button = $Panel/Margin/VBox/CloseBtn
@@ -44,6 +46,8 @@ func _ready() -> void:
 		export_backup_btn.pressed.connect(_on_export_backup_pressed)
 	if import_backup_btn != null:
 		import_backup_btn.pressed.connect(_on_import_backup_pressed)
+	if import_text_btn != null:
+		import_text_btn.pressed.connect(_on_import_text_pressed)
 	close_btn.pressed.connect(_on_close_pressed)
 
 	if settings != null:
@@ -117,6 +121,8 @@ func _on_export_backup_pressed() -> void:
 	if res.get("error", ERR_UNCONFIGURED) == OK:
 		var txt: String = res.get("text", "")
 		last_exported_backup = txt
+		if backup_text_field != null:
+			backup_text_field.text = txt
 		if OS.has_feature("web"):
 			var buf: PackedByteArray = txt.to_utf8_buffer()
 			JavaScriptBridge.download_buffer(buf, "soulbound_backup_%s.json" % active_profile_id, "application/json")
@@ -143,12 +149,29 @@ func _on_import_backup_pressed() -> void:
 			txt = clip
 	if txt.is_empty():
 		if backup_status_label != null:
-			backup_status_label.text = "Clipboard is empty. Copy backup string first."
+			backup_status_label.text = "Clipboard is empty. Use \"Import From Text\" after pasting a backup."
 		return
+	_import_backup_text(txt)
+
+## Browser-safe import path: uses only the in-sheet text box, so it never depends on
+## DisplayServer clipboard access (which browsers may deny).
+func _on_import_text_pressed() -> void:
+	if profile_store == null:
+		if backup_status_label != null:
+			backup_status_label.text = "ProfileStore unavailable for import."
+		return
+	var txt: String = backup_text_field.text.strip_edges() if backup_text_field != null else ""
+	if txt.is_empty():
+		if backup_status_label != null:
+			backup_status_label.text = "Paste a backup JSON string into the text box first."
+		return
+	_import_backup_text(txt)
+
+func _import_backup_text(txt: String) -> void:
 	var err: Error = profile_store.import_backup(active_profile_id, txt, GameplayProfileValidator.validate)
 	if err == OK:
 		if backup_status_label != null:
-			backup_status_label.text = "Profile imported successfully from clipboard!"
+			backup_status_label.text = "Profile imported successfully from backup text!"
 		backup_imported.emit()
 	else:
 		if backup_status_label != null:

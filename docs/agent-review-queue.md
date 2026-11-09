@@ -433,3 +433,40 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | Full 24-suite regression check | Exit 0. All 24 test suites pass cleanly with zero engine errors. |
 | Automated Release Exporter (`export_release.ps1`) | Exit 0. Generated `dist/Soulbound-Web.zip` (10.6 MB) and `dist/Soulbound-Windows-Portable.zip` (86.4 MB). |
 
+---
+
+## SBL-FIX-006 — Dimension Travel Collision Sync, Persisted Expedition Resume, Web Backup/CSV Fallbacks & Live Accessibility Application
+
+- **Milestone** M3, M4 & M6 Hardening (residual Codex review findings on `SBL-W4-001`..`SBL-FIX-005`).
+- **Requirements** GDD-031..035, GDD-098..103, FR-DNG-002/003, FR-SAV-001, TC-ACC-001, AGENTS.md Invariants ("Suspend/resume an expedition does not count as extraction; validate exactly-once reward transfer", "Preserve secured gear, level/skills, story and educational records after expedition defeat", "provide local web backup export/import", "Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer").
+- **Implementation owner** agy (quota-blocked; slice authored in-session under the same contract and marked pending review). **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - Dimension/travel: `scripts/world/dimension_manager.gd`, `scenes/main/game_root.gd`.
+  - Expedition persistence: `scenes/main/game_root.gd`, `scenes/dungeon/dungeon_expedition.gd`, `scripts/persistence/gameplay_profile_validator.gd`.
+  - Web backup/CSV: `scenes/ui/settings_sheet.{tscn,gd}`, `scenes/ui/academic_completion_modal.gd`.
+  - Accessibility/results: `scenes/main/game_root.gd`, `scenes/ui/ending_modal.gd`.
+  - Tests: `tests/headless/{dimension_test,dungeon_scene_test,settings_accessibility_test}.gd`.
+  - Process: `docs/agent-review-queue.md`.
+- **Asset provenance** None (pure code, Godot UI primitives; no image, audio, or text asset generation in this slice).
+- **Review** REVIEW_PENDING_CODEX. Work continues per AGENTS.md Rule 5 while Codex CLI review is halted; no review has occurred.
+- **Open questions** None for this slice. The dimension player mask assumes layer 1 = physical obstacles and layer 2 = spirit obstacles; region scenes must keep authored collision layers on those two bits.
+
+### Changes
+
+1. **Dimension travel/shift sync.** `DimensionManager` now owns the player collision mask for the active plane (`player_collision_mask()`, `apply_player_collision()`) and re-applies it on every accepted shift. Region toggling is scoped to descendants of the active region (previously a global `get_nodes_in_group` touched sibling/queued regions) and disables every shape owner of nested `CollisionObject2D` nodes, restoring each owner's authored disabled state via per-owner metadata. `GameRoot._sync_dimension_state()` runs after a shift, after a region transition, and after a profile reload, so the visual plane, collision plane, and player mask never diverge.
+2. **Persisted expedition resume.** A suspended run is written to `world.active_expedition` through a load-modify-save helper (`_mutate_profile`) instead of memory only, and is reloaded into `_suspended_expedition` during `_init_slice_progress`, so a restarted session can resume the same run. Extraction writes the banked inventory **and** erases `active_expedition` in one profile write, and defeat/cancel clear the record too, keeping exactly-once banking. `restore_expedition` and `GameplayProfileValidator._validate_active_expedition` reject malformed seed, room count, step, path, and satchel payloads before any state is applied.
+3. **Browser-safe backup and CSV.** `SettingsSheet` gains a `BackupTextField` + `Import From Text` path that never reads the system clipboard (browsers may deny it), and export fills that box so the string is visible and copyable. `AcademicCompletionModal` downloads the CSV through `JavaScriptBridge.download_buffer` on Web regardless of whether the `user://` copy succeeds; the file write is only a desktop convenience.
+4. **Live accessibility + results blocking.** Text scale is applied to the live UI tree from each control's authored font size (captured once, so repeated changes never compound, and 1.0 restores the authored size); high contrast is applied to the world and top-level overlay controls, including sheets and modals created later. `EndingModal` consumes character/inventory/settings/`ui_cancel` hotkeys so no sheet can stack over the epilogue.
+5. **Live-profile reload.** Importing a backup now re-reads every consumer (`CharacterStats`, `InventoryManager`, `ChapterManager`, `AssessmentController`, `KureiTree`, `EndingManager`, chapter baseline) through `_init_slice_progress`, so the next save cannot write stale pre-import state back over the imported profile.
+
+### Verification across all 24 suites
+
+| Suite | Result |
+| --- | --- |
+| `tests/headless/dimension_test.gd` | Exit 0. Verified player collision mask flips with the active plane and restores on return, physical/spirit visibility and nested shape-owner collision toggling, and that a sibling region is never modified by a scoped apply. |
+| `tests/headless/dungeon_scene_test.gd` | Exit 0. Verified the existing suspend/restore/extraction regressions plus a new end-to-end persistence case: suspend writes `world.active_expedition`, a fresh `GameRoot` session reloads it, the preflight validator rejects a zero-count satchel, atomic extraction banks the satchel exactly once and clears the record, and the next session finds no resumable run. |
+| `tests/headless/settings_accessibility_test.gd` | Exit 0. Verified text-box backup import succeeds without clipboard access and rejects malformed JSON, and that text scale/high contrast change the live `GameRoot` UI and restore to authored values. |
+| Full 24-suite regression check | Exit 0. All 24 suites pass with the console executable via `Start-Process` redirection. |
+| Automated Release Exporter (`export_release.ps1`) | Exit 0. Generated `dist/Soulbound-Web.zip` (10,623,505 bytes) and `dist/Soulbound-Windows-Portable.zip` (86,495,925 bytes). |
+

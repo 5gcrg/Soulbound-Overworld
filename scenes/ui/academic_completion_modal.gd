@@ -50,19 +50,22 @@ func refresh() -> void:
 		]
 
 func _on_export_pressed() -> void:
-	if assessment_controller != null:
-		var export_path: String = "user://reports/soulbound_academic_mvp_report.csv"
-		var err: Error = assessment_controller.export_to_csv(export_path)
-		if err == OK:
-			if OS.has_feature("web"):
-				var csv_text: String = assessment_controller.generate_csv_text()
-				var buf: PackedByteArray = csv_text.to_utf8_buffer()
-				JavaScriptBridge.download_buffer(buf, "soulbound_academic_mvp_report.csv", "text/csv")
-				status_feedback_label.text = "Report downloaded via browser!"
-			else:
-				status_feedback_label.text = "Report exported to: %s" % export_path
-		else:
-			status_feedback_label.text = "Export failed: Error %d" % err
+	if assessment_controller == null:
+		return
+	var export_path: String = "user://reports/soulbound_academic_mvp_report.csv"
+	if OS.has_feature("web"):
+		# Browser download is the primary path; the IndexedDB copy is only a convenience.
+		var csv_text: String = assessment_controller.generate_csv_text()
+		var buf: PackedByteArray = csv_text.to_utf8_buffer()
+		JavaScriptBridge.download_buffer(buf, "soulbound_academic_mvp_report.csv", "text/csv")
+		assessment_controller.export_to_csv(export_path)
+		status_feedback_label.text = "Report downloaded via browser!"
+		return
+	var err: Error = assessment_controller.export_to_csv(export_path)
+	if err == OK:
+		status_feedback_label.text = "Report exported to: %s" % export_path
+	else:
+		status_feedback_label.text = "Export failed: Error %d" % err
 
 func _on_close_pressed() -> void:
 	closed.emit()

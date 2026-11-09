@@ -107,6 +107,27 @@ func _run_test() -> void:
 	sheet._on_high_contrast_toggled(true)
 	_check(sm_ui.high_contrast == true, "Manager high contrast updated from UI")
 
+	# Browser-safe backup import: the text box path never reads the system clipboard.
+	var backup_root: String = _test_root + "_backup"
+	var backup_store: ProfileStore = ProfileStore.new(backup_root)
+	var backup_profile: Dictionary = backup_store.new_profile("profile_01")
+	backup_profile["character"]["level"] = 3
+	backup_profile["character"]["xp"] = 0
+	_check(backup_store.save_profile("profile_01", backup_profile) == OK, "Backup fixture profile saved")
+	var exported: Dictionary = backup_store.export_backup("profile_01")
+	_check(exported.get("error", ERR_UNCONFIGURED) == OK, "Backup fixture exported")
+	var imported_box: Array[bool] = [false]
+	sheet.backup_imported.connect(func() -> void: imported_box[0] = true)
+	sheet.set_profile_context(backup_store, "profile_01")
+	sheet.backup_text_field.text = String(exported.get("text", ""))
+	sheet._on_import_text_pressed()
+	_check(imported_box[0], "Text-box import succeeds without clipboard access")
+	imported_box[0] = false
+	sheet.backup_text_field.text = "{not valid json"
+	sheet._on_import_text_pressed()
+	_check(not imported_box[0], "Malformed text-box backup is rejected safely")
+	_cleanup_dir(backup_root)
+
 	var closed_box: Array[bool] = [false]
 	sheet.closed.connect(func() -> void: closed_box[0] = true)
 	sheet._on_close_pressed()
@@ -142,6 +163,21 @@ func _run_test() -> void:
 	game_root._settings_sheet.sfx_slider.value = 40.0
 	game_root._settings_sheet._on_sfx_slider_changed(40.0)
 	_check(is_equal_approx(game_root.settings_manager.sfx_volume, 0.4), "GameRoot settings_manager sfx updated")
+
+	# Text scale and contrast must change the live UI, not only the stored flags.
+	var font_before: int = game_root.status_label.get_theme_font_size("font_size")
+	game_root.settings_manager.set_text_scale(1.5)
+	await process_frame
+	var font_after: int = game_root.status_label.get_theme_font_size("font_size")
+	_check(font_after > font_before, "Text scale applied to live GameRoot UI")
+	game_root.settings_manager.set_text_scale(1.0)
+	await process_frame
+	_check(game_root.status_label.get_theme_font_size("font_size") == font_before, "Text scale restores authored size")
+	game_root.settings_manager.set_high_contrast(true)
+	await process_frame
+	_check(game_root.world_container.modulate.r > 1.0, "High contrast applied to world presentation")
+	game_root.settings_manager.set_high_contrast(false)
+	await process_frame
 
 	# Toggle Settings OFF
 	game_root._toggle_settings_sheet()

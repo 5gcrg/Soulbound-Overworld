@@ -248,6 +248,39 @@ static func _validate_world(world: Dictionary, education: Dictionary) -> Error:
 			if not _is_question_completed(education, req_id):
 				return ERR_INVALID_DATA
 
+	if world.has("active_expedition"):
+		var ae_err: Error = _validate_active_expedition(world["active_expedition"])
+		if ae_err != OK:
+			return ae_err
+
+	return OK
+
+## Validates a persisted suspend snapshot before it can reach DungeonExpedition.restore_expedition.
+static func _validate_active_expedition(value: Variant) -> Error:
+	if typeof(value) != TYPE_DICTIONARY:
+		return ERR_INVALID_DATA
+	var state: Dictionary = value as Dictionary
+	if typeof(state.get("is_active")) != TYPE_BOOL or state["is_active"] != true:
+		return ERR_INVALID_DATA
+	if not _is_bounded_int(state.get("seed"), MIN_SAFE_INT, MAX_SAFE_INT):
+		return ERR_INVALID_DATA
+	if not _is_bounded_int(state.get("room_count"), 1, 1024):
+		return ERR_INVALID_DATA
+	if not _is_bounded_int(state.get("current_step"), 0, 1024):
+		return ERR_INVALID_DATA
+	if typeof(state.get("expedition_path")) != TYPE_ARRAY:
+		return ERR_INVALID_DATA
+	for step: Variant in state["expedition_path"] as Array:
+		if not _is_bounded_int(step, 0, MAX_SAFE_INT):
+			return ERR_INVALID_DATA
+	if typeof(state.get("satchel_items")) != TYPE_DICTIONARY:
+		return ERR_INVALID_DATA
+	var satchel: Dictionary = state["satchel_items"] as Dictionary
+	for item_id: Variant in satchel.keys():
+		if typeof(item_id) != TYPE_STRING or String(item_id).is_empty():
+			return ERR_INVALID_DATA
+		if not _is_bounded_int(satchel[item_id], 1, MAX_SAFE_INT):
+			return ERR_INVALID_DATA
 	return OK
 
 static func _is_question_completed(education: Dictionary, q_id: String) -> bool:
