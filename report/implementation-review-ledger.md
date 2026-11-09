@@ -105,6 +105,16 @@ entries:
 - **Verdict:** `APPROVED`; no actionable regressions. Codex noted only that its sandbox needed a writable temporary APPDATA path for the settings suite.
 - **Disposition:** Batch B is `REVIEWED`. Batch C may proceed. `OD-015` remains open; no binary audio was generated.
 
+## Batch C review
+
+- **Evidence:** `report/codex_review_batchC.log`.
+- **Session:** `01a1c033-a580-7dc0-b15a-1a703f857eb0`.
+- **Range:** `293602e..HEAD`.
+- **Independent targeted verification:** Kurei tree, normal combat, boss combat, UI sheets, and layout suites passed.
+- **Verdict:** `CHANGES_REQUESTED`; two P2 findings.
+- **Findings:** (1) expanded boss notices in a non-wrapping HBox clip functional controls at 960×540; (2) imported `equipped_skills: []` passes validation/deserialization, leaving fallback-visible spells unusable because requests reject unequipped skills.
+- **Disposition:** Batch C remains unreviewed. `OD-003/004` boss-effect mapping remains separately blocked and unchanged.
+
 ## Rule
 
 Every future implementation, review, finding, negative control, and disposition

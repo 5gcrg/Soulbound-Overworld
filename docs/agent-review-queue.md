@@ -1698,7 +1698,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 
 ---
 
-## SBL-REV-005 — Apply Authored Phase Mastery Capacity
+## SBL-REV-005 - Apply Authored Phase Mastery Capacity
 
 - **Milestone** Remediation Batch C (M3 Combat & Kurei Magic Hardening).
 - **Requirements** GDD-019, GDD-030, FR-CMB-001/003, TC-CMB-002, persistence checks supporting TC-SAV-001. AGENTS.md Engineering Invariants ("Do not invent numerical stats, formula coefficients, drop probabilities, story revelations, or unsupported integrations. Mark such items TBD and seek change approval").
@@ -1713,7 +1713,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
   - Test suites: `tests/headless/kurei_tree_test.gd`, `tests/headless/kurei_combat_test.gd`, `tests/headless/boss_combat_test.gd`.
   - Documentation: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
 - **Asset provenance** None (pure GDScript logic and state synchronization; zero image generation, zero audio assets).
-- **Review** REVIEW_PENDING_CODEX.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1c033-a580-7dc0-b15a-1a703f857eb0` found two Batch C P2 findings: boss-menu viewport overflow and empty equipped-loadout validation. No Phase Mastery-specific defect was reported.
 - **Open questions** `OD-002/003/004` combat balance numbers, elemental affinities, and status formulas remain blocked for human authority sign-off; authored maximum capacity is 4.
 
 ### Changes
@@ -1751,7 +1751,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 
 ---
 
-## SBL-REV-006 — Purchased-Skill Menus and Six-Slot Enforcement
+## SBL-REV-006 - Purchased-Skill Menus and Six-Slot Enforcement
 
 - **Milestone** Remediation Batch C (M3 Combat, Progression & Kurei Magic Hardening).
 - **Requirements** GDD-018..020, GDD-030, GDD-089, FR-CMB-003/004, TC-CMB-001/002, GDD/SRS §4.5 (six-equipped-spell check), GDD-092 / TC-ACC-001 (keyboard access). AGENTS.md Engineering Invariants ("Do not invent numerical stats, formula coefficients, drop probabilities, story revelations, or unsupported integrations. Mark such items TBD and seek change approval").
@@ -1767,7 +1767,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
   - Test suites: `tests/headless/kurei_tree_test.gd`, `tests/headless/kurei_combat_test.gd`, `tests/headless/boss_combat_test.gd`, `tests/headless/layout_audit_test.gd`, `tests/headless/settings_accessibility_test.gd`.
   - Documentation: `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`.
 - **Asset provenance** None (pure GDScript logic, UI controls, theme styles; zero image generation, zero audio assets).
-- **Review** REVIEW_PENDING_CODEX.
+- **Review** CHANGES_REQUESTED. Codex CLI session `01a1c033-a580-7dc0-b15a-1a703f857eb0` found two P2 findings shared with Batch C: expanded boss-menu viewport overflow and empty equipped-loadout validation.
 - **Explicit OD boundary & Partial Remediation Disposition**:
   Finding 5 is recorded as a **partial remediation** blocked by `OD-003/004`. `BossEncounter` currently lacks authoritative SRS-backed effect semantics for the 4 purchased active skills (`solar_flare`, `celestial_prism`, `glacial_aegis`, `void_shift`). Rather than inventing combat balance stats or transplanting normal-combat numbers without SRS authorization, `BossEncounter` renders equipped advanced skills disabled with the explicit label `<Skill Name> (Boss effect pending design approval)`, and `request_action()` rejects requests atomically with zero state mutation (SP, turn counter, cooldown, HP, and status remain untouched). Starter skills (`flame_burst`, `lumina_lance`, `torrent_surge`) remain fully functional against the boss.
 - **Open questions** `OD-003/004` boss effect specifications for the 4 purchased active skills remain open pending educator/designer approval.
