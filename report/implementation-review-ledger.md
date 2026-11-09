@@ -163,6 +163,15 @@ entries:
 - **Findings:** the journal test writes fixture answers to the real `user://profiles` instead of a disposable ProfileStore root; completion HTML exports hardcode `profile_01` instead of receiving the active slot.
 - **Disposition:** agy pauses. Present the remediation plan to the project owner before MiMo execution.
 
+## SBL-EDU-005 fix re-review approval
+
+- **Evidence:** `report/codex_rereview_edu005_fix.log`.
+- **Session:** `01a1c0bd-85d2-75a0-b5d9-7c25cb5d3bd8`.
+- **Range:** `e45f7d8..426630a`.
+- **Independent targeted verification:** journal, report, backup, settings/accessibility, and layout suites passed.
+- **Verdict:** `APPROVED`; no actionable regressions.
+- **Disposition:** `SBL-EDU-005` is `REVIEWED`. agy remains paused pending the next approved plan.
+
 ## Batch C audit order fix (SBL-REV-009)
 
 - **Task:** `SBL-REV-009` (Fix boss layout audit initialization order).

@@ -2103,7 +2103,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
   - Modified audits & documentation: `tests/headless/layout_audit_test.gd`, `docs/browser_verification_checklist.md`, `docs/traceability-matrix.md`, `docs/testing.md`, `docs/agent-review-queue.md`.
   - Negative control logs: `report/neg_journal_mutate_first_attempt.log`, `report/neg_journal_omit_html_escaping.log`, `report/neg_journal_stale_controller.log`, `report/neg_journal_claim_browser_delivery.log`.
 - **Asset provenance** None (pure GDScript, Control UI scene nodes, and test automation; zero image generation, zero audio generation).
-- **Review** CHANGES_REQUESTED. Codex CLI session `01a1c094-60d4-70c0-aaa6-37f8ffbce421` found a P1 test-profile isolation defect and a P2 active-profile attribution defect in completion report exports. Remediation is implemented in [SBL-EDU-005-FIX](#sbl-edu-005-fix--learning-journal-test-isolation--active-profile-report-attribution) at the end of this file and remains `REVIEW_PENDING_CODEX`.
+- **Review** REVIEWED by Codex CLI session `01a1c0bd-85d2-75a0-b5d9-7c25cb5d3bd8`; no actionable regressions. Test-profile isolation and active-profile report attribution are cleared.
 - **Open questions** `OD-012` remains open pending human educator review. Mandatory notice is prominently displayed in both journal and reports: `"Practice records. Educator review pending — OD-012. These records do not establish learning improvement."` Browser download/print execution remains PENDING human evaluation per AGENTS.md.
 
 ### Changes
