@@ -6,7 +6,7 @@ signal continue_requested(slot_id: String)
 signal new_journey_requested(slot_id: String)
 signal settings_requested()
 signal backup_requested()
-signal defense_demo_requested()
+signal defense_demo_requested(slot_id: String)
 
 @onready var main_menu: VBoxContainer = $CenterContainer/MainVBox/MenuButtons
 @onready var profile_menu: VBoxContainer = $CenterContainer/MainVBox/ProfileSelector
@@ -103,7 +103,8 @@ func _ready() -> void:
 	)
 	defense_btn.pressed.connect(func():
 		if _is_modal_blocked: return
-		defense_demo_requested.emit()
+		show_error("")
+		defense_demo_requested.emit(current_slot)
 	)
 	if recovery_export_btn != null:
 		recovery_export_btn.pressed.connect(_on_recovery_export_pressed)

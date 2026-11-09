@@ -1791,7 +1791,30 @@ func _on_title_new_journey_requested(slot_id: String) -> void:
 func _on_title_game_started(_slot_id: String) -> void:
 	pass
 
-func _on_title_defense_demo() -> void:
+func _on_title_defense_demo(slot_id: String = "") -> void:
+	if profile_store == null:
+		profile_store = ProfileStore.new()
+
+	var target_slot: String = slot_id if not slot_id.is_empty() else (_title_screen.current_slot if _title_screen != null else _profile_slot)
+	if not (target_slot in ProfileStore.VALID_PROFILE_IDS):
+		target_slot = _profile_slot
+
+	var check := profile_store.load_profile(target_slot)
+	var check_err: int = check.get("error", ERR_UNCONFIGURED)
+	if check_err != OK and check_err != ERR_FILE_NOT_FOUND:
+		push_error("Cannot start defense demo: slot '%s' load error %s" % [target_slot, error_string(check_err)])
+		if _title_screen != null and is_instance_valid(_title_screen):
+			_title_screen.show_error("Cannot load profile '%s'." % target_slot)
+		return
+
+	var is_empty: bool = (check_err == ERR_FILE_NOT_FOUND)
+	var act_err: Error = activate_profile(target_slot, is_empty)
+	if act_err != OK:
+		push_error("Cannot start defense demo: failed to activate profile '%s': %s" % [target_slot, error_string(act_err)])
+		if _title_screen != null and is_instance_valid(_title_screen):
+			_title_screen.show_error("Failed to activate profile: %s" % error_string(act_err))
+		return
+
 	_on_debug_complete_activities()
 	_on_debug_grant_items()
 	_on_debug_max_stats()

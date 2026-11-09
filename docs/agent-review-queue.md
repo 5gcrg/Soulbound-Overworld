@@ -1573,3 +1573,61 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 | Release exporter (`export_release.ps1`) | Exit 0 | Full release export validated; generated `Soulbound-Windows-Portable.zip` and `Soulbound-Web.zip` (single-threaded Web); PCK headless gate validation succeeded on both packages; project.godot restored byte-identical. |
 | Negative control: wire New Journey to Continue | Exit 1 | Demonstrated that if New Journey button directly reloads the occupied slot, new game picker is bypassed and test fails. |
 | Negative control: skip world/dimension reset | Exit 1 | Demonstrated that skipping dimension reset leaves early profile in prior profile's Spirit dimension and test fails. |
+
+---
+
+## SBL-REV-003-FIX — Defense Demo Activates Title-Selected Profile
+
+- **Milestone** Remediation Batch A (M1, M2 & M6 Hardening).
+- **Requirements** GDD-015, GDD-098, FR-SAV-001, FR-WLD-001/002, TC-SAV-001/002, TC-WLD-001, TC-DIM-001, AGENTS.md Invariants ("Preserve secured gear, level/skills, story and educational records after expedition defeat; lose only approved unbanked items and temporary upgrades", profile ownership and save invariants).
+- **Codex finding** Codex CLI review session `01a1bfe5-fd15-7463-b4b1-c55215e0c3f0` [P2]:
+  "The non-launching profile selector leaves Defense Demo targeting the previously active profile, allowing persistent changes to the wrong save slot. After selecting a different slot, the title now remains open and updates only `current_slot`. Clicking Defense Demo then calls `_on_title_defense_demo()`, whose progression, inventory, and stat helpers still save to GameRoot's previous `_profile_slot`. For example, selecting profile_02 while profile_01 is active modifies profile_01 instead. Route the demo through successful activation of the title-selected slot before applying its persistent changes."
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch** `feature/w4-5-vertical-slice`.
+- **Files**
+  - `scenes/ui/title_screen.gd`
+  - `scenes/main/game_root.gd`
+  - `tests/headless/profile_activation_test.gd`
+  - `tests/headless/title_screen_audio_test.gd`
+  - `docs/agent-review-queue.md`
+  - `docs/traceability-matrix.md`
+  - `docs/testing.md`
+- **Asset provenance** None (pure GDScript and state machine routing; zero generated image or audio assets).
+- **Review** REVIEW_PENDING_CODEX.
+- **Open questions** None.
+
+### Changes
+
+1. **Title-Selected Slot Routing in TitleScreen (`scenes/ui/title_screen.gd`)**:
+   - Parameterized `defense_demo_requested(slot_id: String)` signal to convey the title-selected profile slot.
+   - Clears prior error box via `show_error("")` and emits `defense_demo_requested.emit(current_slot)` when `defense_btn` is pressed.
+2. **Validated Preflight & Profile Activation Before Persistent Demo Mutation (`scenes/main/game_root.gd`)**:
+   - Updated `_on_title_defense_demo(slot_id: String = "")` to resolve `target_slot` from `slot_id`, `_title_screen.current_slot`, or `_profile_slot`, constrained to `ProfileStore.VALID_PROFILE_IDS`.
+   - Preflights `target_slot` in `ProfileStore`:
+     - If corrupt/unreadable (`check_err != OK and check_err != ERR_FILE_NOT_FOUND`), logs error, shows actionable feedback via `_title_screen.show_error("Cannot load profile '%s'." % target_slot)`, and aborts before any mutation. TitleScreen remains open and both profiles are untouched.
+     - If empty (`ERR_FILE_NOT_FOUND`), activates with `is_new = true` to create and initialize the target profile cleanly.
+     - If existing, validates and activates via `activate_profile(target_slot, false)`.
+   - On activation failure (e.g. `ERR_BUSY`), displays actionable failure feedback on TitleScreen, leaves TitleScreen open, and aborts without modifying either profile.
+   - Only upon `activate_profile` returning `OK` (setting `_profile_slot = target_slot` and resetting world/dimension/velocity) does it run persistent demo mutators (`_on_debug_complete_activities()`, `_on_debug_grant_items()`, `_on_debug_max_stats()`), close `_title_screen`, and play procedural cue `"correct"`.
+3. **Automated Regression and Invariant Coverage (`tests/headless/profile_activation_test.gd`)**:
+   - **Part 7**: Selects `profile_02` from TitleScreen while `profile_01` is loaded in gameplay, triggers Defense Demo, and asserts:
+     - `game_root._profile_slot == "profile_02"` and TitleScreen is dismissed.
+     - `profile_02` receives in-memory and on-disk level 10, Chapter 3, banked spirit salves, and educational records.
+     - `profile_01` on disk is byte-identical (`export_backup` string match) and retains level 3, Chapter 2, zero salves, and original educational records.
+   - **Part 8**: Failure path test: seeds `profile_03` with corrupt JSON, selects `profile_03` on TitleScreen, and clicks Defense Demo. Asserts:
+     - TitleScreen remains open and visible.
+     - Actionable error feedback displayed in `error_box` ("Cannot load profile").
+     - `game_root._profile_slot` remains `profile_02`.
+     - `profile_02` bytes on disk are completely unchanged.
+     - `profile_03` corrupt file on disk is untouched.
+   - **Negative Control**: Probed bypassing `activate_profile(target_slot)` to mutate stale `_profile_slot`: suite failed with 11 assertion errors and exited 1 cleanly.
+
+### Verification Table
+
+| Test Scope / Invocation | Result | Evidence |
+|---|---|---|
+| `profile_activation_test.gd` (Parts 1–8) | Exit 0 | Verified empty-slot new journey picker, non-launching profile selection, safe profile activation, defense demo activation of title-selected profile (`profile_02`), byte-identical preservation of inactive profile (`profile_01`), and corrupt-slot failure path keeping title open with actionable error and zero file mutation. |
+| Negative control: bypass selected-slot activation | Exit 1 | Demonstrated that mutating stale `_profile_slot` causes 11 test assertion failures in `profile_activation_test.gd` and exits code 1. |
+| `title_screen_audio_test.gd` | Exit 0 | Regression suite passed; procedural audio, title settings overlay, defense demo quick-start, and evaluator reopening verified. |
+| Full headless test runner (`run_headless_tests.ps1`) | Exit 0 (30/30 passed) | All 30 project headless suites pass with 0 Godot script/engine errors across all game systems. |
+| Release exporter (`export_release.ps1`) | Exit 0 | Full release export validated; generated `Soulbound-Windows-Portable.zip` and `Soulbound-Web.zip`; PCK headless gate validation succeeded on both packages; project.godot restored byte-identical. |

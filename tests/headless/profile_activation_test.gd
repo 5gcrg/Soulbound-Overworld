@@ -255,6 +255,130 @@ func _run_test() -> void:
 	_check(game_root._title_screen.error_label.text.contains("Cannot load profile"), "Error label explains load failure")
 	_check(game_root._profile_slot == "profile_03", "Active profile slot remained profile_03 (prior profile untouched)")
 
+	# Close title screen before Part 7
+	game_root._close_title_screen()
+	await process_frame
+
+	# ==========================================================================
+	# Part 7: SBL-REV-003-FIX Defense Demo Activates Title-Selected Profile (Finding 1)
+	# ==========================================================================
+	# 1. Activate profile_01 as current active gameplay profile
+	var act_p1_err: Error = game_root.activate_profile("profile_01", false)
+	_check(act_p1_err == OK, "Activated profile_01 as baseline gameplay profile")
+	_check(game_root._profile_slot == "profile_01", "Active profile slot is profile_01")
+	var p1_pre_text: String = store.export_backup("profile_01").get("text", "")
+	_check(not p1_pre_text.is_empty(), "Exported baseline profile_01 text")
+
+	# 2. Seed profile_02 with a valid, clean profile (replaces corrupted test revision)
+	var p2_clean := store.new_profile("profile_02")
+	var cs2 := CharacterStats.new()
+	cs2.level = 1
+	cs2.vitality = 10
+	cs2.resonance = 10
+	cs2.agility = 10
+	cs2.focus = 10
+	p2_clean["character"] = cs2.serialize()
+	var inv2 := InventoryManager.new()
+	inv2.add_banked_item("wooden_staff", 1)
+	p2_clean["inventory"] = inv2.serialize()
+	var cm2 := ChapterManager.new()
+	cm2.current_chapter = 1
+	cm2.unlocked_chapters = [1]
+	p2_clean["world"]["chapter_progress"] = cm2.serialize()
+	p2_clean["education"] = {"records": {}}
+	_check(store.save_profile("profile_02", p2_clean) == OK, "Saved clean profile_02 into store")
+	var p2_pre_text: String = store.export_backup("profile_02").get("text", "")
+	_check(not p2_pre_text.is_empty(), "Exported baseline profile_02 text")
+
+	# 3. Open Title Screen on GameRoot while gameplay profile_01 is loaded
+	game_root.open_title_screen()
+	await process_frame
+	var gr_title2: TitleScreen = game_root._title_screen
+	_check(gr_title2 != null, "TitleScreen opened while profile_01 active")
+	_check(gr_title2.current_slot == "profile_01", "TitleScreen initialized with active slot profile_01")
+
+	# 4. Select profile_02 on Title Screen (non-launching selection)
+	gr_title2._select_slot("profile_02")
+	await process_frame
+	_check(gr_title2.current_slot == "profile_02", "TitleScreen selected slot updated to profile_02")
+	_check(game_root._profile_slot == "profile_01", "GameRoot active profile slot remains profile_01 before demo launch")
+
+	# 5. Activate Defense Demo from Title Screen
+	gr_title2.defense_btn.pressed.emit()
+	await process_frame
+	await process_frame
+
+	# 6. Assert TitleScreen dismissed and profile_02 is the active/modified profile
+	_check(game_root._title_screen == null, "TitleScreen dismissed after defense demo activated")
+	_check(game_root._profile_slot == "profile_02", "Defense demo activated selected slot profile_02 (not stale profile_01)")
+	_check(game_root.character_stats.level == 10, "In-memory Ren level updated to 10 for profile_02")
+	_check(game_root.chapter_manager.current_chapter == ChapterManager.CHAPTER_3, "In-memory chapter updated to Chapter 3")
+	_check(game_root.inventory_manager.banked_items.get("spirit_salve", 0) >= 5, "In-memory inventory received spirit salves")
+
+	# 7. Assert profile_02 on disk received the defense demo mutations
+	var p2_post_data: Dictionary = store.load_profile("profile_02").get("profile", {})
+	_check(int(p2_post_data.get("character", {}).get("level", 0)) == 10, "Disk profile_02 level updated to 10")
+	_check(int(p2_post_data.get("world", {}).get("chapter_progress", {}).get("current_chapter", 0)) == 3, "Disk profile_02 chapter updated to 3")
+	_check(int(p2_post_data.get("inventory", {}).get("banked", {}).get("spirit_salve", 0)) >= 5, "Disk profile_02 received spirit salves")
+	_check(p2_post_data.get("education", {}).get("records", {}).is_empty() == false, "Disk profile_02 education records populated")
+
+	# 8. Assert profile_01 on disk is completely unchanged (byte-identical)
+	var p1_post_text: String = store.export_backup("profile_01").get("text", "")
+	_check(p1_post_text == p1_pre_text, "Profile 1 on disk is byte-identical to pre-demo state (no mutation)")
+	var p1_post_data: Dictionary = store.load_profile("profile_01").get("profile", {})
+	_check(int(p1_post_data.get("character", {}).get("level", 0)) == 3, "Profile 1 character level unchanged (3)")
+	_check(int(p1_post_data.get("world", {}).get("chapter_progress", {}).get("current_chapter", 0)) == 2, "Profile 1 chapter progress unchanged (2)")
+	_check(p1_post_data.get("inventory", {}).get("banked", {}).has("spirit_salve") == false, "Profile 1 did NOT receive demo items")
+	_check(p1_post_data.get("education", {}).get("records", {}).has("q_dec_01") == true, "Profile 1 educational records intact")
+
+	# ==========================================================================
+	# Part 8: Failure-Path Test: Corrupt Profile Activation Leaves Title Visible & Files Untouched
+	# ==========================================================================
+	# Clean any existing files in profile_03 directory first, then seed corrupted JSON
+	_cleanup_dir("%s/profile_03" % _test_root)
+	var p3_dir: String = ProjectSettings.globalize_path("%s/profile_03" % _test_root)
+	DirAccess.make_dir_recursive_absolute(p3_dir)
+	var corrupt_p3 := FileAccess.open("%s/profile.0000000000000001.00003.000001.json" % p3_dir, FileAccess.WRITE)
+	var corrupt_payload: String = "{broken_json_syntax: true"
+	corrupt_p3.store_string(corrupt_payload)
+	corrupt_p3.close()
+
+	var p2_pre_fail_text: String = store.export_backup("profile_02").get("text", "")
+
+	# Open Title Screen while profile_02 is active
+	game_root.open_title_screen()
+	await process_frame
+	var gr_title3: TitleScreen = game_root._title_screen
+	_check(gr_title3 != null, "TitleScreen opened for failure-path test")
+
+	# Select corrupt profile_03
+	gr_title3._select_slot("profile_03")
+	await process_frame
+	_check(gr_title3.current_slot == "profile_03", "TitleScreen selected slot updated to corrupt profile_03")
+
+	# Click Defense Demo on corrupt slot
+	gr_title3.defense_btn.pressed.emit()
+	await process_frame
+	await process_frame
+
+	# Assertions for failure path: TitleScreen remains open, error shown, files untouched
+	_check(game_root._title_screen != null, "TitleScreen remains open after corrupt profile defense demo rejected")
+	if game_root._title_screen != null:
+		_check(game_root._title_screen.error_box.visible == true, "TitleScreen error box visible on defense demo failure")
+		_check(game_root._title_screen.error_label.text.contains("Cannot load profile"), "TitleScreen error label explains load failure")
+	_check(game_root._profile_slot == "profile_02", "Active profile slot remained profile_02 (prior profile untouched)")
+
+	# Profile 2 bytes unchanged
+	var p2_post_fail_text: String = store.export_backup("profile_02").get("text", "")
+	_check(p2_post_fail_text == p2_pre_fail_text, "Active profile_02 bytes unchanged after failed defense demo")
+
+	# Profile 3 file still has raw corrupt payload
+	var p3_check_file := FileAccess.open("%s/profile.0000000000000001.00003.000001.json" % p3_dir, FileAccess.READ)
+	_check(p3_check_file != null, "Profile 3 file still exists")
+	var p3_actual_payload: String = p3_check_file.get_as_text()
+	p3_check_file.close()
+	_check(p3_actual_payload == corrupt_payload, "Corrupted profile_03 file untouched on disk")
+
 	# Clean up
 	game_root._close_title_screen()
 	game_root.queue_free()
