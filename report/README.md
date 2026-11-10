@@ -2,6 +2,12 @@
 
 This directory stores the official engineering and milestone implementation reports for the Soulbound project.
 
+- [OD-009 MVP Save Boundary Report (November 10, 2026)](od009_save_boundary_report.md)
+  - Owner-ratified OD-009 MVP scope: persist only at room/exploration boundaries; mid-battle and partial-turn state is never serialized; future fields stay `TBD`
+  - Explicit save-boundary guards (`GameRoot.get_save_blocker` / `check_save_boundary` / `request_save`) rejecting before any profile mutation with actionable diagnostics; OD-009 documentation and an in-flight-extraction snapshot guard in `DungeonExpedition`; boundary contract documented on `ProfileStore.save_profile`
+  - Evidence: targeted `dungeon_scene_test` exit 0 (OD-009 59 checks / 0 failures, 6 diagnostics); negative control (guard disabled) exit 1 with 7 failures incl. profile-byte mutation; canonical suite 32/32 exit 0; real user data unchanged
+  - Status: `REVIEW_PENDING_CODEX`
+
 - [SBL-BLD-005 Release Provenance Manifest Report (November 10, 2026)](sbl_bld_005_release_manifest_report.md)
   - Archive-contained schema-version-1 `release-manifest.json` + external `<archive>.manifest.sha256` receipt for all three release ZIPs
   - Shared archive-byte verifier (strict JSON with duplicate-member rejection, path/type/duplicate/case-collision safety, payload hashes, identity, archived configuration semantics), archive-contained PCK gates, proven disposable user-data isolation

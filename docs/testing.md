@@ -52,7 +52,7 @@ At current development baseline (SBL-EDU-005 learning journal & reporting engine
 | `m3_systems_test.gd` | Character leveling, inventory defeat wipe vs. bank preservation, Kurei 6-spell pips, BFS dungeon reachability |
 | `dimension_test.gd` | Physical/spirit plane shifting, player collision mask sync, zero-embed safety |
 | `kurei_combat_test.gd` | In-battle Kurei spell menu, SP pip consumption, cooldown tracking, SBL-REV-005 Phase Mastery 4 SP capacity, SBL-REV-006 dynamic 6-slot menu generation, rejection of unequipped skills, casting of equipped skills, cancel and Escape dismissal, SBL-REV-008 empty loadout starter normalization regression test |
-| `dungeon_scene_test.gd` | Procedural room layout, at-risk satchel, commit-first suspend/resume, session callback guarding, exact-once extraction |
+| `dungeon_scene_test.gd` | Procedural room layout, at-risk satchel, commit-first suspend/resume, session callback guarding, exact-once extraction, and OD-009 MVP save boundary (mid-battle/partial-turn/pending-encounter/boss/expedition save requests rejected before any profile mutation with byte-identical profile evidence, room/exploration boundary save round-trip, suspend ≠ extraction) |
 | `overworld_gateway_test.gd` | Overworld dungeon shrine entrance, town bank transfers, defeat wipes |
 | `education_report_test.gd` | Question bank, immutable first-attempt tracking, RFC-4180 CSV export |
 | `ui_sheets_test.gd` | Character sheet, inventory sheet, hotkey toggles (`C` / `I`), gear equip |

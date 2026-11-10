@@ -2279,3 +2279,59 @@ Pipeline unrolling collapsed parsed JSON arrays (fixed-size `Object[]`) and abor
 - An unrelated docs commit `18ffb02` landed from another agent mid-session; the source-timing control correctly failed against it and passed again after a fresh export. Final manifests record `30305d6`.
 - The receipt is an integrity reference, not a signature; coordinated archive+receipt replacement remains out of scope. Dirty builds are permitted and honestly recorded.
 - Raw evidence logs (gitignored): `report/release_manifest_test.log`, `report/godot_user_data_isolation.log`, `report/verify_pck_*.log|.err`; run transcripts in the session temp directory.
+
+---
+
+## SBL-OD-009 — OD-009 MVP Save Boundary
+
+```text
+TASK ID: SBL-OD-009
+REQUIREMENTS: GDD-098, GDD-099, GDD-100, FR-SAV-001, FR-CMB-001, TC-SAV-001, TC-SAV-002, TC-DNG-002, TC-DNG-003, TC-DNG-004, AGENTS.md save invariants
+MILESTONE: Release Hardening & Scope Boundary Management
+OWNER: agy (executed by opencode-go/mimo-v2.6-flash under the owner-ratified plan)
+PLAN OWNER: Codex (docs/agy-next-queue.md)
+BRANCH/COMMIT: feature/w4-5-vertical-slice (commit recorded below)
+FILES CHANGED: scenes/main/game_root.gd, scenes/dungeon/dungeon_expedition.gd, scripts/persistence/profile_store.gd, tests/headless/dungeon_scene_test.gd, docs/agent-review-queue.md, docs/traceability-matrix.md, docs/testing.md, report/od009_save_boundary_report.md, report/README.md
+ASSET PROVENANCE: none
+TESTS RUN + RESULTS: targeted dungeon_scene_test exit 0 (OD-009: 59 checks, 0 failed); negative control exit 1 (7 failures); canonical suite 32/32 exit 0; real user data unchanged
+REVIEW: REVIEW_PENDING_CODEX
+OPEN QUESTIONS: see below
+```
+
+- **Milestone** Release Hardening & Scope Boundary Management (owner-ratified `OD-009` MVP fallback).
+- **Requirements** GDD-098, GDD-099, GDD-100, FR-SAV-001, FR-CMB-001, TC-SAV-001/002, TC-DNG-002/003/004. Scope of record: `docs/agy-next-queue.md`. Evidence: [OD-009 report](../report/od009_save_boundary_report.md), [traceability](traceability-matrix.md).
+- **Implementation owner** `opencode-go/mimo-v2.6-flash` (MiMo execution). **Plan owner** Codex. **Reviewer** Codex CLI — deferred; Codex CLI review was explicitly not called for this slice.
+- **Branch and commit** `feature/w4-5-vertical-slice`, implementation commit `e285514` (docs committed immediately afterwards in the same batch), both tagged `[REVIEW_PENDING_CODEX]`.
+- **Files** `scenes/main/game_root.gd`, `scenes/dungeon/dungeon_expedition.gd`, `scripts/persistence/profile_store.gd`, `tests/headless/dungeon_scene_test.gd`, plus this queue, `docs/traceability-matrix.md`, `docs/testing.md`, `report/od009_save_boundary_report.md`, `report/README.md`.
+- **Asset provenance** None. No images, audio, generated content, or gameplay numbers; no save-data format change.
+- **Review** REVIEW_PENDING_CODEX. Nothing in this slice is `REVIEWED`; Codex CLI must review the guard semantics, the byte-identity assertions, and the negative control.
+- **Open decisions** `OD-009` remains open for its full-release decision (mid-battle serialization format, mid-battle browser resume, combat-action replay logs stay blocked). No other OD was touched. `OD-002/003/004` combat values and `OD-008` loss ratios are untouched.
+
+### Changes
+
+1. **Boundary gate and save-request entry point (`scenes/main/game_root.gd`).** New OD-009 section with `OD009_SAVE_BLOCKED_HINT`, `get_save_blocker()`, `check_save_boundary()`, `request_save(reason)` and `_persist_exploration_boundary()`. A save request is evaluated against the blocker list **before** `ProfileStore` is touched; on a blocker it returns `ERR_BUSY` and emits an actionable `push_warning` naming the blocker (live battle phase, pending encounter, boss encounter, active/parked expedition, at-risk satchel) plus the OD-009 hint, and states that no profile data was written. The allowed path is a single atomic load-modify-save of character stats, the Kurei tree (refreshed from the live controller so the rewrite cannot drop stored skills/talents) and inventory. Education, chapter, slice, ending and expedition records keep their existing event-based writers.
+2. **Expedition boundary documentation and snapshot guard (`scenes/dungeon/dungeon_expedition.gd`).** Header, `serialize_expedition()` and `suspend_expedition()` document the room/exploration boundary, the absence of any combat/turn state in the snapshot, and that suspend is never an extraction. `serialize_expedition()` now returns `{}` while an extraction commit is in flight so a snapshot cannot interleave with the atomic terminal write (state `suspend_expedition()` already refused, so no reachable behavior changed).
+3. **Writer contract documentation (`scripts/persistence/profile_store.gd`).** `save_profile()` documents that ProfileStore performs no combat-state serialization and that mid-battle/partial-turn requests are rejected upstream before the writer is reached. No logic, validation, or schema change (`schema_version` stays `1`).
+4. **Regression coverage (`tests/headless/dungeon_scene_test.gd`).** New `_test_od009_save_boundary()` with 59 assertions plus `_profile_revision_count()` / `_profile_revision_files()` helpers: session boot writes nothing; mid-battle, `phase=ENEMY` partial-turn, pending-encounter, boss and expedition requests all return `ERR_BUSY`; after all probes the profile export text, committed-revision count and JSON snapshots of character, inventory, education, story, Kurei tree, slice stage, region and suspended-run state are identical; suspend writes `world.active_expedition` without banking (≠ extraction) and a parked run still defers; resume → extraction clears the snapshot and banks exactly once; the allowed boundary save returns `OK`, commits exactly one revision, round-trips xp and banked inventory into a fresh session, writes an empty satchel, and leaves story/education/expedition records untouched.
+
+### Verification (Godot 4.7.2 Stable `ed1daf0bf`, Windows headless, disposable user data)
+
+| Command | Observed result |
+|---|---|
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\run_headless_tests.ps1 -Suite dungeon_scene_test` | **Exit 0, PASS (2.02 s)**. Import clean. `--- Running OD-009 MVP Save Boundary Test ---` → `OD-009 save boundary checks: 59 run, 0 failed` → `=== ALL DUNGEON SCENE TESTS PASSED SUCCESSFULLY ===` (`report/dungeon_scene_test.log`). |
+| Same run, stderr | **6 actionable OD-009 diagnostics**, one per rejected probe (battle `phase=PLAYER`, battle `phase=ENEMY`, pending encounter, boss, active expedition, parked snapshot), each ending "no profile data was written" (`report/dungeon_scene_test.err`). |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\run_headless_tests.ps1` | **Exit 0, 32/32 suites PASS** (incl. `save_model_test`, `save_compatibility_recovery_test`, `web_backup_test`, `dungeon_scene_test`). `realUserDataUnchanged=True`, `disposableFiles=654`, `rootRemoved=True`. |
+| Negative control: mid-battle branch disabled in `get_save_blocker()`, targeted suite re-run | **Exit 1, 7 failed assertions**, including `Rejected saves leave profile bytes unchanged` and `Rejected saves commit no profile revision` — proving the guard is load-bearing and the test detects an unguarded mid-battle write. Guard restored; targeted suite re-run **exit 0**. |
+
+### Preserved invariants
+
+- Suspend/resume is still not extraction: the bank is untouched by suspend and the exactly-once extraction transfer assertions (atomic extraction, SBL-FIX-007 defeat retry, SBL-REV-001 single transfer) pass unmodified.
+- Permanent data still survives defeat; unbanked satchel loot can never become permanent through the new boundary save (the save is refused while at-risk satchel exists and writes an empty satchel otherwise).
+- Legacy/future profile validation is untouched: `profile_store.gd` changed by documentation only, and `save_model_test` / `save_compatibility_recovery_test` pass unmodified.
+- No new combat values, initiative rules, SP/cooldown values, rewards, loss ratios, story, assets, browser work, schema bump, or OD resolution.
+
+### Open questions for Codex review
+
+1. Should `request_save()` be wired to a UI/event (e.g. region transition) in a follow-up slice, or is a programmatic entry point sufficient for the MVP? No UI was added and no player-facing copy was invented.
+2. Confirm the reading of GDD-099 "separate expedition-state handling" that defers generic saves while a run is active/parked or at-risk satchel is live (it prevents unbanked loot from persisting without an expedition record).
+3. `push_warning` is the current actionable-diagnostic channel; confirm whether the MVP requires a player-facing message instead.
