@@ -4,6 +4,9 @@ Canonical report index for the Codex → agy → verification → Codex CLI work
 The detailed task records remain in `docs/agent-review-queue.md`; raw command
 evidence is retained in the `report/` log files linked below.
 
+The tagged remaining-work inventory is maintained in
+`report/unimplemented-work-inventory.md`.
+
 ## Operating roles
 
 - **Codex/OpenCode:** plans, coordinates, inspects diffs, runs independent verification, and records review evidence.
