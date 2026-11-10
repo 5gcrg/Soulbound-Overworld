@@ -13,6 +13,19 @@ func _check(ok: bool, msg: String) -> bool:
 		printerr("KUREI COMBAT TEST FAILED: ", msg)
 	return ok
 
+## OD-003 exact authored value assertion for one catalog skill.
+func _check_skill(skill_id: StringName, pip_cost: int, cooldown_turns: int, base_power: int) -> void:
+	var skill: Dictionary = KureiSystem.SKILL_CATALOG.get(skill_id, {})
+	if skill.is_empty():
+		_check(false, "Authored skill %s exists in SKILL_CATALOG" % String(skill_id))
+		return
+	_check(int(skill.get("pip_cost", -1)) == pip_cost,
+		"%s pip cost stays at the authored %d" % [String(skill_id), pip_cost])
+	_check(int(skill.get("cooldown_turns", -1)) == cooldown_turns,
+		"%s cooldown stays at the authored %d" % [String(skill_id), cooldown_turns])
+	_check(int(skill.get("base_power", -1)) == base_power,
+		"%s base_power stays at the authored %d" % [String(skill_id), base_power])
+
 func _init() -> void:
 	call_deferred("_run_test")
 
@@ -198,6 +211,136 @@ func _run_test() -> void:
 	_check(empty_cast_ok == true, "request_action for visible flame_burst succeeds on normalized tree (no unusable menu defect)")
 	_check(fixture_empty.enemy_pips == 0, "flame_burst dealt 2 damage to enemy (pips: 0)")
 	fixture_empty.queue_free()
+
+	# ==========================================================================
+	# OD-003: six categories with approved roles and exact authored values
+	# ==========================================================================
+	print("--- Running OD-003 Kurei Role Metadata and Authored Value Controls ---")
+	var kurei := KureiSystem.new()
+
+	_check(KureiSystem.ALL_CATEGORIES.size() == 6, "Exactly six Kurei categories exist")
+	_check(kurei.get_category_role(KureiSystem.CAT_FLAME) == "damage/Burn", "Flame role is damage/Burn")
+	_check(kurei.get_category_role(KureiSystem.CAT_TORRENT) == "heal/cleanse", "Torrent role is heal/cleanse")
+	_check(kurei.get_category_role(KureiSystem.CAT_GALE) == "haste/evasion", "Gale role is haste/evasion")
+	_check(kurei.get_category_role(KureiSystem.CAT_EARTH) == "shield/mitigation", "Earth role is shield/mitigation")
+	_check(kurei.get_category_role(KureiSystem.CAT_LUMINA) == "pierce/focus", "Lumina role is pierce/focus")
+	_check(kurei.get_category_role(KureiSystem.CAT_UMBRA) == "drain/debuff", "Umbra role is drain/debuff")
+	_check(kurei.get_skill_role(&"flame_burst") == "damage/Burn", "flame_burst inherits the Flame role")
+	_check(kurei.get_skill_role(&"torrent_surge") == "heal/cleanse", "torrent_surge inherits the Torrent role")
+	_check(kurei.get_skill_role(&"gale_flurry") == "haste/evasion", "gale_flurry inherits the Gale role")
+	_check(kurei.get_skill_role(&"earth_bastion") == "shield/mitigation", "earth_bastion inherits the Earth role")
+	_check(kurei.get_skill_role(&"lumina_lance") == "pierce/focus", "lumina_lance inherits the Lumina role")
+	_check(kurei.get_skill_role(&"umbra_drain") == "drain/debuff", "umbra_drain inherits the Umbra role")
+	_check(kurei.get_skill_role(&"unknown_skill") == "", "Unknown skills have no invented role")
+
+	# Exact authored pip costs, cooldowns and base powers (OD-003: unchanged content).
+	_check_skill(&"flame_burst", 2, 2, 18)
+	_check_skill(&"torrent_surge", 2, 3, 12)
+	_check_skill(&"gale_flurry", 1, 1, 10)
+	_check_skill(&"earth_bastion", 2, 3, 0)
+	_check_skill(&"lumina_lance", 1, 2, 14)
+	_check_skill(&"umbra_drain", 2, 3, 12)
+	_check_skill(&"solar_flare", 3, 3, 28)
+	_check_skill(&"celestial_prism", 2, 3, 20)
+	_check_skill(&"glacial_aegis", 2, 3, 16)
+	_check_skill(&"void_shift", 1, 2, 10)
+	_check_skill(&"phase_mastery", 0, 0, 0)
+	_check(kurei.is_skill_passive(&"phase_mastery"), "phase_mastery stays a passive with no cost")
+
+	# Exact SP baselines: normal 2, Phase Mastery 4, boss 3 / Phase Mastery 4.
+	_check(BattleFixture.BASELINE_MAX_SP == 2, "Normal SP baseline stays 2")
+	_check(BossEncounter.BASELINE_MAX_SP == 3, "Boss SP baseline stays 3")
+	_check(KureiTree.AUTHORED_PHASE_MASTERY_MAX_SP == 4, "Phase Mastery raises SP capacity to 4 for both")
+
+	# OD-003 negative controls: no rock-paper-scissors multiplier chart anywhere.
+	var banned_fields: Array[String] = [
+		"multiplier", "element_multiplier", "weakness_multiplier", "resistance_multiplier",
+		"affinity_chart", "counter_chart", "element_chart", "affinity"
+	]
+	var chart_leaks: Array[String] = []
+	for skill_id: StringName in KureiSystem.SKILL_CATALOG:
+		var skill_record: Dictionary = KureiSystem.SKILL_CATALOG[skill_id]
+		for banned: String in banned_fields:
+			if skill_record.has(banned):
+				chart_leaks.append("%s.%s" % [String(skill_id), banned])
+	_check(chart_leaks.is_empty(),
+		"No authored skill carries an elemental multiplier/counter field (OD-003): %s" % str(chart_leaks))
+	var cast_probe: Dictionary = kurei.cast_skill(&"flame_burst", 2)
+	_check(int(cast_probe.get("base_power", -1)) == 18,
+		"cast_skill returns the authored base_power unchanged (no hidden elemental multiplier)")
+	_check(cast_probe.get("error", ERR_UNAVAILABLE) == OK, "Authored flame_burst cast succeeds with 2 SP")
+
+	# ==========================================================================
+	# OD-004: status durations, refresh/no-stack, Stun skip and Torrent cleanse
+	# ==========================================================================
+	print("--- Running OD-004 Status Policy in BattleFixture ---")
+	var od_fixture: BattleFixture = BattleFixtureScene.instantiate() as BattleFixture
+	od_fixture.ren_pips = 3 # Ren survives the opponent strikes during these probes
+	root.add_child(od_fixture)
+	await process_frame
+
+	od_fixture.enemy_pips = 20 # keep the opponent alive for the status probes
+	var flame_ok: bool = od_fixture.request_action(&"kurei_flame_burst")
+	_check(flame_ok, "Flame Burst accepted for the OD-004 probe")
+	_check(od_fixture.enemy_statuses.get_duration(StatusEngine.EFFECT_BURN) == 3,
+		"Flame applies the OD-004 3-turn Burn")
+	_check(od_fixture.enemy_statuses.get_potency(StatusEngine.EFFECT_BURN) == 1,
+		"Flame keeps its authored Burn potency")
+	_check(int(od_fixture.enemy_statuses.active_effects[StatusEngine.EFFECT_BURN].get("stacks", 0)) == 1,
+		"Applied Burn holds a single intensity")
+	await process_frame
+	await process_frame
+	_check(od_fixture.phase == BattleFixture.Phase.PLAYER, "Control returned to Ren after the opponent acted")
+
+	# Same-name refresh: larger duration and larger potency, never a stack.
+	od_fixture.kurei.reset_cooldowns()
+	od_fixture.ren_sp = 2
+	od_fixture.enemy_statuses.apply_status(StatusEngine.EFFECT_BURN, 3, 2) # stronger authored Burn
+	_check(od_fixture.enemy_statuses.get_duration(StatusEngine.EFFECT_BURN) == 3, "Stronger Burn refreshed to 3 turns")
+	var weaker_cast_ok: bool = od_fixture.request_action(&"kurei_flame_burst")
+	_check(weaker_cast_ok, "Weaker Flame reapplication accepted")
+	_check(od_fixture.enemy_statuses.get_duration(StatusEngine.EFFECT_BURN) == 3,
+		"Refresh keeps the larger duration")
+	_check(od_fixture.enemy_statuses.get_potency(StatusEngine.EFFECT_BURN) == 2,
+		"Refresh keeps the larger potency")
+	_check(int(od_fixture.enemy_statuses.active_effects[StatusEngine.EFFECT_BURN].get("stacks", 0)) == 1,
+		"Refresh never stacks intensity (OD-004)")
+	await process_frame
+	await process_frame
+
+	# OD-004 Stun: the opponent skips exactly one action.
+	od_fixture.enemy_statuses.clear_all()
+	od_fixture.enemy_statuses.apply_status(StatusEngine.EFFECT_STUN)
+	od_fixture.enemy_pips = 10
+	var pre_skip_pips: int = od_fixture.ren_pips
+	var pre_skip_intent: StringName = od_fixture.enemy_intent
+	var attack_ok: bool = od_fixture.request_action(&"attack")
+	_check(attack_ok, "Ren attack accepted before the stunned opponent acts")
+	await process_frame
+	await process_frame
+	_check(od_fixture.ren_pips == pre_skip_pips,
+		"Stunned opponent skipped its Strike (no damage to Ren)")
+	_check(od_fixture.enemy_intent == pre_skip_intent,
+		"Telegraphed intent did not advance for an action the opponent never took")
+	_check(od_fixture.enemy_statuses.has_status(StatusEngine.EFFECT_STUN) == false,
+		"Stun consumed by the single skipped action")
+	_check(od_fixture.phase == BattleFixture.Phase.PLAYER, "Battle continues after the skipped action")
+
+	# OD-003/OD-004 Torrent role: heal/cleanse - negatives removed, positives kept.
+	od_fixture.ren_statuses.apply_status(StatusEngine.EFFECT_BURN, -1, 2)
+	od_fixture.ren_statuses.apply_status(StatusEngine.EFFECT_DEFENSE_UP, -1, 1)
+	od_fixture.ren_sp = 2
+	var pre_heal_pips: int = od_fixture.ren_pips
+	var torrent_ok: bool = od_fixture.request_action(&"kurei_torrent_surge")
+	_check(torrent_ok, "Torrent Surge accepted for the cleanse probe")
+	_check(od_fixture.ren_statuses.has_status(StatusEngine.EFFECT_BURN) == false,
+		"Cleanse removed the negative Burn from Ren")
+	_check(od_fixture.ren_statuses.has_status(StatusEngine.EFFECT_DEFENSE_UP) == true,
+		"Cleanse kept the positive Defense Up")
+	_check(od_fixture.ren_pips == mini(od_fixture.max_ren_pips, pre_heal_pips + 1),
+		"Torrent Surge healed Ren by its authored amount")
+	od_fixture.queue_free()
+	await process_frame
 
 	if _failures > 0:
 		printerr("KUREI COMBAT TESTS FAILED: ", _failures)

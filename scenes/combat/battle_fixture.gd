@@ -21,6 +21,11 @@ const HEALING_ITEMS: Array[String] = [
 
 const BASELINE_MAX_SP: int = 2
 
+## OD-002 initiative actor identities. Stable actor IDs are assigned in registration
+## order (Ren 0, opponent 1), so equal effective Agility resolves player-first.
+const ACTOR_REN: StringName = &"ren"
+const ACTOR_ENEMY: StringName = &"enemy"
+
 var phase: Phase = Phase.PLAYER
 var ren_pips: int = 1
 var max_ren_pips: int = 3
@@ -30,6 +35,15 @@ var max_sp: int = BASELINE_MAX_SP
 var enemy_intent: StringName = &"Strike"
 var last_player_action: StringName = &""
 var _continued_emitted: bool = false
+
+## OD-002: initiative equals effective Agility (higher acts first).
+## Ren's Agility comes from the authored CharacterStats default (10 when no profile
+## is wired into the fixture). MVP encounter definitions author no enemy Agility
+## value yet (TBD content), so the encounter opponent participates with 0 and Ren
+## keeps first strike until an authored opponent Agility exists.
+var ren_agility: int = CharacterStats.new().agility
+var enemy_agility: int = 0
+var initiative: InitiativeOrder = InitiativeOrder.new()
 
 var inventory: InventoryManager = null
 var kurei_tree: KureiTree = null:
@@ -56,6 +70,8 @@ var enemy_statuses: StatusEngine = StatusEngine.new()
 @onready var title_label: Label = $VBoxContainer/TitleLabel
 @onready var status_label: Label = $VBoxContainer/StatusLabel
 @onready var outcome_label: Label = $VBoxContainer/OutcomeLabel
+## OD-002 battle HUD: shows the next three actors in initiative order.
+@onready var turn_order_label: Label = $VBoxContainer/HBoxContainer/TurnOrderLabel
 @onready var ren_pips_label: Label = $VBoxContainer/HBoxContainer/RenPanel/RenPips
 @onready var enemy_pips_label: Label = $VBoxContainer/HBoxContainer/EnemyPanel/EnemyPips
 @onready var enemy_intent_label: Label = $VBoxContainer/HBoxContainer/EnemyPanel/EnemyIntent
@@ -87,9 +103,56 @@ func _ready() -> void:
 	cancel_kurei_btn.pressed.connect(_on_cancel_kurei_pressed)
 
 	continue_button.pressed.connect(_on_continue_pressed)
+	ensure_initiative()
 	apply_kurei_tree_capacity()
 	_rebuild_kurei_menu()
+	_resolve_next_actor()
 	_update_ui()
+
+## OD-002: registers the encounter participants (stable actor IDs in spawn order)
+## and opens round 1. Effective Agility is snapshotted per round inside the engine.
+func ensure_initiative() -> void:
+	if initiative.round_index > 0:
+		return
+	initiative.register_actor(ACTOR_REN, ren_agility, "Ren")
+	initiative.register_actor(ACTOR_ENEMY, enemy_agility, "Adversary")
+	initiative.begin_round()
+
+## OD-002 authoring/test hook: sets a participant's base Agility. The change is
+## reflected in ordering only at the next round boundary.
+func set_actor_agility(actor_id: StringName, agility: int) -> void:
+	if actor_id == ACTOR_REN:
+		ren_agility = agility
+	elif actor_id == ACTOR_ENEMY:
+		enemy_agility = agility
+	initiative.set_actor_agility(actor_id, agility)
+
+## OD-002 battle HUD: "Next: <actor> > <actor> > <actor>" (next three actors).
+func get_next_three_actors_text() -> String:
+	return "Next: %s" % initiative.get_next_actor_names(InitiativeOrder.HUD_PREVIEW_COUNT)
+
+## OD-002: hands play to the next actor in initiative order. Round boundaries - and
+## therefore any haste/slow change - are applied only here, never mid-resolution.
+func _resolve_next_actor() -> void:
+	ensure_initiative()
+	var guard: int = 0
+	while guard < 8:
+		guard += 1
+		if initiative.is_round_complete():
+			initiative.begin_round()
+		var next_actor: StringName = initiative.current_actor()
+		if next_actor == ACTOR_ENEMY:
+			phase = Phase.ENEMY
+			_resolve_enemy_turn.call_deferred()
+			return
+		if next_actor == ACTOR_REN:
+			# OD-004: a stunned Ren skips exactly one action and play continues.
+			if ren_statuses.consume_stun():
+				initiative.record_action(ACTOR_REN)
+				continue
+			phase = Phase.PLAYER
+			return
+		return # no registered actor: hold the current phase
 
 func _on_cancel_kurei_pressed() -> void:
 	if kurei_menu != null:
@@ -227,7 +290,12 @@ func consume_healing_item() -> bool:
 	return false
 
 func request_action(action: StringName) -> bool:
+	ensure_initiative()
 	if phase != Phase.PLAYER:
+		return false
+	# OD-002: one main action per actor per round - no extra turns, no reaction
+	# attacks. A second request inside the same round is rejected without mutation.
+	if not initiative.can_act(ACTOR_REN):
 		return false
 
 	var is_kurei: bool = action.begins_with("kurei_")
@@ -253,7 +321,8 @@ func request_action(action: StringName) -> bool:
 
 		if skill_id == &"flame_burst":
 			enemy_pips -= 2
-			enemy_statuses.apply_status(StatusEngine.EFFECT_BURN, 2, 1)
+			# OD-004: Burn lasts the approved 3 turns (authored potency 1).
+			enemy_statuses.apply_status(StatusEngine.EFFECT_BURN, 3, 1)
 		elif skill_id == &"solar_flare":
 			enemy_pips -= 3
 			enemy_statuses.apply_status(StatusEngine.EFFECT_BURN, 3, 2)
@@ -261,14 +330,20 @@ func request_action(action: StringName) -> bool:
 			enemy_pips -= 1
 		elif skill_id == &"celestial_prism":
 			enemy_pips -= 2
+			# OD-004: Stun skips exactly one action.
 			enemy_statuses.apply_status(StatusEngine.EFFECT_STUN, 1, 1)
 		elif skill_id == &"torrent_surge":
+			# OD-003 Torrent role: heal/cleanse - negative statuses are removed,
+			# positive statuses (Shield, Regeneration, Defense Up) survive.
 			ren_pips = mini(max_ren_pips, ren_pips + 1)
+			ren_statuses.cleanse_negative()
 		elif skill_id == &"glacial_aegis":
 			ren_pips = mini(max_ren_pips, ren_pips + 2)
-			ren_statuses.apply_status(StatusEngine.EFFECT_SHIELD, 2, 2)
+			# OD-004: Shield expires depleted or after the approved 3 turns.
+			ren_statuses.apply_status(StatusEngine.EFFECT_SHIELD, 3, 2)
 		elif skill_id == &"void_shift":
-			ren_statuses.apply_status(StatusEngine.EFFECT_DEFENSE_UP, 1, 2)
+			# OD-004: Defense Up lasts the approved 2 turns.
+			ren_statuses.apply_status(StatusEngine.EFFECT_DEFENSE_UP, 2, 2)
 
 		action_performed.emit(&"spell")
 		last_player_action = action
@@ -293,6 +368,8 @@ func request_action(action: StringName) -> bool:
 		action_performed.emit(&"defend")
 
 	last_player_action = action
+	# OD-002: the accepted action spends Ren's single main action for this round.
+	initiative.record_action(ACTOR_REN)
 	phase = Phase.ENEMY
 	kurei_menu.visible = false
 
@@ -305,11 +382,19 @@ func request_action(action: StringName) -> bool:
 			_update_ui()
 			return true
 
+	# OD-002: the opponent only ever spends its single in-round action here. When
+	# Ren's action completes a round the opponent already acted in (opponent opens
+	# the round by initiative), the round boundary is resolved instead so the
+	# opponent's next action belongs to the new round - never an extra turn.
+	if initiative.is_round_complete():
+		_resolve_next_actor()
+	else:
+		_resolve_enemy_turn.call_deferred()
 	_update_ui()
-	_resolve_enemy_turn.call_deferred()
 	return true
 
 func _resolve_enemy_turn() -> void:
+	ensure_initiative()
 	if phase != Phase.ENEMY:
 		return
 
@@ -323,24 +408,31 @@ func _resolve_enemy_turn() -> void:
 				_update_ui()
 				return
 
-	if enemy_intent == &"Strike":
-		if last_player_action != &"defend":
-			var dmg_info: Dictionary = ren_statuses.process_incoming_damage(1)
-			ren_pips -= int(dmg_info.get("hp_damage", 0))
-			if ren_pips <= 0:
-				ren_pips = 0
-				phase = Phase.DEFEAT
-				_update_ui()
-				return
-	# Recover is harmless to the player
-
-	enemy_intent = &"Recover" if enemy_intent == &"Strike" else &"Strike"
+	# OD-004: Stun skips exactly one action and is consumed by that skip. The
+	# telegraphed intent is not advanced by an action the opponent never took.
+	var enemy_action_skipped: bool = enemy_statuses.consume_stun()
+	if not enemy_action_skipped:
+		if enemy_intent == &"Strike":
+			if last_player_action != &"defend":
+				var dmg_info: Dictionary = ren_statuses.process_incoming_damage(1)
+				ren_pips -= int(dmg_info.get("hp_damage", 0))
+				if ren_pips <= 0:
+					ren_pips = 0
+					phase = Phase.DEFEAT
+					_update_ui()
+					return
+		# Recover is harmless to the player
+		enemy_intent = &"Recover" if enemy_intent == &"Strike" else &"Strike"
 	ren_statuses.tick_turn_end()
 	enemy_statuses.tick_turn_end()
 
-	phase = Phase.PLAYER
 	kurei.tick_cooldowns()
 	ren_sp = mini(max_sp, ren_sp + 1)
+
+	# OD-002: the opponent spends its single main action for the round; play then
+	# moves to the next actor in initiative order (round boundary included).
+	initiative.record_action(ACTOR_ENEMY)
+	_resolve_next_actor()
 	_update_ui()
 
 func _on_continue_pressed() -> void:
@@ -352,11 +444,15 @@ func _on_continue_pressed() -> void:
 func _update_ui() -> void:
 	if not is_node_ready():
 		return
+	ensure_initiative()
 
 	ren_pips_label.text = "Ren HP: %d/%d | SP: %d" % [ren_pips, max_ren_pips, ren_sp]
 	enemy_pips_label.text = "Enemy HP: %d" % enemy_pips
 	enemy_intent_label.text = "Intent: %s" % enemy_intent
 	status_label.text = "Phase: %s" % Phase.keys()[phase]
+	# OD-002 battle HUD: next three actors in initiative order.
+	if turn_order_label != null:
+		turn_order_label.text = get_next_three_actors_text()
 
 	var is_player: bool = (phase == Phase.PLAYER)
 	var is_terminal: bool = (phase == Phase.VICTORY or phase == Phase.DEFEAT)

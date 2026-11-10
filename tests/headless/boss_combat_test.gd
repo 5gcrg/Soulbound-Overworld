@@ -11,6 +11,28 @@ func _check(ok: bool, msg: String) -> bool:
 		printerr("BOSS COMBAT TEST FAILED: ", msg)
 	return ok
 
+## Full mutable state of a boss encounter, used for OD-002/OD-003 zero-mutation controls.
+func _boss_snapshot(b: BossEncounter) -> Dictionary:
+	return {
+		"ren_hp": b.ren_hp,
+		"ren_sp": b.ren_sp,
+		"boss_hp": b.boss_hp,
+		"boss_barrier": b.boss_barrier,
+		"turn_counter": b.turn_counter,
+		"phase": b.current_phase,
+		"intent": b.boss_intent,
+		"cataclysm_charging": b.is_cataclysm_charging,
+		"cataclysm_timer": b.cataclysm_timer,
+		"last_player_action": b.last_player_action,
+		"cooldowns": b.kurei.cooldowns.duplicate(true),
+		"ren_statuses": b.ren_statuses.serialize(),
+		"boss_statuses": b.boss_statuses.serialize(),
+		"initiative_round": b.initiative.round_index,
+		"initiative_order": b.initiative.get_round_order(),
+		"ren_acted": b.initiative.has_acted(BossEncounter.ACTOR_REN),
+		"boss_acted": b.initiative.has_acted(BossEncounter.ACTOR_BOSS),
+	}
+
 func _init() -> void:
 	call_deferred("_run_test")
 
@@ -282,6 +304,107 @@ func _run_test() -> void:
 	var boss_empty_cast_ok: bool = boss_empty.request_action(&"kurei_flame_burst")
 	_check(boss_empty_cast_ok == true, "request_action for visible flame_burst succeeds on normalized tree in BossEncounter")
 	boss_empty.queue_free()
+
+	# ==========================================================================
+	# OD-002 / OD-004: initiative HUD, shared status rules and Stun skip on bosses
+	# ==========================================================================
+	print("--- Running OD-002/OD-004 Boss Initiative and Status Parity ---")
+	var boss_od: BossEncounter = boss_scene.instantiate() as BossEncounter
+	root.add_child(boss_od)
+	await process_frame
+	await process_frame
+
+	# OD-002: battle HUD shows the next three actors.
+	_check(boss_od.turn_order_label != null, "BossEncounter exposes the OD-002 turn order HUD")
+	_check(boss_od.get_next_three_actors_text() == "Next: Ren > Void Sovereign > Ren",
+		"Boss HUD shows the next three actors: %s" % boss_od.get_next_three_actors_text())
+	_check(boss_od.initiative.current_actor() == BossEncounter.ACTOR_REN, "Ren opens the boss round")
+	_check(boss_od.initiative.get_round_order().size() == 2, "Both boss combatants are registered for initiative")
+
+	# OD-004: bosses use the same status rules as Ren - no hidden resistance.
+	var ren_reference := StatusEngine.new()
+	ren_reference.apply_status(StatusEngine.EFFECT_BURN)
+	boss_od.boss_statuses.apply_status(StatusEngine.EFFECT_BURN)
+	_check(boss_od.boss_statuses.get_duration(StatusEngine.EFFECT_BURN) == 3,
+		"Boss Burn lasts the approved 3 turns")
+	_check(boss_od.boss_statuses.get_duration(StatusEngine.EFFECT_BURN)
+		== ren_reference.get_duration(StatusEngine.EFFECT_BURN),
+		"Boss Burn duration equals Ren's (same OD-004 policy, no hidden boss resistance)")
+	_check(int(boss_od.boss_statuses.active_effects[StatusEngine.EFFECT_BURN].get("stacks", 0)) == 1,
+		"Boss Burn refresh follows the no-intensity-stacking rule too")
+	boss_od.boss_statuses.clear_all()
+
+	# OD-004: Stun skips exactly one boss action and is consumed by that skip.
+	boss_od.boss_statuses.apply_status(StatusEngine.EFFECT_STUN)
+	boss_od.ren_hp = 4
+	var od_pre_boss_hp: int = boss_od.boss_hp
+	var od_pre_ren_hp: int = boss_od.ren_hp
+	var od_pre_boss_turns: int = boss_od.turn_counter
+	var stun_ok: bool = boss_od.request_action(&"attack")
+	_check(stun_ok, "Ren action accepted while the boss is stunned")
+	_check(boss_od.boss_hp == od_pre_boss_hp - 1, "Ren's attack still landed on the stunned boss")
+	_check(boss_od.ren_hp == od_pre_ren_hp, "Stunned boss skipped its action (no damage to Ren)")
+	_check(boss_od.boss_statuses.has_status(StatusEngine.EFFECT_STUN) == false,
+		"Stun consumed by the single skipped action")
+	_check(boss_od.turn_counter == od_pre_boss_turns + 1, "Boss turn resolved exactly once")
+	_check(boss_od.initiative.round_index == 2, "Round advanced after both actors acted")
+
+	# OD-002: one main action per actor per round (no extra turns).
+	_check(boss_od.initiative.can_act(BossEncounter.ACTOR_REN), "Ren has a fresh action budget in round 2")
+	_check(boss_od.initiative.record_action(BossEncounter.ACTOR_REN), "Ren's round-2 action can be spent")
+	var round_snapshot: Dictionary = _boss_snapshot(boss_od)
+	_check(boss_od.request_action(&"attack") == false, "Second main action in round 2 is rejected")
+	_check(_boss_snapshot(boss_od) == round_snapshot, "Rejected extra action causes zero mutation")
+
+	# ==========================================================================
+	# OD-003/OD-004: unsupported advanced boss effects stay disabled and
+	# mutation-free for every unsupported skill id
+	# ==========================================================================
+	print("--- Running OD-003 Unsupported Boss Action No-Mutation Controls ---")
+	var od_tree := KureiTree.new()
+	od_tree.sync_with_level(20)
+	od_tree.unlock_skill(&"solar_flare")
+	od_tree.unlock_skill(&"celestial_prism")
+	od_tree.unlock_skill(&"glacial_aegis")
+	od_tree.unlock_skill(&"void_shift")
+	od_tree.unlock_skill(&"phase_mastery")
+	boss_od.kurei_tree = od_tree
+	# Open the Kurei menu so it rebuilds all six equipped slots and applies the
+	# disabled-state notices for unsupported boss effects (OD-003/004 boundary).
+	boss_od.kurei_btn.pressed.emit()
+	_check(boss_od.kurei_menu.visible, "Boss Kurei menu opened for the disabled-state controls")
+
+	var unsupported_actions: Array[StringName] = [
+		&"kurei_solar_flare",
+		&"kurei_celestial_prism",
+		&"kurei_glacial_aegis",
+		&"kurei_void_shift",
+		&"kurei_gale_flurry",
+		&"kurei_earth_bastion",
+		&"kurei_umbra_drain",
+		&"kurei_phase_mastery"
+	]
+	var unsupported_snapshot: Dictionary = _boss_snapshot(boss_od)
+	for action_id: StringName in unsupported_actions:
+		var accepted: bool = boss_od.request_action(action_id)
+		_check(accepted == false, "Unsupported boss action %s is rejected" % String(action_id))
+		_check(_boss_snapshot(boss_od) == unsupported_snapshot,
+			"Unsupported boss action %s causes zero mutation (HP, SP, barrier, turn, phase, intent, cooldowns, statuses, initiative)" % String(action_id))
+	_check(boss_od.is_boss_skill_supported(&"flame_burst")
+		and boss_od.is_boss_skill_supported(&"lumina_lance")
+		and boss_od.is_boss_skill_supported(&"torrent_surge"),
+		"Only the three supported boss skills remain enabled")
+	_check(boss_od._active_skill_buttons.size() == 6, "Boss menu still renders all six equipped skills")
+	for skill_id: StringName in [&"solar_flare", &"celestial_prism", &"glacial_aegis"]:
+		var skill_btn: Button = boss_od._active_skill_buttons.get(skill_id, null)
+		_check(skill_btn != null and skill_btn.disabled,
+			"Unsupported skill %s stays disabled with a pending-design notice" % String(skill_id))
+		if skill_btn != null:
+			_check(skill_btn.text.contains("Boss effect pending design approval"),
+				"Unsupported skill %s keeps the OD-003/004 notice" % String(skill_id))
+
+	boss_od.queue_free()
+	await process_frame
 
 	if _failures == 0:
 		print("--- SBL-W11-002 Multi-Phase Boss Encounter Test Suite PASSED ---")

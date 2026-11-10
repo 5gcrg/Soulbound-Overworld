@@ -2,7 +2,7 @@ class_name StatusEngine
 extends RefCounted
 
 ## StatusEngine — Turn-Based Combat Status Effect Controller
-## Requirements: GDD-018/022/025, FR-CBT-003, AGENTS.md Invariants.
+## Requirements: GDD-018/022/025, FR-CBT-003, OD-004 (owner-approved), AGENTS.md Invariants.
 ##
 ## Manages buff and debuff status lifecycles during turn-based combat:
 ## - POISON, BURN, BLEED (Damage over Time)
@@ -11,6 +11,17 @@ extends RefCounted
 ## - STUN (Turn loss)
 ## - SILENCE (Kurei/magic lock)
 ## - DEFENSE_UP, DEFENSE_DOWN (Damage mitigation modifiers)
+##
+## OD-004 approved status policy (single policy for Ren, enemies and bosses):
+## - Same-name reapplication refreshes to the larger duration and the larger potency.
+## - Same-name effects never gain intensity stacks (stacks stay at 1).
+## - Burn/Poison/Bleed/Regeneration default 3 turns; Defense Up/Down 2 turns;
+##   Silence 1 turn; Stun skips 1 action; Shield expires depleted or after 3 turns.
+## - Cleanse removes negative statuses only.
+## - Bosses use the same engine, the same defaults and the same caps: no hidden
+##   boss resistance, no diminishing returns, no percentage-based tenacity.
+## Approved durations are enforced here (an application is capped at the approved
+## duration) so every caller, including boss content, shares one source of truth.
 
 signal status_applied(effect_type: String, duration: int, potency: int)
 signal status_expired(effect_type: String)
@@ -39,27 +50,99 @@ const ALL_EFFECTS: Array[String] = [
 	EFFECT_DEFENSE_DOWN
 ]
 
+## OD-004 approved durations (turns). Stun duration 1 means exactly one skipped
+## action; Shield duration 3 is the timed expiry that complements depletion.
+const OD004_DEFAULT_DURATIONS: Dictionary = {
+	EFFECT_POISON: 3,
+	EFFECT_BURN: 3,
+	EFFECT_BLEED: 3,
+	EFFECT_REGENERATION: 3,
+	EFFECT_SHIELD: 3,
+	EFFECT_STUN: 1,
+	EFFECT_SILENCE: 1,
+	EFFECT_DEFENSE_UP: 2,
+	EFFECT_DEFENSE_DOWN: 2
+}
+
+## Cleanse removes negative statuses only (OD-004); positive statuses survive.
+const NEGATIVE_EFFECTS: Array[String] = [
+	EFFECT_POISON,
+	EFFECT_BURN,
+	EFFECT_BLEED,
+	EFFECT_SILENCE,
+	EFFECT_STUN,
+	EFFECT_DEFENSE_DOWN
+]
+
+const POSITIVE_EFFECTS: Array[String] = [
+	EFFECT_REGENERATION,
+	EFFECT_SHIELD,
+	EFFECT_DEFENSE_UP
+]
+
 # Dictionary of effect_type -> { "duration": int, "potency": int, "stacks": int }
 var active_effects: Dictionary = {}
 
-func apply_status(effect_type: String, duration: int, potency: int = 1) -> void:
+## OD-004 approved default/max duration for a status effect.
+func get_default_duration(effect_type: String) -> int:
+	return int(OD004_DEFAULT_DURATIONS.get(effect_type, 1))
+
+func is_negative(effect_type: String) -> bool:
+	return NEGATIVE_EFFECTS.has(effect_type)
+
+func is_positive(effect_type: String) -> bool:
+	return POSITIVE_EFFECTS.has(effect_type)
+
+## Remaining duration in turns (0 when the status is not active).
+func get_duration(effect_type: String) -> int:
+	if has_status(effect_type):
+		return int(active_effects[effect_type]["duration"])
+	return 0
+
+## Applies a status for up to the OD-004 approved duration.
+## - duration < 0 (default): the approved default duration is used.
+## - duration 0: rejected, matching the historical no-op contract.
+## - Reapplication refreshes duration and potency to the larger of the current and
+##   the incoming values and never increases intensity stacks (OD-004).
+func apply_status(effect_type: String, duration: int = -1, potency: int = 1) -> void:
 	if not ALL_EFFECTS.has(effect_type):
 		return
-	if duration <= 0:
+	if duration == 0:
 		return
+
+	var approved: int = get_default_duration(effect_type)
+	var applied_duration: int = approved if duration < 0 else clampi(duration, 1, approved)
 
 	if active_effects.has(effect_type):
 		var cur: Dictionary = active_effects[effect_type]
-		cur["duration"] = maxi(int(cur["duration"]), duration)
+		cur["duration"] = maxi(int(cur["duration"]), applied_duration)
 		cur["potency"] = maxi(int(cur["potency"]), potency)
-		cur["stacks"] = int(cur.get("stacks", 1)) + 1
+		cur["stacks"] = 1 # OD-004: no intensity stacking on refresh
 	else:
 		active_effects[effect_type] = {
-			"duration": duration,
+			"duration": applied_duration,
 			"potency": potency,
 			"stacks": 1
 		}
-	status_applied.emit(effect_type, duration, potency)
+	status_applied.emit(effect_type, applied_duration, potency)
+
+## OD-004 cleanse: removes negative statuses only, returns the removed effect names.
+func cleanse_negative() -> Array[String]:
+	var removed: Array[String] = []
+	for effect_type: String in active_effects.keys():
+		if is_negative(effect_type):
+			removed.append(effect_type)
+	for effect_type: String in removed:
+		remove_status(effect_type)
+	return removed
+
+## OD-004 Stun: skips exactly one action. The actor that loses the action calls this
+## once when its action would resolve; the status is consumed by the skip.
+func consume_stun() -> bool:
+	if has_status(EFFECT_STUN):
+		remove_status(EFFECT_STUN)
+		return true
+	return false
 
 func has_status(effect_type: String) -> bool:
 	return active_effects.has(effect_type) and int(active_effects[effect_type]["duration"]) > 0

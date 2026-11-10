@@ -2,15 +2,23 @@ class_name KureiSystem
 extends RefCounted
 
 ## KureiSystem — SBL-W7-001 M3 six Kurei magic categories and action pip mechanics.
-## Requirements: GDD-009/010/011/012/013/014/015, FR-MAG-001.
+## Requirements: GDD-009/010/011/012/013/014/015, GDD-019/021/030, FR-MAG-001,
+## OD-003 (owner-approved combat batch).
 ##
-## Categories:
-##   - Flame: High burst damage, ignite status
-##   - Torrent: Health restoration, purification, fluid defense
-##   - Gale: Action acceleration, evasion, multi-hit
-##   - Earth: Unyielding barrier, stagger, physical mitigation
-##   - Lumina: True spirit sight, radiant pierce, focus amplification
-##   - Umbra: Life drain, corruption curse, debuff amplification
+## Categories and OD-003 roles (identity only; no rock-paper-scissors multiplier
+## chart exists in the academic MVP and no hidden elemental multiplier is applied):
+##   - Flame: damage/Burn
+##   - Torrent: heal/cleanse
+##   - Gale: haste/evasion
+##   - Earth: shield/mitigation
+##   - Lumina: pierce/focus
+##   - Umbra: drain/debuff
+##
+## Skill magnitude uses the authored base_power below; pip costs, cooldowns and
+## base_power values are authored content and are not rescaled by this slice.
+## SP baselines (BattleFixture 2 / BossEncounter 3, Phase Mastery 4) live with their
+## scenes and KureiTree; no regeneration, critical, resistance or boss-effect
+## formula is defined here (unsupported advanced boss effects stay disabled).
 
 const CAT_FLAME: StringName = &"flame"
 const CAT_TORRENT: StringName = &"torrent"
@@ -27,6 +35,18 @@ const ALL_CATEGORIES: Array[StringName] = [
 	CAT_LUMINA,
 	CAT_UMBRA
 ]
+
+## OD-003 approved role per category (identity strings, no numeric effect):
+## no counter-chart, weakness multiplier, resistance matrix or affinity multiplier
+## exists anywhere in the academic MVP.
+const CATEGORY_ROLES: Dictionary = {
+	CAT_FLAME: "damage/Burn",
+	CAT_TORRENT: "heal/cleanse",
+	CAT_GALE: "haste/evasion",
+	CAT_EARTH: "shield/mitigation",
+	CAT_LUMINA: "pierce/focus",
+	CAT_UMBRA: "drain/debuff"
+}
 
 ## Baseline catalog of approved skills (1 starter skill per category)
 const SKILL_CATALOG: Dictionary = {
@@ -131,6 +151,16 @@ const SKILL_CATALOG: Dictionary = {
 		"passive": true
 	}
 }
+
+## OD-003 role of a category ("damage/Burn", ... ). Unknown categories return "".
+func get_category_role(category: StringName) -> String:
+	return String(CATEGORY_ROLES.get(category, ""))
+
+## OD-003 role of a skill, derived from its authored category.
+func get_skill_role(skill_id: StringName) -> String:
+	if not SKILL_CATALOG.has(skill_id):
+		return ""
+	return get_category_role(StringName((SKILL_CATALOG[skill_id] as Dictionary).get("category", &"")))
 
 var cooldowns: Dictionary = {} # StringName -> int (turns remaining)
 

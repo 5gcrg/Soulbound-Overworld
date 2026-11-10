@@ -82,6 +82,13 @@ alignment = 1
 layout_mode = 2
 size_flags_horizontal = 3
 
+[node name="TurnOrderLabel" type="Label" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Next: Ren > Void Sovereign > Ren"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="Margin" type="MarginContainer" parent="VBoxContainer/HBoxContainer/RenPanel"]
 layout_mode = 2
 theme_override_constants/margin_left = 12

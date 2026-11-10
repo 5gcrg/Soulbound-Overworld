@@ -11,6 +11,10 @@ extends Control
 ##     * Void Shield / Phase Barrier absorption.
 ##     * Telegraphed 2-turn ultimate attack ("Void Cataclysm") requiring Defend/mitigation.
 ## - Integrated Kurei Magic system and Status Engine (Burn, Stun, Shield).
+## - OD-002 initiative: effective Agility ordering, stable actor ID tie-break, one
+##   main action per actor per round, next-three-actor battle HUD preview.
+## - OD-004 shared status policy: bosses use the same durations, refresh and stun
+##   rules as Ren (no hidden boss resistance).
 ## - Scaled victory rewards deposited directly into persistent bank/inventory.
 
 signal continued()
@@ -26,6 +30,11 @@ enum BossPhase {
 }
 
 const BASELINE_MAX_SP: int = 3
+
+## OD-002 initiative actor identities. Stable actor IDs are assigned in registration
+## order (Ren 0, boss 1), so equal effective Agility resolves player-first.
+const ACTOR_REN: StringName = &"ren"
+const ACTOR_BOSS: StringName = &"boss"
 
 const SUPPORTED_BOSS_SKILLS: Array[StringName] = [
 	&"flame_burst",
@@ -65,6 +74,15 @@ var last_player_action: StringName = &""
 var _continued_emitted: bool = false
 var turn_counter: int = 1
 
+## OD-002: initiative equals effective Agility (higher acts first).
+## Ren's Agility comes from the authored CharacterStats default (10 when no profile
+## is wired into the encounter). MVP boss content authors no boss Agility value yet
+## (TBD content), so the boss participates with 0 and Ren keeps first strike until an
+## authored boss Agility exists. Bosses follow the same OD-004 status rules as Ren.
+var ren_agility: int = CharacterStats.new().agility
+var boss_agility: int = 0
+var initiative: InitiativeOrder = InitiativeOrder.new()
+
 var inventory: InventoryManager = null
 var kurei_tree: KureiTree = null:
 	set(value):
@@ -93,6 +111,8 @@ var boss_statuses: StatusEngine = StatusEngine.new()
 @onready var telegraph_label: Label = $VBoxContainer/TelegraphBanner/TelegraphLabel
 @onready var telegraph_banner: PanelContainer = $VBoxContainer/TelegraphBanner
 @onready var outcome_label: Label = $VBoxContainer/OutcomeLabel
+## OD-002 battle HUD: shows the next three actors in initiative order.
+@onready var turn_order_label: Label = $VBoxContainer/HBoxContainer/TurnOrderLabel
 
 @onready var ren_panel: PanelContainer = $VBoxContainer/HBoxContainer/RenPanel
 @onready var ren_hp_label: Label = $VBoxContainer/HBoxContainer/RenPanel/Margin/VBox/RenHP
@@ -139,9 +159,58 @@ func _ready() -> void:
 	if cancel_kurei_btn != null:
 		cancel_kurei_btn.pressed.connect(_on_cancel_kurei_pressed)
 
+	ensure_initiative()
 	apply_kurei_tree_capacity()
 	_rebuild_kurei_menu()
+	_resolve_next_actor()
 	_update_ui()
+
+## OD-002: registers the encounter participants (stable actor IDs in spawn order)
+## and opens round 1. Effective Agility is snapshotted per round inside the engine.
+func ensure_initiative() -> void:
+	if initiative.round_index > 0:
+		return
+	initiative.register_actor(ACTOR_REN, ren_agility, "Ren")
+	initiative.register_actor(ACTOR_BOSS, boss_agility, "Void Sovereign")
+	initiative.begin_round()
+
+## OD-002 authoring/test hook: sets a participant's base Agility. The change is
+## reflected in ordering only at the next round boundary.
+func set_actor_agility(actor_id: StringName, agility: int) -> void:
+	if actor_id == ACTOR_REN:
+		ren_agility = agility
+	elif actor_id == ACTOR_BOSS:
+		boss_agility = agility
+	initiative.set_actor_agility(actor_id, agility)
+
+## OD-002 battle HUD: "Next: <actor> > <actor> > <actor>" (next three actors).
+func get_next_three_actors_text() -> String:
+	return "Next: %s" % initiative.get_next_actor_names(InitiativeOrder.HUD_PREVIEW_COUNT)
+
+## OD-002: hands play to the next actor in initiative order. Round boundaries - and
+## therefore any haste/slow change - are applied only here, never mid-resolution.
+## The boss's in-round action stays synchronous (resolved from request_action) so
+## combat reads exactly as before; this path handles the opening actor and any round
+## the boss already acted in.
+func _resolve_next_actor() -> void:
+	ensure_initiative()
+	var guard: int = 0
+	while guard < 8:
+		guard += 1
+		if initiative.is_round_complete():
+			initiative.begin_round()
+		var next_actor: StringName = initiative.current_actor()
+		if next_actor == ACTOR_BOSS:
+			if not is_terminal():
+				_resolve_boss_turn.call_deferred()
+			return
+		if next_actor == ACTOR_REN:
+			# OD-004: a stunned Ren skips exactly one action and play continues.
+			if ren_statuses.consume_stun():
+				initiative.record_action(ACTOR_REN)
+				continue
+			return
+		return # no registered actor: hold current state
 
 func _on_cancel_kurei_pressed() -> void:
 	if kurei_menu != null:
@@ -294,7 +363,12 @@ func consume_healing_item() -> bool:
 	return false
 
 func request_action(action: StringName) -> bool:
+	ensure_initiative()
 	if is_terminal():
+		return false
+	# OD-002: one main action per actor per round - no extra turns, no reaction
+	# attacks. A second request inside the same round is rejected without mutation.
+	if not initiative.can_act(ACTOR_REN):
 		return false
 
 	var is_kurei: bool = action.begins_with("kurei_")
@@ -333,14 +407,18 @@ func request_action(action: StringName) -> bool:
 
 		if skill_id == &"flame_burst":
 			_deal_damage_to_boss(2)
-			boss_statuses.apply_status(StatusEngine.EFFECT_BURN, 2, 1)
+			# OD-004: Burn lasts the approved 3 turns (authored potency 1).
+			boss_statuses.apply_status(StatusEngine.EFFECT_BURN, 3, 1)
 		elif skill_id == &"lumina_lance":
 			# Radiant Piercing: ignores barrier directly to HP!
 			boss_hp = maxi(0, boss_hp - 2)
 			_check_phase_transition()
 		elif skill_id == &"torrent_surge":
+			# OD-003 Torrent role: heal/cleanse - negative statuses are removed,
+			# positive statuses survive. OD-004: Regeneration lasts 3 turns.
 			ren_hp = mini(max_ren_hp, ren_hp + 1)
-			ren_statuses.apply_status(StatusEngine.EFFECT_REGENERATION, 2, 1)
+			ren_statuses.cleanse_negative()
+			ren_statuses.apply_status(StatusEngine.EFFECT_REGENERATION, 3, 1)
 
 	last_player_action = action
 	if kurei_menu != null:
@@ -352,7 +430,11 @@ func request_action(action: StringName) -> bool:
 		_deal_damage_to_boss(1)
 	elif action == &"defend":
 		action_performed.emit(&"defend")
-		ren_statuses.apply_status(StatusEngine.EFFECT_DEFENSE_UP, 1, 1)
+		# OD-004: Defense Up lasts the approved 2 turns.
+		ren_statuses.apply_status(StatusEngine.EFFECT_DEFENSE_UP, 2, 1)
+
+	# OD-002: the accepted action spends Ren's single main action for this round.
+	initiative.record_action(ACTOR_REN)
 
 	# Check boss defeat
 	if boss_hp <= 0:
@@ -362,8 +444,13 @@ func request_action(action: StringName) -> bool:
 	# Check Phase 2 transition
 	_check_phase_transition()
 
-	# 2. Boss turn resolution
-	_resolve_boss_turn()
+	# 2. Turn resolution in initiative order (OD-002): the boss's remaining action
+	# for this round resolves synchronously; when the boss already acted first, the
+	# round boundary opens the next round instead.
+	if initiative.is_round_complete():
+		_resolve_next_actor()
+	else:
+		_resolve_boss_turn()
 	return true
 
 func _deal_damage_to_boss(dmg: int) -> void:
@@ -387,6 +474,8 @@ func _check_phase_transition() -> void:
 		boss_phase_changed.emit(2)
 
 func _resolve_boss_turn() -> void:
+	if is_terminal():
+		return
 	turn_counter += 1
 
 	# Tick statuses on boss
@@ -405,10 +494,14 @@ func _resolve_boss_turn() -> void:
 			ren_hp = mini(max_ren_hp, ren_hp + int(ev["heal"]))
 
 	# Resolve Boss Action
-	if current_phase == BossPhase.PHASE_1:
-		_resolve_phase_1_action()
-	elif current_phase == BossPhase.PHASE_2:
-		_resolve_phase_2_action()
+	# OD-004: bosses follow the same Stun rule as Ren - the Stun skips exactly one
+	# action, is consumed by the skip, and no hidden boss resistance exists.
+	var boss_action_skipped: bool = boss_statuses.consume_stun()
+	if not boss_action_skipped:
+		if current_phase == BossPhase.PHASE_1:
+			_resolve_phase_1_action()
+		elif current_phase == BossPhase.PHASE_2:
+			_resolve_phase_2_action()
 
 	# End of turn cleanup
 	ren_statuses.tick_turn_end()
@@ -419,6 +512,13 @@ func _resolve_boss_turn() -> void:
 	if ren_hp <= 0:
 		ren_hp = 0
 		current_phase = BossPhase.DEFEAT
+		_update_ui()
+		return
+
+	# OD-002: the boss spends its single main action for the round; play then moves
+	# to the next actor in initiative order (round boundary included).
+	initiative.record_action(ACTOR_BOSS)
+	_resolve_next_actor()
 	_update_ui()
 
 func _resolve_phase_1_action() -> void:
@@ -495,6 +595,11 @@ func _input(event: InputEvent) -> void:
 func _update_ui() -> void:
 	if not is_node_ready():
 		return
+	ensure_initiative()
+
+	# OD-002 battle HUD: next three actors in initiative order.
+	if turn_order_label != null:
+		turn_order_label.text = get_next_three_actors_text()
 
 	# Labels
 	if ren_hp_label != null:
