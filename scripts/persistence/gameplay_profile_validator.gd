@@ -30,6 +30,14 @@ extends RefCounted
 ##   * Assessment records: verified via AssessmentController.deserialize.
 ##   * Active expedition snapshots: OD-007 satchel stack/slot boundaries and
 ##     non-negative at-risk currency are enforced on top of the OD-009 shape checks.
+##   * OD-010 quest branch records (optional world["quest_branches"]): strict
+##     branch-and-reconverge structure only - one local choice cluster per chapter,
+##     gate reconvergence consistency, academic-MVP profiles must stay linear, and
+##     any key outside the approved schema (for example a deferred reputation or
+##     faction field) is rejected.
+##   * OD-011 dungeon mastery records (optional world["dungeon_mastery"]): knowledge/
+##     access markers only - unique bounded string markers under an exact two-key
+##     schema, so a stat/power field can never ride along into a profile or backup.
 
 const KNOWN_EQUIP_SLOTS: Array[StringName] = [
 	&"weapon",
@@ -315,6 +323,20 @@ static func _validate_world(world: Dictionary, education: Dictionary) -> Error:
 		var ae_err: Error = _validate_active_expedition(world["active_expedition"])
 		if ae_err != OK:
 			return ae_err
+
+	# OD-010: optional branch-and-reconverge quest structure (strict schema; the
+	# academic MVP profile simply carries no record and stays linear).
+	if world.has(QuestBranchModel.WORLD_KEY):
+		var qb_err: Error = QuestBranchModel.validate_record(world[QuestBranchModel.WORLD_KEY])
+		if qb_err != OK:
+			return qb_err
+
+	# OD-011: optional dungeon mastery record (knowledge/access markers only; a
+	# stat or power field in the record is rejected here).
+	if world.has(DungeonMastery.WORLD_KEY):
+		var dm_err: Error = DungeonMastery.validate_record(world[DungeonMastery.WORLD_KEY])
+		if dm_err != OK:
+			return dm_err
 
 	return OK
 
