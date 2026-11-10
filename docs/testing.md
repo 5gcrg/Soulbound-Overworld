@@ -39,7 +39,7 @@ On Windows, the default Godot executable (`godot.exe`) is compiled targeting the
 
 ## Suite Count and Inventory
 
-At current development baseline (OD-005/006/007/008 owner-approved progression/economy batch), there are **34 headless test suites**:
+At current development baseline (OD-010/011 owner-approved narrative & dungeon structure batch), there are **35 headless test suites**:
 
 | Suite Name | Scope & Verification Invariants |
 |---|---|
@@ -52,6 +52,7 @@ At current development baseline (OD-005/006/007/008 owner-approved progression/e
 | `vertical_slice_loop_test.gd` | Full vertical slice loop: NPC -> practice -> combat -> turn-in -> ProfileStore |
 | `m3_systems_test.gd` | Character leveling, inventory defeat wipe vs. bank preservation, Kurei 6-spell pips, BFS dungeon reachability |
 | `progression_economy_test.gd` | OD-005/006/007/008 owner-approved progression & economy batch (201 checks): XP formula `100 x level`, level cap 30 with load/save roundtrip and validator bound, 2 attribute points per level with +1-only allocations, `max(0, level - 1)` Kurei talent points, no negative XP/level loss; five approved tiers, deterministic refinement at `base_item_cost x next_tier_index`, zero-mutation failure controls, no-RNG/affix negative control, authored-cost-table gate; 20-slot shared bank+satchel budget, 99-unit stacks, secured banked vs. at-risk satchel Spirit Coins; GameRoot defeat byte-identical preservation of character/story/education with satchel-only loss and no consolation EXP/currency, failed-persistence retry, exactly-once extraction with stale-callback guard, suspend/resume of at-risk currency |
+| `od010_011_test.gd` | OD-010/011 owner-approved narrative & dungeon structure batch (244 checks): academic MVP Chapters I–III linearity and completion gating with zero branch state, full-release one-local-choice-cluster-per-chapter with gate reconvergence and chapter freeze, normalized JSON integer serialize/store/load/backup round-trips, cross-profile isolation, deferred reputation/faction field rejection at validator and backup boundaries; academic MVP seeded 4-room and 6-room DAG preservation and reachability, full-release 3-floor / 6-slot (18-room) seeded connected layout generation across 72 seeds, BFS connectivity and extraction reachability validation, 18 invalid-graph rejection controls (disconnected, isolated extraction, wrong floor/slot counts, duplicate IDs, unapproved room types, terminal risk flags, invented drop/loot probabilities, self-loop/dangling/asymmetric edges, schema tampering), and dungeon mastery markers persisted as knowledge/access only with combat-power field rejection |
 | `dimension_test.gd` | Physical/spirit plane shifting, player collision mask sync, zero-embed safety |
 | `kurei_combat_test.gd` | In-battle Kurei spell menu, SP pip consumption, cooldown tracking, SBL-REV-005 Phase Mastery 4 SP capacity, SBL-REV-006 dynamic 6-slot menu generation, rejection of unequipped skills, casting of equipped skills, cancel and Escape dismissal, SBL-REV-008 empty loadout starter normalization regression test, OD-003 six-category role metadata + exact authored pip cost/cooldown/base-power values + SP baselines (2 / 4 / 3) + no-multiplier-chart negative controls, OD-004 fixture Burn duration & refresh/no-stack, Stun skip, and Torrent heal/cleanse |
 | `dungeon_scene_test.gd` | Procedural room layout, at-risk satchel, commit-first suspend/resume, session callback guarding, exact-once extraction, and OD-009 MVP save boundary (mid-battle/partial-turn/pending-encounter/boss/expedition save requests rejected before any profile mutation with byte-identical profile evidence, room/exploration boundary save round-trip, suspend ≠ extraction) |
@@ -128,7 +129,7 @@ root, and the redirection is **proved before execution** by a headless probe tha
 
 ## OD-013 Performance Evidence Gate (SBL-OD-013)
 
-Performance evidence is a PowerShell gate, **not** one of the 34 GDScript suites in `tests/headless/`.
+Performance evidence is a PowerShell gate, **not** one of the 35 GDScript suites in `tests/headless/`.
 It is chained into the canonical release path so a release run always records it:
 
 ```powershell

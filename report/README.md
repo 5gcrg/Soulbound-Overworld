@@ -2,6 +2,12 @@
 
 This directory stores the official engineering and milestone implementation reports for the Soulbound project.
 
+- [OD-010/011 Owner-Approved Narrative & Dungeon Structure Batch Report (November 11, 2026)](od010_011_narrative_dungeon_report.md)
+  - OD-010 narrative/quest structure: local branch-and-reconverge model (`QuestBranchModel`), academic MVP Chapters I–III strictly linear, full-release one local choice cluster per chapter reconverging at the chapter gate, deferred reputation/faction fields rejected at validator and backup boundaries, JSON integer normalization across save/backup round-trips, zero invented lore/dialogue
+  - OD-011 dungeon structure & mastery: academic MVP seeded 4-room and 6-room DAG preserved unchanged, full-release 3-floor / 6-slot seeded connected layout (`MultiFloorLayout`) with BFS connectivity and extraction reachability validation, risk flag restricted to existing reward-path rooms with no invented drop probabilities, dungeon mastery (`DungeonMastery`) persisted as knowledge/access markers only with zero combat-power fields
+  - Evidence: new 244-check suite exit 0, 12 targeted save/transition/dungeon/story suites exit 0, canonical suite 35/35 exit 0, four negative controls exit 1 (7 / 15 / 2 / 1 failed checks), `-Export -Tier all` gate exit 0 (62/62 manifest controls, 5/5 OD-013 PASS), restoration gate exit 0
+  - Status: `REVIEW_PENDING_CODEX`
+
 - [OD-005/006/007/008 Owner-Approved Progression & Economy Batch Report (November 11, 2026)](od005_006_007_008_progression_economy_report.md)
   - OD-005 progression: level cap 30, XP 100 x current level, 2 attribute points per level, +1 per allocation, Kurei talent points max(0, level - 1), no negative XP/level loss, cap load-save roundtrip
   - OD-006 gear: five tiers Common/Uncommon/Rare/Epic/Legendary, deterministic refinement at base_item_cost x next_tier_index, no random affix rolls, refinement never destroys an item, authored cost table ships empty (no invented values)

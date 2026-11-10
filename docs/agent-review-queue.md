@@ -2519,3 +2519,66 @@ Raw transcripts: `report/progression_economy_test.log`, `report/dungeon_scene_te
 ### Review history
 
 - None yet. Codex CLI review was explicitly deferred by the task instruction; this entry is queued as `REVIEW_PENDING_CODEX` under AGENTS.md rule 5.
+
+---
+
+## SBL-OD-010/011 - Owner-Approved Narrative & Dungeon Structure Batch
+
+```text
+TASK ID: SBL-OD-010/011
+REQUIREMENTS: GDD-036..048, GDD-061..066, FR-WLD-001, FR-QST-001, FR-DNG-001/003, TC-WLD-001, TC-DNG-001/004, TC-SAV-001
+MILESTONE: Release Hardening & Scope Boundary Management (owner-approved OD-010/011 narrative & dungeon structure batch)
+OWNER: agy (staged by opencode-go/mimo-v2.6-flash in 835a19b, completed by opencode-go/gemini-4-argon in b8ecffb)
+PLAN OWNER: Codex (docs/agy-next-queue.md; approved values report/complete-od002-011-proposal.md Stage C, report/od002-011-implementation-plan-draft.md Stage C)
+BRANCH/COMMIT: feature/w4-5-vertical-slice (WIP commit 835a19b, completion commit b8ecffb, docs committed immediately afterwards)
+FILES CHANGED: scripts/story/quest_branch_model.gd (new), scripts/story/quest_branch_model.gd.uid (new), scripts/dungeon/multi_floor_layout.gd (new), scripts/dungeon/multi_floor_layout.gd.uid (new), scripts/dungeon/dungeon_mastery.gd (new), scripts/dungeon/dungeon_mastery.gd.uid (new), scripts/persistence/gameplay_profile_validator.gd, tests/headless/od010_011_test.gd (new), tests/headless/od010_011_test.gd.uid (new), docs/agent-review-queue.md, docs/traceability-matrix.md, docs/testing.md, docs/open-decisions-ledger.md, report/od010_011_narrative_dungeon_report.md (new), report/README.md
+ASSET PROVENANCE: none
+TESTS RUN + RESULTS: targeted od010_011_test (244 checks / 0 failures) and 12 save/transition/dungeon/story suites all exit 0; four negative controls exit 1 (7 / 15 / 2 / 1 failed checks) and were restored; canonical suite 35/35 exit 0 with real user data unchanged; canonical -Export -Tier all gate exit 0 (35/35 suites, artifact validation + 3 PCK gates, 62/62 manifest controls, OD-013 evidence 5/5 PASS); test_export_failure_restoration.ps1 exit 0 (project.godot byte-identical)
+REVIEW: REVIEW_PENDING_CODEX
+OPEN QUESTIONS: see below
+```
+
+- **Milestone** Release Hardening & Scope Boundary Management; owner-approved `OD-010` (narrative/quest branch-and-reconverge structure) and `OD-011` (dungeon 3-floor/6-slot grammar and knowledge/access mastery markers) per `docs/agy-next-queue.md` and `report/complete-od002-011-proposal.md` Stage C.
+- **Requirements** GDD-036..048, GDD-061..066, FR-WLD-001, FR-QST-001, FR-DNG-001/003, TC-WLD-001, TC-DNG-001/004, TC-SAV-001. [Traceability](traceability-matrix.md); full evidence: [OD-010/011 report](../report/od010_011_narrative_dungeon_report.md).
+- **Implementation owner** agy (`opencode-go/mimo-v2.6-flash` in `835a19b` and `opencode-go/gemini-4-argon` in `b8ecffb`). **Plan owner** Codex/OpenCode. **Reviewer** Codex CLI — explicitly **not called** for this slice; nothing here is `REVIEWED`.
+- **Branch and commit** `feature/w4-5-vertical-slice` (worktree `soulbound-overworld`), WIP commit `835a19b`, completion commit `b8ecffb` (docs committed immediately afterwards in the same batch), all tagged `[REVIEW_PENDING_CODEX]`.
+- **Files** see the block above. `scripts/dungeon/dungeon_generator.gd`, `scenes/dungeon/dungeon_expedition.gd`, `scripts/story/chapter_manager.gd`, `scenes/vertical_slice/*`, `scripts/education/*`, `scripts/combat/*`, `scripts/progression/*`, `scripts/inventory/*`, `scripts/persistence/profile_store.gd`, `scenes/main/game_root.gd`, `project.godot` and export configuration are untouched.
+- **Asset provenance** None. No images, audio, dialogue, lore reveals, NPC rosters, faction definitions, educational questions, or drop probabilities were generated or invented.
+- **Review** `REVIEW_PENDING_CODEX`. Human release sign-off also pending.
+
+### Changes
+
+1. **OD-010 branch-and-reconverge quest structure (`scripts/story/quest_branch_model.gd`, `scripts/persistence/gameplay_profile_validator.gd`).** `QuestBranchModel` defaults to `MODE_ACADEMIC_MVP`, where `record_choice()` and `reconverge_at_gate()` return `ERR_UNAVAILABLE` and `configure(MODE_ACADEMIC_MVP)` refuses any non-empty model (`ERR_INVALID_DATA`), keeping the Chapters I–III academic MVP strictly linear. In `MODE_FULL_RELEASE`, `record_choice(chapter, cluster_id, branch_id)` enforces at most one local choice cluster per chapter (`1..5`), is idempotent on identical `(cluster_id, branch_id)`, and returns `ERR_ALREADY_EXISTS` on a competing cluster in the same chapter. `reconverge_at_gate(chapter)` marks the chapter's cluster `"reconverged": true`, records the gate in `reconverged_chapters`, and freezes the chapter against subsequent local choices. `_parse()` and `serialize()` normalize `chapter` and `reconverged_chapters` to `int` within safe integer bounds (`MIN_SAFE_INT..MAX_SAFE_INT`) so `JSON.parse_string` float conversion (`1 -> 1.0`) never breaks `serialize -> store -> load -> serialize` or backup byte-identity. `QuestBranchModel.validate_record()` and `GameplayProfileValidator._validate_world()` enforce exact keys and reject deferred `reputation` or `faction` fields at both the profile and backup import boundaries.
+2. **OD-011 3-floor / 6-slot full-release dungeon grammar (`scripts/dungeon/multi_floor_layout.gd`).** `MultiFloorLayout` preserves `DungeonGenerator` and `DungeonExpedition` untouched for the academic MVP (both 4-room and 6-room seeded DAGs remain intact) and implements the full-release structure: `FLOOR_COUNT = 3`, `ROOMS_PER_FLOOR = 6` (`ROOM_TOTAL = 18`), deterministic seeded spanning-DAG generation per floor using the MVP cardinal head-growing grammar, inter-floor route links (`floor_exit -> next_floor_entry`), exactly one `TYPE_SPAWN` entry (`id = 0`), and one `TYPE_EXTRACTION` endpoint at the furthest room on Floor 3. `validate_layout()` enforces exact schema keys (rejecting invented probability fields such as `drop_rate` or `loot_chance`), floor/slot counts, approved room types only (`spawn`/`normal`/`combat`/`extraction`), `risk = true` only on existing reward-path rooms (`normal`/`combat`), symmetric neighbor edges with safe-int bounds, full graph connectivity via BFS from `entry_id`, and extraction reachability via `find_route()`.
+3. **OD-011 dungeon mastery markers (`scripts/dungeon/dungeon_mastery.gd`, `scripts/persistence/gameplay_profile_validator.gd`).** `DungeonMastery` persists `world["dungeon_mastery"]` under schema `"sbl-dungeon-mastery/1"` with exact keys `["schema", "markers"]` and unique bounded string marker IDs. `grant_marker()` is idempotent and has no path to `CharacterStats`, `KureiTree`, or `InventoryManager`. Any stat or combat-power field (`"power"`, `"attack"`, `"level"`, etc.), non-string marker, or duplicate marker is rejected by `DungeonMastery.validate_record()` and `GameplayProfileValidator._validate_world()`.
+4. **Regression coverage (`tests/headless/od010_011_test.gd`).** New **244-check** suite covering OD-010 academic linearity + `ChapterManager` completion-gated progression, full-release local choice clusters + gate reconvergence + byte-identical store round-trip, cross-profile and backup isolation (same-slot unmodified backup round-trip, cross-slot `profile_id` mismatch rejection, retargeted `profile_03` round-trip, and validator-boundary rejection of tampered `reputation` and `faction` backups with zero target-slot mutation), OD-011 4-room and 6-room MVP DAG preservation, 3-floor/6-slot layout validation and 72-seed sweep, 18 invalid-graph rejection controls with source-layout zero-mutation proof, and mastery marker persistence/isolation/power-field rejection.
+
+### Verification (Godot 4.7.2 Stable `ed1daf0bf`, Windows headless, disposable user data)
+
+| Command | Observed result |
+|---|---|
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\run_headless_tests.ps1 -Suite od010_011_test` | **Exit 0, PASS (1.02 s)** — new suite, **244 checks / 0 failures**, 0 lines in `report/od010_011_test.err`. |
+| Targeted save/transition/dungeon/story suites (`save_model_test`, `web_backup_test`, `save_compatibility_recovery_test`, `profile_activation_test`, `transition_test`, `dungeon_scene_test`, `overworld_gateway_test`, `chapter_progression_test`, `vertical_slice_test`, `vertical_slice_loop_test`, `m3_systems_test`, `progression_economy_test`) | **Exit 0, PASS** — all 12 targeted suites green with zero regressions. |
+| `run_headless_tests.ps1` (canonical) | **Exit 0, 35/35 suites PASS** (import clean, `realUserDataUnchanged=True`, `disposableFiles=655`, `rootRemoved=True`). |
+| Negative control 1: allow `record_choice()` in `MODE_ACADEMIC_MVP` | **Exit 1, 7 failed checks** (`Academic MVP refuses a local choice cluster at chapter 1..5`, `No branch state was created in academic MVP mode`, `Academic mode is accepted on an empty model`) -> guard restored, suite green. |
+| Negative control 2: disable duplicate-chapter check in `record_choice()` | **Exit 1, 15 failed checks** (`Exactly one local choice cluster per chapter`, `No duplicate cluster record was appended`, plus persistence/validator checks) -> guard restored, suite green. |
+| Negative control 3: disable BFS connectivity / extraction reachability check in `MultiFloorLayout.validate_layout()` | **Exit 1, 2 failed checks** (`Disconnected graph rejected`, `Unreachable extraction endpoint rejected (TC-DNG-001)`) -> validator restored, suite green. |
+| Negative control 4: disable `_exact_keys` check in `DungeonMastery._parse()` | **Exit 1, 1 failed check** (`Combat-power field inside the mastery record rejected`) -> validator restored, suite green. |
+| `run_headless_tests.ps1 -Export -Tier all` | **Exit 0 (canonical release gate)** — 35/35 suites, Web + Windows + Academic MVP exports, `ALL RELEASE ARTIFACTS AND PRESETS VALIDATED SUCCESSFULLY` (incl. 3 PCK gates), **62/62 manifest controls**, OD-013 performance evidence **5/5 PASS** (129.0–144.9 avg FPS), isolation proof `realUserDataUnchanged=True`. |
+| `scripts\build\test_export_failure_restoration.ps1` | **Exit 0** — injected post-mutation export failure restored `project.godot` byte-identically (SHA-256 `5C65BBCD...`), staging root removed, all 6 dist artifacts unchanged. |
+
+### Preserved invariants
+
+- **Academic MVP linearity & dungeon preservation:** `ChapterManager`, `DungeonGenerator`, `DungeonExpedition`, and `GameRoot` are untouched; the 3-chapter linear MVP and seeded 4-room/6-room DAGs behave identically to prior commits.
+- **OD-009, OD-002..004, OD-005..008:** all combat, progression, economy, defeat/extraction, and save-boundary suites pass unmodified.
+- **No invented content or numbers:** zero dialogue, lore reveals, villain identities, faction rosters, ending triggers, educational questions, drop probabilities, or stat multipliers were added.
+
+### Open questions for Codex review
+
+1. **Full-release runtime wiring deferral.** `QuestBranchModel`, `MultiFloorLayout`, and `DungeonMastery` are standalone structural modules validated by `GameplayProfileValidator` and `od010_011_test.gd`, and are not wired into the academic MVP runtime loop. Confirm that wiring into full-release chapters/dungeons stays gated on narrative and dungeon content sign-off.
+2. **Risk-room reward values (`TBD`).** `MultiFloorLayout` validates that `risk = true` is allowed only on `normal`/`combat` rooms and rejects any probability key, while generated layouts default `risk = false`. Confirm that risk-room placement and reward multipliers remain deferred until approved content tables exist.
+3. **Mastery marker catalog (`TBD`).** `DungeonMastery` stores opaque marker IDs and forbids stat/power fields. Confirm that concrete marker IDs and the knowledge/access gates they unlock remain deferred to content review.
+
+### Review history
+
+- None yet. Codex CLI review was explicitly deferred by the task instruction; this entry is queued as `REVIEW_PENDING_CODEX` under AGENTS.md rule 5.
