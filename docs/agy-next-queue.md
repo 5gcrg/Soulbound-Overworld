@@ -1,70 +1,63 @@
-# Next Work Queue — Approved OD-002/003/004 Combat Batch
+# Next Work Queue — Approved OD-005/006/007/008 Progression and Economy
 
-Plan owner: OpenCode/Codex plan. Executor: `opencode-go/mimo-v2.6-flash`. Codex CLI review deferred.
+Executor: `opencode-go/mimo-v2.6-flash`. Codex CLI review deferred.
 
 ## Approved specifications
 
-### OD-002 initiative
+### OD-005 progression
 
-- Initiative equals effective Agility.
-- Higher score acts first.
-- Ties resolve by stable actor ID ascending.
-- One main action per actor per round.
-- No ATB, extra turns, reaction attacks, or initiative rolls.
-- Haste/slow changes apply at the next round boundary.
-- Battle HUD displays the next three actors.
+- Level cap 30.
+- XP to next level: `100 × current level`.
+- Level-up reward: 2 attribute points.
+- Attribute allocation: +1 to Vitality, Resonance, Agility, or Focus.
+- Kurei talent points: existing `max(0, level - 1)` rule.
+- No negative XP or level loss on defeat.
+- Capability/access rewards are preferred over raw stat inflation.
 
-### OD-003 Kurei/elements
+### OD-006 gear/refinement
 
-- Keep Flame, Torrent, Gale, Earth, Lumina, Umbra.
-- No rock-paper-scissors multiplier chart in the academic MVP.
-- Roles: Flame damage/Burn; Torrent heal/cleanse; Gale haste/evasion; Earth shield/mitigation; Lumina pierce/focus; Umbra drain/debuff.
-- Skill magnitude uses existing authored `base_power`; no hidden elemental multiplier.
-- Retain current authored pip costs/cooldowns in `KureiSystem`.
-- Normal SP baseline 2; Phase Mastery raises it to 4. Boss baseline 3; Phase Mastery raises it to 4.
-- No new regeneration, critical, resistance, damage, or boss-effect formulas.
-- Unsupported advanced boss effects remain disabled.
+- Five tiers: Common, Uncommon, Rare, Epic, Legendary.
+- No random affix rolls in the academic MVP.
+- Refinement is deterministic and cannot destroy an item.
+- Character progression owns new capabilities; gear owns specialization/magnitude.
+- Refinement cost: `base_item_cost × next_tier_index`.
+- Use the existing authored item cost table; do not invent additional item values.
 
-### OD-004 status policy
+### OD-007 inventory/currency
 
-- Same-name status reapplication refreshes to the larger duration and larger potency; no intensity stacking.
-- Burn, Poison, Bleed, Regeneration: 3 turns by default.
-- Defense Up/Down: 2 turns.
-- Silence: 1 turn.
-- Stun: 1 skipped action.
-- Shield expires when depleted or after 3 turns.
-- Cleanse removes negative statuses only.
-- Bosses use the same status rules; no hidden resistance.
+- 20 inventory slots in the MVP.
+- Maximum stack size 99 for stackable consumables/materials.
+- Equipped gear and banked items are secured.
+- Expedition satchel items remain at risk until extraction.
+- No inventory expansion in the academic MVP.
+- Banked Spirit Coins are secured; satchel currency follows satchel-loss policy.
+- No tokens, PvP economy, monetization, or trading.
+
+### OD-008 defeat
+
+- Defeat loses all unbanked satchel contents.
+- Defeat preserves banked items, equipped gear, level, skills, story, and education.
+- No consolation EXP or currency.
+- Extraction transfers the satchel exactly once and clears its persisted snapshot.
+- Failed persistence leaves the run open for retry.
 
 ## Requirements
 
-- GDD-016..023, GDD-030, GDD-089.
-- FR-CMB-001/002/003/004, FR-MAG-001/002.
-- TC-CMB-001/002/003, TC-SAV-001.
-
-## Allowed files
-
-- `scenes/combat/battle_fixture.gd`
-- `scenes/combat/battle_fixture.tscn`
-- `scenes/combat/boss_encounter.gd`
-- `scenes/combat/boss_encounter.tscn`
-- `scripts/magic/kurei_system.gd`
-- `scripts/magic/kurei_tree.gd`
-- `scripts/combat/status_engine.gd`
-- related HUD/UI scripts and targeted combat tests
-- docs and report evidence
+- GDD-024..030, GDD-034/035.
+- FR-PRG-001/002, FR-INV-001/002, FR-DNG-002, FR-SAV-001.
+- TC-PRG-001, TC-INV-001/002, TC-DNG-003/004, TC-SAV-001.
 
 ## Acceptance
 
-- Initiative ordering, stable ties, next-three HUD, round-boundary refresh, and no-extra-turn controls pass.
-- Existing skill base powers/costs/cooldowns remain exact; six role descriptions are represented.
-- Status refresh/no-stack, durations, cleanse, stun, shield expiry, and boss consistency pass.
-- Unsupported advanced boss actions remain disabled and mutation-free.
-- Save, extraction, defeat, and OD-009 boundaries remain green.
-- Run targeted combat suites and canonical headless suite; record actual results in `/report`.
-- Commit with `[REVIEW_PENDING_CODEX]`; do not mark reviewed.
+- Progression formula/level cap/attribute allocation and save tests pass.
+- Deterministic refinement and tier behavior pass without random affix generation.
+- Inventory capacity/stack/bank/satchel boundaries pass.
+- Defeat preserves permanent data and loses only approved satchel data.
+- Extraction/defeat retry and exactly-once tests remain green.
+- Canonical suite and export/restoration gates pass with disposable user data.
+- Update docs/report and commit `[REVIEW_PENDING_CODEX]`; do not mark reviewed.
 
 ## Boundaries
 
-- No new content, story, images, audio, browser work, or further OD resolution.
-- Codex CLI review remains deferred.
+- No new story, images, audio, browser work, PvP, monetization, or additional ODs.
+- Preserve OD-009 save boundaries and completed OD-002/003/004 combat behavior.
