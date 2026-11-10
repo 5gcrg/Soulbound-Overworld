@@ -1,57 +1,53 @@
-# Next Work Queue — OD-009 MVP Save Boundary
+# Next Work Queue — OD-013 Performance Evidence
 
-Plan owner: Codex/OpenCode. Implementation executor: `opencode-go/mimo-v2.6-flash`. Reviewer: Codex CLI deferred.
+Plan owner: OpenCode/Codex plan draft. Implementation executor: `opencode-go/mimo-v2.6-flash`. Codex CLI review deferred.
 
 ## Ratified scope
 
-The project owner approved the MVP fallback for `OD-009`:
-
-- Persist only at room/exploration boundaries.
-- Do not serialize mid-battle or partial-turn state.
-- Preserve all future mid-battle fields and behavior as `TBD`.
+- Reference hardware: owner's current Windows machine; capture exact specifications.
+- Browsers: Chromium, Firefox, and additional available owner-selected browsers.
+- Target: 60 FPS with documented 30 FPS fallback.
+- Scenes: title, overworld, combat, dungeon, learning journal.
+- Measurement: automated capture plus manual profiling evidence.
+- No maximum build-size budget.
+- Below-target result: warn and record; do not automatically fail release.
+- Web: Godot 4.7.2 Compatibility, single-threaded.
+- Performance evidence is included in the canonical release gate with warning semantics.
 
 ## Requirements
 
-- GDD-098, GDD-099, GDD-100.
-- FR-SAV-001, FR-CMB-001.
-- TC-SAV-001, TC-SAV-002, TC-DNG-002, TC-DNG-003, TC-DNG-004.
-- AGENTS.md save invariants: suspension is not extraction; exactly-once reward transfer; permanent data survives defeat.
+- GDD-093..097, GDD-104, GDD-107, GDD-123, GDD-124, GDD-129.
+- FR-REL-001, TC-REL-001, TC-WEB-001/002, NFR-PERF-001, NFR-WEB-001, NFR-BUILD-001.
+- OD-013 ratification: `report/od013-ratification.md`.
 
-## Allowed implementation
+## Implementation
 
-- Add explicit save-boundary guards and documentation for the approved MVP behavior.
-- Reject/defer mid-battle or partial-turn save requests before mutation, with actionable diagnostics.
-- Preserve existing room/exploration saves, suspended expedition persistence, backup validation, extraction, defeat, and retry behavior.
-- Add regression tests proving rejected mid-battle saves do not change profile bytes, inventory, education, story, or temporary state.
-- Update `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`, and `/report`.
+Create `scripts/build/performance_evidence.ps1`, `scripts/build/test_performance_evidence.ps1`, and `report/od013_performance_report.md`.
 
-## Forbidden scope
+Modify only as needed: `scripts/build/run_headless_tests.ps1`, `scripts/build/export_release.ps1`, `scripts/build/validate_release.ps1`, `docs/browser_verification_checklist.md`, `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`, and report ledger files.
 
-- No mid-battle serialization format.
-- No partial-turn replay/state schema.
-- No new combat numbers, initiative rules, SP/cooldown values, rewards, loss ratios, story, assets, browser work, or other OD resolution.
-- No profile schema bump unless an existing guard requires documentation only; preserve schema compatibility.
-
-## Likely files
-
-- `scenes/dungeon/dungeon_expedition.gd`
-- `scenes/main/game_root.gd`
-- `scripts/persistence/profile_store.gd`
-- `tests/headless/dungeon_scene_test.gd`
-- `tests/headless/save_model_test.gd`
-- `tests/headless/save_compatibility_recovery_test.gd`
-- `tests/headless/web_backup_test.gd`
-- required docs and report files only
+- Capture machine specs and actual Godot version/configuration.
+- Measure title, overworld, combat, dungeon, and learning journal.
+- Record average/minimum FPS, frame timing, scene, environment, and browser/device metadata where available.
+- Automated evidence must distinguish headless/native evidence from human browser smoke; never claim browser acceptance automatically.
+- 60 FPS is the target; 30 FPS is the documented fallback.
+- Below-target results warn and remain exit 0; the report records the warning.
+- No build-size limit may be introduced.
+- Preserve existing export, PCK, save, and restoration gates.
 
 ## Acceptance
 
-- Allowed room/exploration save succeeds and round-trips.
-- Mid-battle/partial-turn save request rejects or defers before any profile mutation.
-- Rejected save leaves profile bytes and all permanent/temporary state unchanged.
-- Suspend/resume remains distinct from extraction.
-- Extraction and defeat remain atomic and exactly-once.
-- Legacy/future profile validation remains unchanged and safe.
-- Targeted tests and canonical headless suite pass.
-- Record actual evidence and leave implementation `REVIEW_PENDING_CODEX`.
+- Positive capture runs for all five scenes.
+- Invalid/missing engine or incompatible renderer/thread configuration fails preflight.
+- A disposable below-target fixture emits a warning but does not fail the release gate.
+- Canonical `-Export` path includes performance evidence.
+- Browser checklist remains human/manual and pending until executed by the owner.
+- Run targeted tests, canonical headless tests, export validation, and restoration controls.
+- Record actual results in `/report` and commit with `[REVIEW_PENDING_CODEX]`.
 
-Use MiMo execution only; Codex CLI review is deferred.
+## Boundaries
+
+- No browser acceptance claim.
+- No maximum size budget.
+- No image/audio generation, combat/story decisions, or other OD resolution.
+- Codex CLI review is deferred.
