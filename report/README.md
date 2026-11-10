@@ -2,6 +2,14 @@
 
 This directory stores the official engineering and milestone implementation reports for the Soulbound project.
 
+- [OD-005/006/007/008 Owner-Approved Progression & Economy Batch Report (November 11, 2026)](od005_006_007_008_progression_economy_report.md)
+  - OD-005 progression: level cap 30, XP 100 x current level, 2 attribute points per level, +1 per allocation, Kurei talent points max(0, level - 1), no negative XP/level loss, cap load-save roundtrip
+  - OD-006 gear: five tiers Common/Uncommon/Rare/Epic/Legendary, deterministic refinement at base_item_cost x next_tier_index, no random affix rolls, refinement never destroys an item, authored cost table ships empty (no invented values)
+  - OD-007 inventory: fixed 20-slot shared bank+satchel budget, 99-unit stacks, secured banked Spirit Coins, at-risk satchel currency, no expansion/tokens/PvP/monetization/trading
+  - OD-008 defeat: loses all unbanked satchel items and currency, preserves banked/equipped/level/skills/story/education byte-for-byte, no consolation EXP/currency, extraction exactly-once with snapshot clearing, failed persistence retries
+  - Evidence: new 201-check suite exit 0, targeted suites exit 0, canonical suite 34/34 exit 0, four negative controls exit 1, `-Export` gate exit 0 (62/62 manifest controls), restoration gate exit 0
+  - Status: `REVIEW_PENDING_CODEX`
+
 - [OD-002/003/004 Owner-Approved Combat Batch Report (November 10, 2026)](od002_003_004_combat_report.md)
   - OD-002 initiative: effective Agility ordering, stable actor ID ascending ties, one main action per actor per round, no ATB/extra turns/reaction attacks/rolls, haste-slow applied only at the round boundary, next-three-actor battle HUD
   - OD-003 Kurei roles: six categories with role identity only (no rock-paper-scissors multiplier chart), authored base_power/pip costs/cooldowns and SP baselines 2 / 3 / 4 unchanged, unsupported advanced boss effects stay disabled and mutation-free

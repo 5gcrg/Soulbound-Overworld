@@ -2447,3 +2447,75 @@ Raw transcripts: `report/initiative_test.log`, `report/status_engine_test.log`, 
 ### Review history
 
 - None yet. Codex CLI review was explicitly deferred by the task instruction; this entry is queued as `REVIEW_PENDING_CODEX` under AGENTS.md rule 5.
+
+---
+
+## SBL-OD-005/006/007/008 - Owner-Approved Progression & Economy Batch
+
+```text
+TASK ID: SBL-OD-005/006/007/008
+REQUIREMENTS: GDD-024, GDD-025, GDD-026, GDD-027, GDD-028, GDD-029, GDD-030, GDD-034, GDD-035, FR-PRG-001/002, FR-INV-001/002, FR-DNG-002, FR-SAV-001, TC-PRG-001, TC-INV-001/002, TC-DNG-003/004, TC-SAV-001
+MILESTONE: Release Hardening & Scope Boundary Management (owner-approved OD-005/006/007/008 progression & economy batch)
+OWNER: agy (executed by opencode-go/mimo-v2.6-flash under the owner-approved plan)
+PLAN OWNER: Codex (docs/agy-next-queue.md; approved values report/complete-od002-011-proposal.md Stage B, report/final-plan-specifications.md Stage 2)
+BRANCH/COMMIT: feature/w4-5-vertical-slice (implementation commit 0c16720, docs committed immediately afterwards)
+FILES CHANGED: scripts/progression/character_stats.gd, scripts/inventory/inventory_manager.gd, scenes/dungeon/dungeon_expedition.gd, scenes/main/game_root.gd, scripts/persistence/gameplay_profile_validator.gd, scenes/ui/character_sheet.gd, scenes/ui/inventory_sheet.gd, tests/headless/progression_economy_test.gd (new), tests/headless/progression_economy_test.gd.uid (new), docs/agent-review-queue.md, docs/traceability-matrix.md, docs/testing.md, docs/open-decisions-ledger.md, docs/agy-next-queue.md, report/od005_006_007_008_progression_economy_report.md, report/README.md
+ASSET PROVENANCE: none
+TESTS RUN + RESULTS: targeted progression_economy_test (201 checks), m3_systems_test, dungeon_scene_test, ui_sheets_test, save_model_test, web_backup_test, save_compatibility_recovery_test, profile_activation_test, overworld_gateway_test all exit 0; four negative controls exit 1 (4 / 4 / 5 / 2 failed checks) and were restored; canonical suite 34/34 exit 0 with real user data unchanged; canonical -Export gate exit 0 (34/34 suites, artifact validation, 62/62 manifest controls, OD-013 evidence 5/5); test_export_failure_restoration.ps1 exit 0 (project.godot byte-identical)
+REVIEW: REVIEW_PENDING_CODEX
+OPEN QUESTIONS: see below
+```
+
+- **Milestone** Release Hardening & Scope Boundary Management; owner-approved `OD-005` (progression), `OD-006` (gear/refinement), `OD-007` (inventory/currency) and `OD-008` (defeat policy) per `docs/agy-next-queue.md` and `report/complete-od002-011-proposal.md` Stage B.
+- **Requirements** GDD-024..030, GDD-034/035, FR-PRG-001/002, FR-INV-001/002, FR-DNG-002, FR-SAV-001, TC-PRG-001, TC-INV-001/002, TC-DNG-003/004, TC-SAV-001. [Traceability](traceability-matrix.md); full evidence: [OD-005..008 report](../report/od005_006_007_008_progression_economy_report.md).
+- **Implementation owner** `opencode-go/mimo-v2.6-flash` (MiMo execution) under the agy contract. **Plan owner** Codex/OpenCode. **Reviewer** Codex CLI - explicitly **not called** for this slice; nothing here is `REVIEWED`.
+- **Branch and commit** `feature/w4-5-vertical-slice` (worktree `soulbound-overworld`), implementation commit `0c16720` (docs committed immediately afterwards in the same batch), both tagged `[REVIEW_PENDING_CODEX]`.
+- **Files** see the block above. Combat (`scripts/combat/*`, both combat scenes), `scripts/magic/*`, `scripts/persistence/profile_store.gd` (OD-009 writer), dungeon generator, story/education code, `project.godot` and export configuration are untouched.
+- **Asset provenance** None. No images, audio, generated content or invented gameplay values; only owner-approved OD-005..008 behavior and documentation. Test coin/XP figures are explicitly test-fixture data.
+- **Review** `REVIEW_PENDING_CODEX`. Human release sign-off also pending.
+
+### Changes
+
+1. **OD-005 progression (`scripts/progression/character_stats.gd`).** `LEVEL_CAP = 30` guards both the XP award and the level-up loop, so `add_xp()` stops at the cap (no past-cap levels, no unbounded XP growth); XP stays `>= 0`, levels never drop below 1, and `deserialize()` clamps a tampered level into `[1, 30]`. The approved `100 x current level` threshold and `2 points per level` are unchanged and now pinned by tests (43500 XP = level 1 -> 30 exactly, 58 points, +1-only allocations). `KureiTree.sync_with_level()` keeps the approved `max(0, level - 1)` rule and is regression-pinned at levels 0/1/30. `GameplayProfileValidator` rejects backups above the cap (TC-PRG-001), and the character sheet shows `XP: Max Level 30 (Cap)` instead of an unreachable threshold.
+2. **OD-006 tiers/refinement (`scripts/inventory/inventory_manager.gd`).** Five approved tiers (`TIER_COMMON..TIER_LEGENDARY`, names Common/Uncommon/Rare/Epic/Legendary) stored per item type with Common as the default. `static refinement_cost(base, tier)` implements the approved `base_item_cost x next_tier_index` formula with `-1` refusals at Legendary/non-positive/negative inputs. `refine_item()` is deterministic (no RNG exists anywhere in the inventory code - source-scanned), all-or-nothing (four failure modes proven byte-identical by before/after snapshots), and never destroys the item. The designated authored `base_item_cost_table` ships **empty**, so refinement stays inert until content authors costs (FR-ITM-002) and no item value was invented. Tiers and currency roundtrip through `serialize()`/`deserialize()`; malformed tier/coin data is rejected atomically; legacy profiles default to Common/0.
+3. **OD-007 inventory/currency (`scripts/inventory/inventory_manager.gd`, `scenes/ui/inventory_sheet.gd`).** `MAX_INVENTORY_SLOTS = 20` is one shared budget of distinct item stacks across bank + satchel, and `MAX_STACK_SIZE = 99` counts one item type across both containers; every acquisition is all-or-nothing at both boundaries (21st stack refused, 100th unit refused, mixed 60+40 refused / 60+39 accepted). The shared model means an extraction *move* can never add a slot or overflow a stack, so `extract_satchel_to_bank()` transfers unconditionally (loot is never destroyed) while `equip_item()` became transactional with a direct-restore rollback (no equip/unequip path can destroy an item). `banked_coins`/`satchel_coins` implement the approved Spirit Coin rules: banked coins are secured, satchel currency follows the satchel-loss policy through defeat/extraction/suspend paths, and no tokens/PvP/monetization/trading surface exists. The inventory sheet displays slot usage, coins and item tiers.
+4. **OD-008 defeat/extraction (`scenes/dungeon/dungeon_expedition.gd`, `scenes/main/game_root.gd`).** The suspend snapshot now carries `satchel_coins` (validated in both the scene and the profile validator: stacks 1..99, <= 20 distinct stacks, non-negative currency), so suspension never secures or silently drops at-risk state. Defeat loses all unbanked satchel items **and** currency while `GameRoot._commit_defeat()` still writes only the inventory section - post-defeat profiles are byte-identical for `character` (level/XP/attributes/Kurei tree), `world` and `education`, with zero consolation EXP or currency. Extraction still commits bank + snapshot clearing in one atomic write and now also moves satchel coins exactly once; a stale callback returns `ERR_UNAUTHORIZED` and leaves the profile byte-identical; an injected persistence failure leaves the run open with satchel and currency intact for retry. `get_save_blocker()` gained the parallel at-risk-currency condition so the OD-009 boundary ("no unbanked loot becomes permanent") now covers currency too.
+5. **Regression coverage.** New `tests/headless/progression_economy_test.gd` (**201 checks**) covers the OD-005 formula/cap/allocation/talent/clamp/roundtrip section, the OD-006 tier/cost/determinism/zero-mutation/no-RNG/persistence section, the OD-007 capacity/stack/shared-budget/security/currency section, and a GameRoot OD-008 section (defeat byte-identity, failed-persistence retry, exactly-once extraction with stale-callback guard, suspend/resume of at-risk currency). Existing suites (`dungeon_scene_test` with its 59 OD-009 checks, `m3_systems_test`, `ui_sheets_test`, `save_model_test`, `web_backup_test`, `save_compatibility_recovery_test`, `profile_activation_test`, `overworld_gateway_test`) pass **unmodified**.
+
+### Verification (Godot 4.7.2 Stable `ed1daf0bf`, Windows headless, disposable user data)
+
+| Command | Observed result |
+|---|---|
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\run_headless_tests.ps1 -Suite progression_economy_test` | **Exit 0, PASS (2.03 s)** - new suite, **201 checks / 0 failures**. |
+| `... -Suite m3_systems_test` / `dungeon_scene_test` / `ui_sheets_test` / `save_model_test` | **Exit 0, PASS** - progression, inventory, dungeon and save baselines green under the new rules. |
+| `... -Suite web_backup_test` / `save_compatibility_recovery_test` / `profile_activation_test` / `overworld_gateway_test` | **Exit 0, PASS** - legacy profiles, snapshots, activation and gateway bank/defeat flows unchanged. |
+| `run_headless_tests.ps1` (canonical) | **Exit 0, 34/34 suites PASS** (import clean, `realUserDataUnchanged=True`, `disposableFiles=654`, `rootRemoved=True`). |
+| Negative control: level-cap guard removed in `add_xp()` | **Exit 1, 4 failed checks** (`No level gained once at the cap`, `Cap absorbs further XP...`, `Negative XP at the cap...`, `TC-PRG-001 roundtrip...`) -> guard restored, suite green. |
+| Negative control: refinement cost flattened to `base x 1` | **Exit 1, 4 failed checks** (`Uncommon -> Rare costs base x 2`, `Rare -> Epic...`, `Epic -> Legendary...`, `Second refinement costs base x 2...`) -> formula restored, suite green. |
+| Negative control: `MAX_INVENTORY_SLOTS` 20 -> 21 | **Exit 1, 5 failed checks** (capacity constant, 20-slot fill, 21st-stack refusal, shared-budget refusal) -> constant restored, suite green. |
+| Negative control: defeat no longer clears the satchel | **Exit 1, 2 failed checks** (`Defeat loses ALL unbanked satchel items and currency`, `...lost on defeat (OD-008)`) -> policy restored, suite green. |
+| `run_headless_tests.ps1 -Export -Tier all` | **Exit 0 (canonical release gate)** - 34/34 suites, Web + Windows + Academic MVP exports, `ALL RELEASE ARTIFACTS AND PRESETS VALIDATED SUCCESSFULLY`, **62/62 manifest controls**, OD-013 performance evidence **5/5 PASS**, isolation proof `realUserDataUnchanged=True`. |
+| `scripts\build\test_export_failure_restoration.ps1` | **Exit 0** - injected post-mutation export failure restored `project.godot` byte-identically (SHA-256 `5C65BBCD...`), staging root removed, all 6 dist artifacts unchanged. |
+
+Raw transcripts: `report/progression_economy_test.log`, `report/dungeon_scene_test.log`, `report/m3_systems_test.log`, `report/ui_sheets_test.log`, `report/save_model_test.log`, `report/web_backup_test.log`; negative-control runs are recorded in the table above and in the [OD-005..008 report](../report/od005_006_007_008_progression_economy_report.md). The OD-013 evidence files regenerated by the `-Export` gate were restored to their committed content so this batch's diff stays batch-scoped.
+
+### Preserved invariants
+
+- **OD-009 save boundary:** `ProfileStore` and the OD-009 writer contract are untouched (no schema bump); the only `get_save_blocker()` addition is the parallel at-risk-currency condition. `dungeon_scene_test` (59 OD-009 checks), `save_model_test`, `save_compatibility_recovery_test` and `web_backup_test` pass unmodified, and suspend remains distinct from extraction.
+- **OD-002/003/004 combat:** combat scripts/scenes and all authored pip costs/cooldowns/base powers are unchanged; `initiative_test`, `kurei_combat_test`, `boss_combat_test` and `status_engine_test` are green.
+- **Extraction/defeat:** the atomic commit structure is unchanged; existing exactly-once, retry and suspend != extraction assertions pass unmodified alongside the new currency-aware ones.
+- **Authored content:** no numerical gameplay value was invented - only the owner-approved constants (cap 30, `100 x level`, 2 points, 20 slots, 99 stack, five tier names) and the approved cost formula; the authored `base_item_cost_table` ships empty.
+- **Scope:** only the OD-005..008 ledger rows were updated; every other OD (including OD-001, OD-009..OD-017) keeps its existing status and blocked items. No story, image, audio, browser, PvP, monetization or trading work was added.
+
+### Open questions for Codex review
+
+1. **Shared bank+satchel budget.** The approved rules do not name a container for the 20 slots / 99 stack; this slice treats bank and satchel as one inventory split by ownership (the only model where an extraction move can never overflow or lose loot). Confirm the interpretation.
+2. **XP at the cap.** Once level 30 is reached incoming XP is ignored (no unbounded counter); leftover XP from the final level-up is retained. Confirm.
+3. **Authored cost table location.** `base_item_cost_table` is an instance dictionary that ships empty, keeping refinement inert until content authors costs (FR-ITM-002). Confirm whether the authored table should become a shared content resource when content lands.
+4. **Boundary denial.** A new distinct item is refused when the 20-slot budget is full (e.g. a boss reward in a full inventory); no discard/sell sink exists because merchant tables remain blocked. Confirm the refusal is acceptable until an economy sink is authored.
+5. **Validator clamp-vs-reject.** Backups with `level > 30` are rejected at the import/activation boundary while direct loads clamp to 30. Confirm.
+6. **Uniform stack ceiling.** With no authored stackability table, the 99-unit ceiling applies to every item type (gear included). Confirm until such a table is authored.
+
+### Review history
+
+- None yet. Codex CLI review was explicitly deferred by the task instruction; this entry is queued as `REVIEW_PENDING_CODEX` under AGENTS.md rule 5.

@@ -2,6 +2,13 @@
 
 Executor: `opencode-go/mimo-v2.6-flash`. Codex CLI review deferred.
 
+**Status (11 Nov 2026):** implemented in implementation commit `0c16720` on `feature/w4-5-vertical-slice`
+(docs recorded in the immediately following docs commit). New suite `tests/headless/progression_economy_test.gd`
+(201 checks) plus targeted/canonical/export/restoration gates all exit 0; four negative controls exit 1 and
+were restored. Evidence: [`report/od005_006_007_008_progression_economy_report.md`](../report/od005_006_007_008_progression_economy_report.md)
+and the [queue entry](agent-review-queue.md#sbl-od-005006007008---owner-approved-progression--economy-batch).
+Review status: `REVIEW_PENDING_CODEX` (Codex CLI not called).
+
 ## Approved specifications
 
 ### OD-005 progression
