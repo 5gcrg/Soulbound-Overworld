@@ -35,6 +35,13 @@ func new_profile(profile_id: String) -> Dictionary:
 		"character": {}, "inventory": {}, "world": {}, "education": {}
 	}
 
+## OD-009 MVP save boundary (GDD-098/099/100, FR-SAV-001): this writer persists only
+## caller-approved boundary state. ProfileStore performs no combat-state serialization:
+## mid-battle and partial-turn save requests are rejected or deferred by the game layer
+## (GameRoot.request_save / check_save_boundary) *before* save_profile is reached, so a
+## rejected request commits no revision and leaves the stored bytes untouched. Existing
+## legacy/future schema validation below is unchanged. Future mid-battle fields and
+## behavior remain TBD pending Persistence Architecture Review.
 func save_profile(profile_id: String, data: Dictionary) -> Error:
 	if not _is_valid_profile_id(profile_id):
 		return ERR_INVALID_PARAMETER

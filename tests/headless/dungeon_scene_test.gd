@@ -8,8 +8,10 @@ extends SceneTree
 const DungeonExpeditionScene: PackedScene = preload("res://scenes/dungeon/dungeon_expedition.tscn")
 
 var _failures: int = 0
+var _checks: int = 0
 
 func _check(ok: bool, msg: String) -> bool:
+	_checks += 1
 	if not ok:
 		_failures += 1
 		printerr("DUNGEON SCENE TEST FAILED: ", msg)
@@ -71,6 +73,9 @@ func _run_test() -> void:
 
 	# Run SBL-REV-001 profile-owned suspension and terminal commit tests
 	await _test_sbl_rev_001_full_lifecycle()
+
+	# Run OD-009 MVP save boundary regression (mid-battle rejection + boundary round-trip)
+	await _test_od009_save_boundary()
 
 	if _failures > 0:
 		printerr("DUNGEON SCENE TESTS FAILED: ", _failures)
@@ -621,6 +626,199 @@ func _test_sbl_rev_001_full_lifecycle() -> void:
 	await process_frame
 
 	_cleanup_dir(test_root)
+
+## OD-009 MVP save boundary: room/exploration saves round-trip, while mid-battle and
+## partial-turn save requests are rejected before any profile mutation and leave profile
+## bytes plus permanent and temporary state unchanged. Suspend stays distinct from
+## extraction; extraction keeps its exactly-once transfer.
+func _test_od009_save_boundary() -> void:
+	print("--- Running OD-009 MVP Save Boundary Test ---")
+	var checks_start: int = _checks
+	var failures_start: int = _failures
+	var test_root: String = "user://test_od009_%d_%d" % [OS.get_process_id(), Time.get_ticks_usec()]
+	var store: ProfileStore = ProfileStore.new(test_root)
+
+	# Seed permanent state before the session boots.
+	var seeded: Dictionary = store.new_profile("profile_01")
+	seeded["character"]["level"] = 4
+	seeded["character"]["xp"] = 400
+	seeded["character"]["vitality"] = 12
+	seeded["inventory"]["banked"] = {"iron_sword": 1}
+	seeded["world"]["chapter_progress"] = {
+		"current_chapter": 1,
+		"unlocked_chapters": [1],
+		"is_academic_complete": false,
+		"chapter_flags": {}
+	}
+	seeded["education"]["records"] = {
+		"q_dec_01": {
+			"id": "q_dec_01",
+			"competency": "Decision-Making",
+			"completed": true,
+			"first_attempt_correct": true,
+			"total_attempts": 1,
+			"selected_index": 0
+		}
+	}
+	_check(store.save_profile("profile_01", seeded) == OK, "OD-009 baseline profile saved")
+	var baseline_text: String = store.export_backup("profile_01")["text"]
+	var baseline_revisions: int = _profile_revision_count(test_root, "profile_01")
+	_check(baseline_revisions == 1, "OD-009 baseline holds one committed revision")
+
+	var game = preload("res://scenes/main/game_root.tscn").instantiate()
+	game.profile_store = store
+	root.add_child(game)
+	game._init_slice_progress(store, "profile_01")
+	await process_frame
+	_check(store.export_backup("profile_01")["text"] == baseline_text, "Session boot leaves profile bytes unchanged")
+	_check(_profile_revision_count(test_root, "profile_01") == baseline_revisions, "Session boot commits no revision")
+	_check(game.get_save_blocker() == "", "Exploration boundary is open at session start")
+
+	# --- Mid-battle and partial-turn requests are rejected before mutation ---
+	game._on_debug_combat()
+	_check(game._battle != null and is_instance_valid(game._battle), "Battle fixture opened for the mid-battle probe")
+	var pre_text: String = store.export_backup("profile_01")["text"]
+	var pre_revisions: int = _profile_revision_count(test_root, "profile_01")
+	var pre_character: String = JSON.stringify(game.character_stats.serialize())
+	var pre_inventory: String = JSON.stringify(game.inventory_manager.serialize())
+	var pre_education: String = JSON.stringify(game.assessment_controller.serialize())
+	var pre_story: String = JSON.stringify(game.chapter_manager.serialize())
+	var pre_kurei: String = JSON.stringify(game.kurei_tree.serialize())
+	var pre_stage: int = game.slice_progress.stage
+	var pre_region: String = game._current_region_id
+	var pre_suspended: String = JSON.stringify(game._suspended_expedition)
+	var pre_velocity: Vector2 = game.player.velocity
+	var pre_frozen: bool = game.player.input_frozen
+
+	_check(game.get_save_blocker() != "", "Live battle reports a save blocker")
+	_check(game.check_save_boundary() == ERR_BUSY, "Boundary check rejects a mid-battle save")
+	_check(game.request_save("od009 mid-battle probe") == ERR_BUSY, "Mid-battle save request rejected")
+
+	(game._battle as BattleFixture).phase = BattleFixture.Phase.ENEMY
+	_check(game.request_save("od009 partial-turn probe") == ERR_BUSY, "Partial-turn save request rejected")
+	_check(game.player.input_frozen == pre_frozen, "Rejected saves leave temporary input state unchanged")
+	_check(game.player.velocity == pre_velocity, "Rejected saves leave temporary movement state unchanged")
+
+	# A pending encounter open is mid-battle for save purposes too.
+	game._close_combat()
+	_check(game._battle == null, "Battle fixture closed after the probe")
+	game._battle_pending = true
+	_check(game.request_save("od009 pending-encounter probe") == ERR_BUSY, "Pending-encounter save request rejected")
+	game._battle_pending = false
+
+	# The boss encounter is mid-battle as well (full release tier only).
+	if ReleaseTier.is_full_release():
+		game.open_boss_encounter()
+		_check(game._boss_encounter != null, "Boss encounter opened for the mid-battle probe")
+		_check(game.request_save("od009 boss probe") == ERR_BUSY, "Boss mid-battle save request rejected")
+		game._close_boss_encounter()
+		_check(game._boss_encounter == null, "Boss encounter closed after the probe")
+
+	_check(store.export_backup("profile_01")["text"] == pre_text, "Rejected saves leave profile bytes unchanged")
+	_check(_profile_revision_count(test_root, "profile_01") == pre_revisions, "Rejected saves commit no profile revision")
+	_check(JSON.stringify(game.character_stats.serialize()) == pre_character, "Rejected saves leave character state unchanged")
+	_check(JSON.stringify(game.inventory_manager.serialize()) == pre_inventory, "Rejected saves leave inventory state unchanged")
+	_check(JSON.stringify(game.assessment_controller.serialize()) == pre_education, "Rejected saves leave education state unchanged")
+	_check(JSON.stringify(game.chapter_manager.serialize()) == pre_story, "Rejected saves leave story state unchanged")
+	_check(JSON.stringify(game.kurei_tree.serialize()) == pre_kurei, "Rejected saves leave skill-tree state unchanged")
+	_check(game.slice_progress.stage == pre_stage, "Rejected saves leave slice stage unchanged")
+	_check(game._current_region_id == pre_region, "Rejected saves leave the current region unchanged")
+	_check(JSON.stringify(game._suspended_expedition) == pre_suspended, "Rejected saves leave suspended-run state unchanged")
+
+	# --- Expedition persists only through its own approved boundary (GDD-099) ---
+	_check(_open_game_expedition(game), "Expedition opened for the boundary probe")
+	game._expedition._on_advance_pressed()
+	game._expedition._on_advance_pressed()
+	_check(game._expedition.current_step == 2, "Advanced to chamber 3 before the boundary probe")
+	_check(game.request_save("od009 active-expedition probe") == ERR_BUSY, "Active-expedition save request rejected")
+	_check(store.export_backup("profile_01")["text"] == pre_text, "Expedition rejection leaves profile bytes unchanged")
+
+	# Suspend is the approved room-boundary save and never an extraction.
+	game._expedition.suspend_btn.pressed.emit()
+	await process_frame
+	_check(game._expedition == null, "Expedition closed after suspend")
+	var after_suspend: Dictionary = store.load_profile("profile_01")["profile"]
+	_check((after_suspend["world"] as Dictionary).has("active_expedition"), "Suspend persists the room-boundary snapshot")
+	_check(int(after_suspend["inventory"]["banked"].get("ancient_relic_fragment", 0)) == 0, "Suspend does not bank loot (not an extraction)")
+	_check(int(after_suspend["inventory"]["banked"].get("iron_sword", 0)) == 1, "Secured bank preserved across suspend")
+	_check(game.request_save("od009 parked-run probe") == ERR_BUSY, "Parked run defers to the expedition-state save path")
+
+	# --- Allowed boundary save round-trips once the run resolves ---
+	_check(_open_game_expedition(game), "Expedition resumed from the suspended snapshot")
+	_check(game._expedition.current_step == 2, "Resumed run continues at chamber 3")
+	while not game._expedition.is_at_extraction_chamber():
+		game._expedition._on_advance_pressed()
+	var portal_satchel: int = game._expedition.inventory.satchel_items.get("ancient_relic_fragment", 0)
+	_check(portal_satchel > 0, "Resumed run reached the extraction portal with loot")
+	game._expedition.extract_btn.pressed.emit()
+	await process_frame
+	_check(game._expedition == null, "Extraction completed and expedition closed")
+	var after_extract: Dictionary = store.load_profile("profile_01")["profile"]
+	_check(not (after_extract["world"] as Dictionary).has("active_expedition"), "Extraction clears the suspend snapshot atomically")
+	_check(int(after_extract["inventory"]["banked"].get("ancient_relic_fragment", 0)) == portal_satchel, "Extraction banks the satchel exactly once")
+
+	_check(game.get_save_blocker() == "", "Room/exploration boundary is open after extraction")
+	var pre_boundary_files: Array[String] = _profile_revision_files(test_root, "profile_01")
+	game.character_stats.xp = 450
+	game.inventory_manager.add_banked_item("spirit_salve", 2)
+	_check(game.request_save("od009 room boundary") == OK, "Allowed room/exploration boundary save succeeds")
+	var post_boundary_files: Array[String] = _profile_revision_files(test_root, "profile_01")
+	var added_revisions: int = 0
+	for fname: String in post_boundary_files:
+		if not pre_boundary_files.has(fname):
+			added_revisions += 1
+	var pruned_revisions: int = 0
+	for fname: String in pre_boundary_files:
+		if not post_boundary_files.has(fname):
+			pruned_revisions += 1
+	_check(added_revisions == 1, "Boundary save commits exactly one revision")
+	_check(pruned_revisions <= 1, "Boundary save prunes only the superseded revision")
+
+	var saved: Dictionary = store.load_profile("profile_01")["profile"]
+	_check(int(saved["character"]["xp"]) == 450, "Boundary save round-trips character xp")
+	_check(int(saved["inventory"]["banked"].get("spirit_salve", 0)) == 2, "Boundary save round-trips banked inventory")
+	_check(int(saved["inventory"]["banked"].get("iron_sword", 0)) == 1, "Secured bank preserved by the boundary save")
+	_check((saved["inventory"].get("satchel", {}) as Dictionary).is_empty(), "Boundary save never persists at-risk satchel state")
+	_check(saved["character"].has("kurei_tree"), "Boundary save preserves the Kurei tree section")
+	_check(int(saved["world"]["chapter_progress"]["current_chapter"]) == 1, "Boundary save leaves story progress untouched")
+	_check(saved["education"]["records"].has("q_dec_01"), "Boundary save leaves education records untouched")
+	_check(not (saved["world"] as Dictionary).has("active_expedition"), "Boundary save leaves expedition records untouched")
+
+	# A fresh session loads the boundary-saved state (round-trip).
+	var fresh = preload("res://scenes/main/game_root.tscn").instantiate()
+	fresh.profile_store = store
+	root.add_child(fresh)
+	fresh._init_slice_progress(store, "profile_01")
+	await process_frame
+	_check(fresh.character_stats.xp == 450, "Fresh session loads the boundary-saved xp")
+	_check(fresh.inventory_manager.banked_items.get("spirit_salve", 0) == 2, "Fresh session loads the boundary-saved bank")
+	_check(fresh.inventory_manager.satchel_items.is_empty(), "Fresh session carries no at-risk satchel")
+	_check(fresh.assessment_controller.records.has("q_dec_01"), "Fresh session keeps the education records")
+	_check(fresh.assessment_controller.records["q_dec_01"].get("first_attempt_correct", false) == true, "First-attempt correctness preserved")
+
+	game.queue_free()
+	fresh.queue_free()
+	await process_frame
+	_cleanup_dir(test_root)
+	print("OD-009 save boundary checks: %d run, %d failed" % [_checks - checks_start, _failures - failures_start])
+
+## Committed revisions (.json) for a slot; proves a rejected save commits nothing.
+func _profile_revision_count(root: String, slot: String) -> int:
+	return _profile_revision_files(root, slot).size()
+
+## Committed revision file names for a slot, newest first (ProfileStore keeps the two
+## latest valid revisions).
+func _profile_revision_files(root: String, slot: String) -> Array[String]:
+	var out: Array[String] = []
+	var dir_path: String = root.path_join(slot)
+	if not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(dir_path)):
+		return out
+	for fname: String in DirAccess.get_files_at(dir_path):
+		if fname.begins_with("profile.") and fname.ends_with(".json"):
+			out.append(fname)
+	out.sort()
+	out.reverse()
+	return out
 
 func _cleanup_dir(path: String) -> void:
 	var global_path: String = ProjectSettings.globalize_path(path)

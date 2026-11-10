@@ -829,6 +829,85 @@ func _mutate_profile(mutator: Callable) -> Error:
 		return int(result) as Error
 	return profile_store.save_profile(_profile_slot, profile)
 
+# ==============================================================================
+# OD-009 MVP Save Boundary (GDD-098/099/100, FR-SAV-001, FR-CMB-001)
+# ==============================================================================
+
+## Owner-ratified OD-009 MVP fallback: profiles persist only at room/exploration
+## boundaries. Mid-battle and partial-turn combat state is never serialized, and every
+## future mid-battle field or replay behavior stays TBD until Persistence Architecture
+## Review approves it. Expedition state keeps its separate handling (GDD-099): it is
+## written only by the atomic Suspend / Extraction / Defeat commits, never by the generic
+## boundary save below.
+const OD009_SAVE_BLOCKED_HINT: String = "OD-009: saves are accepted only at room/exploration boundaries. Finish or leave the encounter, then retry; no profile data was written."
+
+## Returns the first condition that blocks a profile save request, or "" when the request
+## arrives at an allowed room/exploration boundary. Evaluated before any profile mutation.
+func get_save_blocker() -> String:
+	if _battle_pending:
+		return "a combat encounter is opening (mid-battle request)"
+	if _battle != null and is_instance_valid(_battle):
+		var battle: BattleFixture = _battle as BattleFixture
+		var phase_name: String = "UNKNOWN" if battle == null else String(BattleFixture.Phase.keys()[battle.phase])
+		return "battle in progress (phase=%s, mid-battle/partial-turn state)" % phase_name
+	if _boss_encounter != null and is_instance_valid(_boss_encounter):
+		return "boss encounter in progress (mid-battle state)"
+	if _expedition_pending:
+		return "an expedition is opening (expedition-state save path pending)"
+	if _expedition != null and is_instance_valid(_expedition):
+		return "expedition in progress (persist only via Suspend, Extraction or Defeat)"
+	if not _suspended_expedition.is_empty():
+		return "a suspended expedition snapshot is held (expedition-state save path)"
+	if not inventory_manager.satchel_items.is_empty():
+		return "at-risk satchel loot is present (expedition-state save path)"
+	return ""
+
+## OD-009 boundary gate: OK when a save request may proceed, ERR_BUSY when it must be
+## rejected or deferred before any profile mutation.
+func check_save_boundary() -> Error:
+	return OK if get_save_blocker().is_empty() else ERR_BUSY
+
+## OD-009 save-request entry point. A rejected or deferred request returns before the
+## profile store is touched (no revision, no byte change) and emits an actionable
+## diagnostic; an allowed request persists the permanent exploration-boundary sections in
+## a single load-modify-save revision.
+func request_save(reason: String = "autosave") -> Error:
+	var blocker: String = get_save_blocker()
+	if not blocker.is_empty():
+		push_warning("[OD-009] Save request '%s' deferred before any profile mutation: %s. %s" % [reason, blocker, OD009_SAVE_BLOCKED_HINT])
+		return ERR_BUSY
+	if profile_store == null:
+		push_warning("[OD-009] Save request '%s' rejected before any profile mutation: profile store is not configured." % reason)
+		return ERR_UNCONFIGURED
+	var err: Error = _persist_exploration_boundary()
+	if err != OK:
+		push_warning("[OD-009] Boundary save request '%s' failed with %s." % [reason, error_string(err)])
+	return err
+
+## Allowed boundary save: one atomic revision carrying character stats, the Kurei tree and
+## inventory. Education, chapter, slice, ending and expedition records keep their existing
+## event-based writers and are never rewritten here, so first-attempt correctness and
+## completion gating stay untouched.
+func _persist_exploration_boundary() -> Error:
+	var live_stats: CharacterStats = character_stats
+	var live_tree: KureiTree = kurei_tree
+	var live_inventory: InventoryManager = inventory_manager
+	return _mutate_profile(func(profile: Dictionary) -> Error:
+		var character_section: Dictionary = {}
+		if profile.get("character") is Dictionary:
+			character_section = (profile["character"] as Dictionary).duplicate(true)
+		var stats_snapshot: Dictionary = live_stats.serialize()
+		for key: String in stats_snapshot.keys():
+			character_section[key] = stats_snapshot[key]
+		# character_stats.serialize() carries no kurei_tree key; refresh it from the live
+		# controller so a boundary save can never drop stored skills or talents.
+		character_section["kurei_tree"] = live_tree.serialize()
+		profile["character"] = character_section
+		# Callers reach this only with an empty at-risk satchel (see get_save_blocker),
+		# so no unbanked expedition loot can become permanent through this path.
+		profile["inventory"] = live_inventory.serialize()
+		return OK)
+
 func _close_expedition() -> void:
 	if player != null and is_instance_valid(player):
 		player.position = Vector2(600, 220)

@@ -6,6 +6,12 @@ extends Control
 ##
 ## Spawns modular dungeon rooms from DungeonGenerator, manages at-risk satchel loot,
 ## and provides an extraction portal at the verified endpoint.
+##
+## OD-009 MVP save boundary (GDD-098/099/100, FR-SAV-001, FR-CMB-001): persistence happens
+## only at room/exploration boundaries — Suspend (room-boundary snapshot), Extraction and
+## Defeat (atomic terminal commits). Mid-battle and partial-turn combat state is never
+## serialized by this scene; every future mid-battle field or resume behavior remains TBD
+## pending Persistence Architecture Review. Suspend never counts as extraction.
 
 signal expedition_completed(extracted_items: Dictionary)
 signal expedition_failed(lost_items: Dictionary)
@@ -283,7 +289,14 @@ func cancel_expedition() -> void:
 	is_active = false
 	expedition_cancelled.emit()
 
+## OD-009 save boundary: captures room/exploration-boundary state only (seed, path, step,
+## at-risk satchel). No combat, turn or partial-turn state exists in this snapshot, and no
+## future mid-battle field may be added here without Persistence Architecture Review.
+## Returns {} while an extraction commit is in flight so a snapshot can never interleave
+## with the atomic terminal write.
 func serialize_expedition() -> Dictionary:
+	if _is_extracting:
+		return {}
 	return {
 		"is_active": is_active,
 		"seed": generator.current_seed,
@@ -353,6 +366,9 @@ func restore_expedition(data: Dictionary) -> bool:
 		refresh_ui()
 	return true
 
+## OD-009 approved expedition boundary: persists the room-boundary snapshot through
+## commit_suspend. This is a suspend, never an extraction — the bank is untouched and the
+## exactly-once extraction transfer is still enforced by _commit_extraction.
 func suspend_expedition() -> Dictionary:
 	if not is_active or _is_extracting:
 		return {}
