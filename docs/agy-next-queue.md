@@ -1,53 +1,70 @@
-# Next Work Queue — OD-013 Performance Evidence
+# Next Work Queue — Approved OD-002/003/004 Combat Batch
 
-Plan owner: OpenCode/Codex plan draft. Implementation executor: `opencode-go/mimo-v2.6-flash`. Codex CLI review deferred.
+Plan owner: OpenCode/Codex plan. Executor: `opencode-go/mimo-v2.6-flash`. Codex CLI review deferred.
 
-## Ratified scope
+## Approved specifications
 
-- Reference hardware: owner's current Windows machine; capture exact specifications.
-- Browsers: Chromium, Firefox, and additional available owner-selected browsers.
-- Target: 60 FPS with documented 30 FPS fallback.
-- Scenes: title, overworld, combat, dungeon, learning journal.
-- Measurement: automated capture plus manual profiling evidence.
-- No maximum build-size budget.
-- Below-target result: warn and record; do not automatically fail release.
-- Web: Godot 4.7.2 Compatibility, single-threaded.
-- Performance evidence is included in the canonical release gate with warning semantics.
+### OD-002 initiative
+
+- Initiative equals effective Agility.
+- Higher score acts first.
+- Ties resolve by stable actor ID ascending.
+- One main action per actor per round.
+- No ATB, extra turns, reaction attacks, or initiative rolls.
+- Haste/slow changes apply at the next round boundary.
+- Battle HUD displays the next three actors.
+
+### OD-003 Kurei/elements
+
+- Keep Flame, Torrent, Gale, Earth, Lumina, Umbra.
+- No rock-paper-scissors multiplier chart in the academic MVP.
+- Roles: Flame damage/Burn; Torrent heal/cleanse; Gale haste/evasion; Earth shield/mitigation; Lumina pierce/focus; Umbra drain/debuff.
+- Skill magnitude uses existing authored `base_power`; no hidden elemental multiplier.
+- Retain current authored pip costs/cooldowns in `KureiSystem`.
+- Normal SP baseline 2; Phase Mastery raises it to 4. Boss baseline 3; Phase Mastery raises it to 4.
+- No new regeneration, critical, resistance, damage, or boss-effect formulas.
+- Unsupported advanced boss effects remain disabled.
+
+### OD-004 status policy
+
+- Same-name status reapplication refreshes to the larger duration and larger potency; no intensity stacking.
+- Burn, Poison, Bleed, Regeneration: 3 turns by default.
+- Defense Up/Down: 2 turns.
+- Silence: 1 turn.
+- Stun: 1 skipped action.
+- Shield expires when depleted or after 3 turns.
+- Cleanse removes negative statuses only.
+- Bosses use the same status rules; no hidden resistance.
 
 ## Requirements
 
-- GDD-093..097, GDD-104, GDD-107, GDD-123, GDD-124, GDD-129.
-- FR-REL-001, TC-REL-001, TC-WEB-001/002, NFR-PERF-001, NFR-WEB-001, NFR-BUILD-001.
-- OD-013 ratification: `report/od013-ratification.md`.
+- GDD-016..023, GDD-030, GDD-089.
+- FR-CMB-001/002/003/004, FR-MAG-001/002.
+- TC-CMB-001/002/003, TC-SAV-001.
 
-## Implementation
+## Allowed files
 
-Create `scripts/build/performance_evidence.ps1`, `scripts/build/test_performance_evidence.ps1`, and `report/od013_performance_report.md`.
-
-Modify only as needed: `scripts/build/run_headless_tests.ps1`, `scripts/build/export_release.ps1`, `scripts/build/validate_release.ps1`, `docs/browser_verification_checklist.md`, `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`, and report ledger files.
-
-- Capture machine specs and actual Godot version/configuration.
-- Measure title, overworld, combat, dungeon, and learning journal.
-- Record average/minimum FPS, frame timing, scene, environment, and browser/device metadata where available.
-- Automated evidence must distinguish headless/native evidence from human browser smoke; never claim browser acceptance automatically.
-- 60 FPS is the target; 30 FPS is the documented fallback.
-- Below-target results warn and remain exit 0; the report records the warning.
-- No build-size limit may be introduced.
-- Preserve existing export, PCK, save, and restoration gates.
+- `scenes/combat/battle_fixture.gd`
+- `scenes/combat/battle_fixture.tscn`
+- `scenes/combat/boss_encounter.gd`
+- `scenes/combat/boss_encounter.tscn`
+- `scripts/magic/kurei_system.gd`
+- `scripts/magic/kurei_tree.gd`
+- `scripts/combat/status_engine.gd`
+- related HUD/UI scripts and targeted combat tests
+- docs and report evidence
 
 ## Acceptance
 
-- Positive capture runs for all five scenes.
-- Invalid/missing engine or incompatible renderer/thread configuration fails preflight.
-- A disposable below-target fixture emits a warning but does not fail the release gate.
-- Canonical `-Export` path includes performance evidence.
-- Browser checklist remains human/manual and pending until executed by the owner.
-- Run targeted tests, canonical headless tests, export validation, and restoration controls.
-- Record actual results in `/report` and commit with `[REVIEW_PENDING_CODEX]`.
+- Initiative ordering, stable ties, next-three HUD, round-boundary refresh, and no-extra-turn controls pass.
+- Existing skill base powers/costs/cooldowns remain exact; six role descriptions are represented.
+- Status refresh/no-stack, durations, cleanse, stun, shield expiry, and boss consistency pass.
+- Unsupported advanced boss actions remain disabled and mutation-free.
+- Save, extraction, defeat, and OD-009 boundaries remain green.
+- Run targeted combat suites and canonical headless suite; record actual results in `/report`.
+- Commit with `[REVIEW_PENDING_CODEX]`; do not mark reviewed.
 
 ## Boundaries
 
-- No browser acceptance claim.
-- No maximum size budget.
-- No image/audio generation, combat/story decisions, or other OD resolution.
-- Codex CLI review is deferred.
+- No new content, story, images, audio, browser work, or further OD resolution.
+- Codex CLI review remains deferred.
