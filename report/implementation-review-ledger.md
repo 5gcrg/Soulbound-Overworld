@@ -237,6 +237,8 @@ entries:
 - **Task:** `SBL-OD-013` — queue entry in `docs/agent-review-queue.md`; scope in
   `docs/agy-next-queue.md`; ratification in `report/od013-ratification.md`; evidence in
   `report/od013_performance_report.md` and `report/od013_performance_evidence.json`.
+- **Implementation commit:** `edbacea` on `feature/w4-5-vertical-slice` (worktree
+  `soulbound-overworld`), tagged `[REVIEW_PENDING_CODEX]`.
 - **Implementation:** executor `opencode-go/mimo-v2.6-flash` (MiMo) under the agy contract;
   plan owner Codex/OpenCode. Codex CLI review **deferred by instruction** — committed
   `[REVIEW_PENDING_CODEX]`; nothing here is `REVIEWED`.
