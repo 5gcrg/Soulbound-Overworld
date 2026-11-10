@@ -6,7 +6,10 @@ extends SceneTree
 ## Verifies that an exported .pck has the correct release tier baked in
 ## and enforces the architectural invariants without manual runtime overrides.
 
+const ProfileTestIsolationScript = preload("res://tests/support/profile_test_isolation.gd")
+
 var _failures: int = 0
+var _profile_isolation: ProfileTestIsolation = null
 
 func _init() -> void:
 	call_deferred("_run_verification")
@@ -20,6 +23,7 @@ func _check(condition: bool, msg: String) -> void:
 
 func _run_verification() -> void:
 	print("--- Running End-to-End Exported Artifact Tier Verification ---")
+	_profile_isolation = ProfileTestIsolationScript.new("verify_exported_tier")
 
 	var user_args: PackedStringArray = OS.get_cmdline_user_args()
 	var expected_tier: String = ""
@@ -38,6 +42,7 @@ func _run_verification() -> void:
 	var root_scene: PackedScene = load("res://scenes/main/game_root.tscn")
 	_check(root_scene != null, "GameRoot scene loaded from pack")
 	var game_root: Control = root_scene.instantiate() as Control
+	game_root.profile_store = _profile_isolation.make_store()
 	root.add_child(game_root)
 	await process_frame
 	await process_frame
@@ -100,6 +105,9 @@ func _run_verification() -> void:
 		_check(false, "Unrecognized active tier: '%s'" % active_tier)
 
 	game_root.queue_free()
+	await process_frame
+	_check(_profile_isolation.real_profile_is_unchanged(), "Real user://profiles/profile_01 is byte-identical before and after the suite")
+	_profile_isolation.cleanup()
 
 	if _failures == 0:
 		print("--- Exported Artifact Tier Verification PASSED for tier '%s' ---" % active_tier)

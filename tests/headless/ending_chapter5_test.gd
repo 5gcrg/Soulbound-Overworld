@@ -3,7 +3,10 @@ extends SceneTree
 ## SBL-W11-001 Void Citadel & Dual-Ending Headless Test Suite
 ## Requirements: GDD-041/116, FR-WLD-001, AGENTS.md Invariants.
 
+const ProfileTestIsolationScript = preload("res://tests/support/profile_test_isolation.gd")
+
 var _failures: int = 0
+var _profile_isolation: ProfileTestIsolation = null
 
 func _check(ok: bool, msg: String) -> bool:
 	if not ok:
@@ -16,11 +19,13 @@ func _init() -> void:
 
 func _run_test() -> void:
 	print("--- Running SBL-W11-001 Void Citadel & Dual-Ending Test Suite ---")
+	_profile_isolation = ProfileTestIsolationScript.new("ending_chapter5")
 
 	var root_scene: PackedScene = load("res://scenes/main/game_root.tscn")
 	_check(root_scene != null, "game_root.tscn loaded successfully")
 
 	var game_root: Control = root_scene.instantiate() as Control
+	game_root.profile_store = _profile_isolation.make_store()
 	root.add_child(game_root)
 	await process_frame
 	await process_frame
@@ -97,6 +102,11 @@ func _run_test() -> void:
 	await process_frame
 	_check(game_root._ending_modal != null, "Debug bar ending cheat opens ending modal")
 	game_root._close_ending_modal()
+
+	game_root.queue_free()
+	await process_frame
+	_check(_profile_isolation.real_profile_is_unchanged(), "Real user://profiles/profile_01 is byte-identical before and after the suite")
+	_profile_isolation.cleanup()
 
 	if _failures == 0:
 		print("--- SBL-W11-001 Void Citadel & Dual-Ending Test Suite PASSED ---")

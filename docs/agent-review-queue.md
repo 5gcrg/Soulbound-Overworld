@@ -1,9 +1,9 @@
 # Agent Review Queue
 
-## SBL-M1-001 — Godot foundation
+## SBL-M1-001 â€” Godot foundation
 
 - **Milestone** M1, Week 1.
-- **Requirements** GDD-093–096, GDD-103, GDD-108–109, GDD-119, GDD-124, GDD-129, NFR-MAINT-001. Scope and evidence are recorded in the [traceability matrix](traceability-matrix.md).
+- **Requirements** GDD-093â€“096, GDD-103, GDD-108â€“109, GDD-119, GDD-124, GDD-129, NFR-MAINT-001. Scope and evidence are recorded in the [traceability matrix](traceability-matrix.md).
 - **Implementation owner** agy. **Plan, validation, and Git operation owner** Codex.
 - **Branch and initial implementation** `feature/m1-godot-foundation`, `cdd8e2d`. Baseline `da2d925`. Reviewed implementation tip `97ecd49`.
 - **Files** `project.godot`, `.gitignore`, `scenes/main/game_root.{tscn,gd,gd.uid}`, `tests/headless/smoke_test.{gd,gd.uid}`, and the [asset register](asset-register.md), traceability matrix, and review queue in `docs/`.
@@ -32,10 +32,10 @@ An isolated copy passed the smoke check (exit 0). An injected assertion before a
 
 ---
 
-## SBL-W2-001 — Overworld controller and transitions
+## SBL-W2-001 â€” Overworld controller and transitions
 
-- **Milestone** Week 2–3 MVP foundation, overworld slice.
-- **Requirements** GDD-001, GDD-002, GDD-041, GDD-094–096, GDD-109, GDD-124, GDD-129, FR-WLD-001, regional portion of TC-WLD-001, and TC-AGY-001. [Traceability](traceability-matrix.md).
+- **Milestone** Week 2â€“3 MVP foundation, overworld slice.
+- **Requirements** GDD-001, GDD-002, GDD-041, GDD-094â€“096, GDD-109, GDD-124, GDD-129, FR-WLD-001, regional portion of TC-WLD-001, and TC-AGY-001. [Traceability](traceability-matrix.md).
 - **Owner** agy. **Plan, validation, and Git operations** Codex.
 - **Branch and base** `feature/w2-overworld-transitions` based on reviewed M1 `50b01a9`. Initial implementation `90760a1`. Reviewed implementation tip `05e121a`.
 - **Files** `project.godot`, `scenes/main/game_root.*`, `scenes/player/player.*`, `scenes/world/`, `tests/headless/{smoke_test,transition_test}.gd`, tracked script UIDs, and the audit, traceability matrix, and asset register.
@@ -70,9 +70,9 @@ Two isolated fault injections also exited 1. Disabling the player movement integ
 
 ---
 
-## SBL-W3-001 — Simple combat in Alpha
+## SBL-W3-001 â€” Simple combat in Alpha
 
-- **Milestone** Week 2–3 MVP foundation, simple combat slice.
+- **Milestone** Week 2â€“3 MVP foundation, simple combat slice.
 - **Requirements** GDD-003, GDD-016, GDD-018, GDD-023, GDD-089, FR-CMB-001/003/004/005, and the action economy and intent portions of TC-CMB-001/003. [Traceability](traceability-matrix.md).
 - **Owner** agy. **Plan, validation, and Git operations** Codex.
 - **Branch and base** `feature/w3-simple-combat` based on reviewed overworld `472f696`. Initial runtime `07ab422`. Reviewed implementation tip `cc20094`.
@@ -109,9 +109,9 @@ A second fault probe confirmed a same-frame competing portal could no longer can
 
 ---
 
-## SBL-W3-002 — Local save model and JSON text
+## SBL-W3-002 â€” Local save model and JSON text
 
-- **Milestone** Week 2–3 MVP foundation.
+- **Milestone** Week 2â€“3 MVP foundation.
 - **Requirements** GDD-098, GDD-099, GDD-100, GDD-102, FR-SAV-001/002 (partial), TC-SAV-001/002, NFR-REL-001, and NFR-SEC-001. [Traceability](traceability-matrix.md)
 - **Owner** agy. **Plan owner** Codex.
 - **Branch and implementation** `feature/w3-save-model` based on `d0fbba9`. Initial store `4822621`, recovery and validation `0fb5791`, review follow-ups `f3c85ec`, legacy compatibility `9a672bb`.
@@ -148,7 +148,7 @@ The save suite uses disposable test roots. It verifies slot isolation, nested da
 
 ---
 
-## Codex CLI review of queued M2–M6 work
+## Codex CLI review of queued M2â€“M6 work
 
 - **Snapshot** `feature/w4-5-vertical-slice`, nine agy commits from `b427fed..e9824a7`.
 - **Review** CHANGES_REQUESTED. Codex CLI session `01a1bd84-e6f1-7722-ae1b-6c1710b56c8e` finished and reported 8 P1 and 13 P2 findings. Human acceptance remains pending.
@@ -167,10 +167,10 @@ Independent probes reproduced newer banked gear disappearing on a quest checkpoi
 
 Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue-headless-20261109-073625.log`, and `agy-queue-review-probes-20261109.log`.
 
-## SBL-W4-001 — One-region vertical slice progress and loop integration
+## SBL-W4-001 â€” One-region vertical slice progress and loop integration
 
-- **Milestone** M2, Week 4–5.
-- **Requirements** GDD-067, GDD-068, GDD-069, GDD-071, GDD-098–100, GDD-119, FR-QST-001, FR-EDU-002/003, FR-SAV-001 (partial), TC-EDU-002/003, TC-SAV-001. Scope and evidence are recorded in the [traceability matrix](traceability-matrix.md).
+- **Milestone** M2, Week 4â€“5.
+- **Requirements** GDD-067, GDD-068, GDD-069, GDD-071, GDD-098â€“100, GDD-119, FR-QST-001, FR-EDU-002/003, FR-SAV-001 (partial), TC-EDU-002/003, TC-SAV-001. Scope and evidence are recorded in the [traceability matrix](traceability-matrix.md).
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch and initial implementation** `feature/w4-5-vertical-slice`. Baseline `b427fed`.
 - **Files** `scripts/vertical_slice/slice_progress.gd`, `scenes/vertical_slice/quest_dialog.{tscn,gd}`, `scenes/main/game_root.{tscn,gd}`, `scenes/world/test_region_alpha.tscn`, `tests/headless/vertical_slice_test.gd`, `tests/headless/vertical_slice_loop_test.gd`, tracked UIDs, and documentation in `docs/`.
@@ -193,15 +193,15 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 ### Review history
 - agy authored `scripts/vertical_slice/slice_progress.gd`, `scenes/vertical_slice/quest_dialog.{tscn,gd}`, overworld NPC integration in `scenes/world/test_region_alpha.tscn` and `scenes/main/game_root.{tscn,gd}`, and automated headless test suites `vertical_slice_test.gd` and `vertical_slice_loop_test.gd`.
 - Local headless validation verified all 6 acceptance criteria and the full interactive loop end-to-end.
-- Codex CLI review was attempted via `codex review --uncommitted` (session `01a1bc01-5b29-7041-afa4-3c92bbd2c320`). Execution was blocked by provider credit quota (`ERROR: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/settings/usage to purchase more credits or try again at 4:15 AM.`).
+- Codex CLI review was attempted via `codex review --uncommitted` (session `01a1bc01-5b29-7041-afa4-3c92bbd2c320`). Execution was blocked by provider credit quota (`ERROR: Youâ€™ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/settings/usage to purchase more credits or try again at 4:15 AM.`).
 - In strict adherence to AGENTS.md Rule 5, work is logged in the queue as `REVIEW_PENDING_CODEX` to await Codex CLI quota reset at 4:15 AM.
 
 ---
 
-## SBL-M3-001 — Core systems foundations (Progression, Inventory, Kurei, Dungeon)
+## SBL-M3-001 â€” Core systems foundations (Progression, Inventory, Kurei, Dungeon)
 
-- **Milestone** M3, Weeks 6–8.
-- **Requirements** GDD-005, GDD-006, GDD-007, GDD-009–015, GDD-025–030, GDD-031–035, FR-PRO-001, FR-INV-001, FR-MAG-001, FR-DNG-001/002. Scope and evidence are recorded in the [traceability matrix](traceability-matrix.md).
+- **Milestone** M3, Weeks 6â€“8.
+- **Requirements** GDD-005, GDD-006, GDD-007, GDD-009â€“015, GDD-025â€“030, GDD-031â€“035, FR-PRO-001, FR-INV-001, FR-MAG-001, FR-DNG-001/002. Scope and evidence are recorded in the [traceability matrix](traceability-matrix.md).
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch and initial implementation** `feature/w4-5-vertical-slice`.
 - **Files** `scripts/progression/character_stats.gd`, `scripts/inventory/inventory_manager.gd`, `scripts/magic/kurei_system.gd`, `scripts/dungeon/dungeon_generator.gd`, `tests/headless/m3_systems_test.gd`, and tracked script UIDs.
@@ -220,14 +220,14 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 ### Review history
 - agy authored the 4 core M3 system modules and the comprehensive test suite `tests/headless/m3_systems_test.gd`.
 - Local verification confirmed all invariants: deterministic procedural dungeon generation, guaranteed extraction reachability, exact-once extraction transfer, defeat satchel wipe with zero banked gear loss, level/stat point scaling, and Kurei pip/cooldown management.
-- Logged as `REVIEW_PENDING_CODEX` per AGENTS.md §5 awaiting Codex quota reset at 4:15 AM.
+- Logged as `REVIEW_PENDING_CODEX` per AGENTS.md Â§5 awaiting Codex quota reset at 4:15 AM.
 
 ---
 
-## SBL-M3-002 — Dimension Shift, Kurei Combat, & Dungeon Expedition (Paths A, B, C)
+## SBL-M3-002 â€” Dimension Shift, Kurei Combat, & Dungeon Expedition (Paths A, B, C)
 
-- **Milestone** M3, Weeks 6–8.
-- **Requirements** GDD-042/043/076 (Dimension Shifting), FR-WLD-002, GDD-003/009–015 (Kurei Combat), FR-CMB-002, GDD-031–035 (Dungeon Scene), FR-DNG-001/002. Full formal report in [`report/m2_m3_full_implementation_report.md`](../report/m2_m3_full_implementation_report.md).
+- **Milestone** M3, Weeks 6â€“8.
+- **Requirements** GDD-042/043/076 (Dimension Shifting), FR-WLD-002, GDD-003/009â€“015 (Kurei Combat), FR-CMB-002, GDD-031â€“035 (Dungeon Scene), FR-DNG-001/002. Full formal report in [`report/m2_m3_full_implementation_report.md`](../report/m2_m3_full_implementation_report.md).
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files** `scripts/world/dimension_manager.gd`, `scenes/combat/battle_fixture.{tscn,gd}`, `scenes/dungeon/dungeon_expedition.{tscn,gd}`, `scenes/main/game_root.gd`, `project.godot`, `tests/headless/{dimension_test,kurei_combat_test,dungeon_scene_test}.gd`, and tracked UIDs.
@@ -245,9 +245,9 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-M3-003 — Overworld Dungeon Gateway, Educational Assessment Engine, & UI Sheets (Options 1, 2, 3)
+## SBL-M3-003 â€” Overworld Dungeon Gateway, Educational Assessment Engine, & UI Sheets (Options 1, 2, 3)
 
-- **Milestone** M2 & M3, Weeks 4–8.
+- **Milestone** M2 & M3, Weeks 4â€“8.
 - **Requirements** GDD-031/032/033/034/035, FR-DNG-001/002 (Dungeon Gateway), GDD-067/068/069/070/071/072, FR-EDU-001/002/003/004 (Educational Assessment & CSV Export), GDD-005/006/007, GDD-025/026/027/028/029/030, FR-PRO-001, FR-INV-001 (UI Sheets). Full formal report in [`report/m2_m3_full_implementation_report.md`](../report/m2_m3_full_implementation_report.md).
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch** `feature/w4-5-vertical-slice`.
@@ -266,10 +266,10 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-M4-001 — Three Academic Chapters, Settings & Accessibility, and Combat Item Action
+## SBL-M4-001 â€” Three Academic Chapters, Settings & Accessibility, and Combat Item Action
 
-- **Milestone** M4, Weeks 9–10 Academic Content Candidate.
-- **Requirements** GDD-037–040, FR-WLD-001/003 (Three Chapters), GDD-016/018/023, FR-CMB-001/004 (Combat Item), GDD-103, TC-ACC-001 (Settings & Accessibility). Full formal report in [`report/m4_academic_candidate_report.md`](../report/m4_academic_candidate_report.md).
+- **Milestone** M4, Weeks 9â€“10 Academic Content Candidate.
+- **Requirements** GDD-037â€“040, FR-WLD-001/003 (Three Chapters), GDD-016/018/023, FR-CMB-001/004 (Combat Item), GDD-103, TC-ACC-001 (Settings & Accessibility). Full formal report in [`report/m4_academic_candidate_report.md`](../report/m4_academic_candidate_report.md).
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files** `scripts/story/chapter_manager.gd`, `scenes/world/{dawnreach_village,whispering_grove,forgotten_shrine}.tscn`, `scenes/ui/academic_completion_modal.{tscn,gd}`, `scenes/combat/battle_fixture.{tscn,gd}`, `scripts/settings/settings_manager.gd`, `scenes/ui/settings_sheet.{tscn,gd}`, `scenes/main/game_root.gd`, `project.godot`, `tests/headless/{chapter_progression_test,settings_accessibility_test}.gd`, and tracked UIDs.
@@ -281,15 +281,15 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 | Suite | Result |
 | --- | --- |
 | `tests/headless/chapter_progression_test.gd` | Exit 0. Verified 3-chapter lifecycle, completion gating, Whispering Grove dimension shift bramble dissolve, academic completion portal, and RFC-4180 CSV export. |
-| `tests/headless/settings_accessibility_test.gd` | Exit 0. Verified master/music/sfx volume controls, reduced motion, high contrast, text scaling (0.8–1.5), sheet toggle (`O`), and `user://settings.json` persistence. |
+| `tests/headless/settings_accessibility_test.gd` | Exit 0. Verified master/music/sfx volume controls, reduced motion, high contrast, text scaling (0.8â€“1.5), sheet toggle (`O`), and `user://settings.json` persistence. |
 | Full 15-suite regression check | Exit 0. All 15 test suites pass cleanly with zero engine errors. |
 
 ---
 
-## SBL-M5-001 — End-to-End Academic Playthrough QA & Educator Analytics Suite
+## SBL-M5-001 â€” End-to-End Academic Playthrough QA & Educator Analytics Suite
 
 - **Milestone** M5, Week 11 QA Evidence.
-- **Requirements** GDD-001–132, M1–M4 Integration, FR-EDU-001–004. Full formal report in [`report/m5_m6_verification_and_release_report.md`](../report/m5_m6_verification_and_release_report.md).
+- **Requirements** GDD-001â€“132, M1â€“M4 Integration, FR-EDU-001â€“004. Full formal report in [`report/m5_m6_verification_and_release_report.md`](../report/m5_m6_verification_and_release_report.md).
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files** `tests/headless/{e2e_academic_playthrough_test,educator_analytics_test}.gd` and tracked UIDs.
@@ -305,10 +305,10 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-M6-001 — Web Save Backup Export/Import & Godot Export Presets
+## SBL-M6-001 â€” Web Save Backup Export/Import & Godot Export Presets
 
 - **Milestone** M6, Week 12 Release Candidate Foundation.
-- **Requirements** GDD-098–103, AGENTS.md Engineering Invariants ("provide local web backup export/import", "single-threaded web build", "Compatibility renderer").
+- **Requirements** GDD-098â€“103, AGENTS.md Engineering Invariants ("provide local web backup export/import", "single-threaded web build", "Compatibility renderer").
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files** `export_presets.cfg`, `scenes/ui/settings_sheet.{tscn,gd}`, `scenes/main/game_root.gd`, `tests/headless/web_backup_test.gd`, `docs/evaluator_walkthrough.md`, `report/academic_defense_checklist.md`, and tracked UIDs.
@@ -324,10 +324,10 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-FIX-001 — Combat Item Validation, UI Sheet Equip Wiring & Modal Exclusivity
+## SBL-FIX-001 â€” Combat Item Validation, UI Sheet Equip Wiring & Modal Exclusivity
 
 - **Milestone** M3 & M4 Hardening.
-- **Requirements** GDD-016, GDD-018, GDD-023, GDD-025–030, GDD-103, FR-CMB-001/004, FR-INV-001, AGENTS.md Invariants.
+- **Requirements** GDD-016, GDD-018, GDD-023, GDD-025â€“030, GDD-103, FR-CMB-001/004, FR-INV-001, AGENTS.md Invariants.
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files** `scenes/combat/battle_fixture.gd`, `scenes/main/game_root.gd`, `scenes/ui/inventory_sheet.{tscn,gd}`, `scenes/vertical_slice/quest_dialog.gd`, `scenes/vertical_slice/chapter_activity_dialog.gd`, `scenes/ui/academic_completion_modal.gd`, `tests/headless/{combat_test,ui_sheets_test}.gd`, and `docs/agent-review-queue.md`.
@@ -345,7 +345,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-FIX-002 — Dungeon Suspend/Resume Persistence, Web Browser Direct Download Bridge & Live Accessibility Audio Application
+## SBL-FIX-002 â€” Dungeon Suspend/Resume Persistence, Web Browser Direct Download Bridge & Live Accessibility Audio Application
 
 - **Milestone** M3, M4 & M6 Hardening (Academic MVP Completion).
 - **Requirements** GDD-031..035, GDD-098..103, GDD-103, FR-DNG-001/002, FR-EDU-004, TC-ACC-001, AGENTS.md Invariants ("Suspend/resume an expedition does not count as extraction; validate exactly-once reward transfer", "provide local web backup export/import").
@@ -367,10 +367,10 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-FIX-003 — Automated Release Exporter, Evaluator Defense Tools, Status Engine & Chapter IV Foundation
+## SBL-FIX-003 â€” Automated Release Exporter, Evaluator Defense Tools, Status Engine & Chapter IV Foundation
 
 - **Milestone** M6 & Academic Defense Readiness / Post-MVP Expansion Phase 1.
-- **Requirements** GDD-018, GDD-022, GDD-025, GDD-041, GDD-063, GDD-070, GDD-116, GDD-098–103, FR-CBT-003, FR-WLD-001, FR-EDU-001/003, AGENTS.md Invariants ("Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer", "Keep the 3-chapter academic MVP separate from the 5-chapter 2-ending full release").
+- **Requirements** GDD-018, GDD-022, GDD-025, GDD-041, GDD-063, GDD-070, GDD-116, GDD-098â€“103, FR-CBT-003, FR-WLD-001, FR-EDU-001/003, AGENTS.md Invariants ("Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer", "Keep the 3-chapter academic MVP separate from the 5-chapter 2-ending full release").
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files** `export_presets.cfg`, `.gitignore`, `scripts/build/export_release.ps1`, `scenes/ui/evaluator_debug_bar.{tscn,gd}`, `scenes/world/ashen_peaks.tscn`, `scenes/world/world_router.gd`, `scenes/combat/battle_fixture.gd`, `scripts/combat/status_engine.gd`, `scripts/education/question_bank.gd`, `scenes/main/game_root.{tscn,gd}`, `tests/headless/{status_engine_test,evaluator_debug_bar_test,educator_analytics_test}.gd`, and `docs/agent-review-queue.md`.
@@ -389,7 +389,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-FIX-004 — Title Screen & Profile Selector, Procedural Audio Feedback Engine & Presentation Guide
+## SBL-FIX-004 â€” Title Screen & Profile Selector, Procedural Audio Feedback Engine & Presentation Guide
 
 - **Milestone** M6 & Final Academic Defense Polish.
 - **Requirements** GDD-098..103, TC-ACC-001, GDD-116, AGENTS.md Invariants ("Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer", "Music/SFX and other non-image assets: Gemini Flash. If no capable audio-output mode exists, only prepare a spec/source and mark the binary asset pending; don't substitute another generator silently").
@@ -409,7 +409,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-FIX-005 — Void Citadel & Dual-Ending Conclusion, Multi-Phase Boss Encounter Engine, and Kurei Art Skill Tree
+## SBL-FIX-005 â€” Void Citadel & Dual-Ending Conclusion, Multi-Phase Boss Encounter Engine, and Kurei Art Skill Tree
 
 - **Milestone** Chapter V Full Release & Apex Climax Features (Options 1, 2, 3 Complete).
 - **Requirements** GDD-009..015, GDD-041, GDD-116, FR-WLD-001, FR-CMB-001/002/003, FR-MAG-001/002, AGENTS.md Invariants ("Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer", "Keep the 3-chapter academic MVP separate from the 5-chapter 2-ending full release").
@@ -436,7 +436,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-FIX-006 — Dimension Travel Collision Sync, Persisted Expedition Resume, Web Backup/CSV Fallbacks & Live Accessibility Application
+## SBL-FIX-006 â€” Dimension Travel Collision Sync, Persisted Expedition Resume, Web Backup/CSV Fallbacks & Live Accessibility Application
 
 - **Milestone** M3, M4 & M6 Hardening (residual Codex review findings on `SBL-W4-001`..`SBL-FIX-005`).
 - **Requirements** GDD-031..035, GDD-098..103, FR-DNG-002/003, FR-SAV-001, TC-ACC-001, AGENTS.md Invariants ("Suspend/resume an expedition does not count as extraction; validate exactly-once reward transfer", "Preserve secured gear, level/skills, story and educational records after expedition defeat", "provide local web backup export/import", "Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer").
@@ -473,9 +473,9 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-VER-001 — Regression Tests Pinning Five Reproduced Review Probes
+## SBL-VER-001 â€” Regression Tests Pinning Five Reproduced Review Probes
 
-- **Milestone** M2–M6 Verification & Regression Hardening.
+- **Milestone** M2â€“M6 Verification & Regression Hardening.
 - **Requirements** GDD-031..035, GDD-067..072, GDD-098..103, FR-DNG-001/002, FR-EDU-002/003, FR-SAV-001, AGENTS.md Invariants ("Preserve secured gear, level/skills, story and educational records after expedition defeat", "Suspend/resume an expedition does not count as extraction; validate exactly-once reward transfer", "Required learning activities are completion-gated, not pass-score-gated; first-attempt correctness is immutable").
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch** `feature/w4-5-vertical-slice`.
@@ -507,7 +507,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-FIX-007 — Extraction & Defeat Failure UX, Retry Pathways, and Anti-Duplication Guards
+## SBL-FIX-007 â€” Extraction & Defeat Failure UX, Retry Pathways, and Anti-Duplication Guards
 
 - **Milestone** M3 Hardening (Dungeon Expedition & Persistence Failure Invariants).
 - **Requirements** GDD-031..035, GDD-098..103, FR-DNG-001/002, FR-SAV-001, AGENTS.md Invariants ("Preserve secured gear, level/skills, story and educational records after expedition defeat; lose only approved unbanked items and temporary upgrades", "Suspend/resume an expedition does not count as extraction; validate exactly-once reward transfer").
@@ -536,7 +536,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-FIX-008 — Terminal-State Input Exclusivity & Modal Stacking Prevention
+## SBL-FIX-008 â€” Terminal-State Input Exclusivity & Modal Stacking Prevention
 
 - **Milestone** M3, M4 & Release Hardening (Input Exclusivity Invariants).
 - **Requirements** GDD-103, GDD-116, FR-WLD-001, FR-CMB-001, AGENTS.md Invariants.
@@ -564,7 +564,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-FIX-009 — Complete Accessibility Application, Keyboard Reachability & High-Contrast Overrides
+## SBL-FIX-009 â€” Complete Accessibility Application, Keyboard Reachability & High-Contrast Overrides
 
 - **Milestone** M4 & Release Hardening (Accessibility Compliance).
 - **Requirements** GDD-103, TC-ACC-001, AGENTS.md Invariants ("Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer").
@@ -600,7 +600,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-DOC-001 — Reconcile Requirements Traceability Matrix
+## SBL-DOC-001 â€” Reconcile Requirements Traceability Matrix
 
 - **Milestone** Documentation & Traceability Alignment.
 - **Requirements** GDD-124, GDD-129, AGENTS.md Operating Contract.
@@ -618,7 +618,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 1. **Remediation Slices Documented.** Added remediation rows/links for `SBL-FIX-001` through `SBL-FIX-009` and `SBL-VER-001` against all requirement IDs they touch.
 2. **Review Status Synchronization.** Replaced stale `CHANGES_REQUESTED` statuses with `REVIEW_PENDING_CODEX` for requirement rows where subsequent fix slices landed in code. Retained `CHANGES_REQUESTED` on any requirement where no fix slice landed.
 3. **Audit Preservation.** Maintained strict fidelity with Codex CLI review history: no row or section reads `REVIEWED` unless accompanied by an explicit Codex CLI session ID from M1, W2, or W3 reviews.
-4. **Row-for-Row Agreement.** Verified that every requirement ID from GDD/SRS §14.3 is represented, with no orphan requirement IDs and exact mapping to implementation files and test suites.
+4. **Row-for-Row Agreement.** Verified that every requirement ID from GDD/SRS Â§14.3 is represented, with no orphan requirement IDs and exact mapping to implementation files and test suites.
 
 ### Verification Table
 
@@ -628,7 +628,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-VER-002 — Web/Browser Verification Evidence Checklist & Single-Thread Audit
+## SBL-VER-002 â€” Web/Browser Verification Evidence Checklist & Single-Thread Audit
 
 - **Milestone** M6 & Release Hardening (Platform Compliance & Web Invariants).
 - **Requirements** GDD-095, GDD-103, AGENTS.md Invariants ("Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer").
@@ -660,10 +660,10 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-MCP-001 — Godot-Compatible MCP Adapter Evaluation
+## SBL-MCP-001 â€” Godot-Compatible MCP Adapter Evaluation
 
 - **Milestone** Tooling & Workflow Validation.
-- **Requirements** AGENTS.md Operating Contract § AI Game Developer MCP caution.
+- **Requirements** AGENTS.md Operating Contract Â§ AI Game Developer MCP caution.
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files**
@@ -688,10 +688,10 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-DATA-001 — Open Decisions Ledger (`OD-001` through `OD-016`)
+## SBL-DATA-001 â€” Open Decisions Ledger (`OD-001` through `OD-016`)
 
 - **Milestone** Release Hardening & Scope Boundary Management.
-- **Requirements** All requirements GDD-001..132, Soulbound_GDD_SRS.md §16.1, AGENTS.md Invariants ("Do not invent numerical stats, formula coefficients, drop probabilities, story revelations, or unsupported integrations. Mark such items `TBD` and seek change approval").
+- **Requirements** All requirements GDD-001..132, Soulbound_GDD_SRS.md Â§16.1, AGENTS.md Invariants ("Do not invent numerical stats, formula coefficients, drop probabilities, story revelations, or unsupported integrations. Mark such items `TBD` and seek change approval").
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files**
@@ -703,7 +703,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ### Ledger Summary
 
-1. **Complete Coverage.** Mapped all 16 unresolved design choices (`OD-001` through `OD-016`) from GDD/SRS §16.1 with decision needed, affected requirement IDs, current code placeholder (`TBD`), resolution owner / gate, and current impact / what stays blocked.
+1. **Complete Coverage.** Mapped all 16 unresolved design choices (`OD-001` through `OD-016`) from GDD/SRS Â§16.1 with decision needed, affected requirement IDs, current code placeholder (`TBD`), resolution owner / gate, and current impact / what stays blocked.
 2. **Zero Invented Values.** Verified that neither agy nor Codex invented numerical stats, formulas, damage multipliers, or drop tables. All open decisions remain explicitly gated.
 3. **Critical Gates Highlighted.** Specifically tracked Speed initiative rule (`OD-002`), elemental damage formulas (`OD-003`), status stacking (`OD-004`), save boundaries (`OD-009`), procedural dungeon budgets (`OD-011`), and the educator review sign-off gate (`OD-012`).
 
@@ -717,10 +717,10 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-DATA-002 — Non-Image Asset Queue Finalization & Educator Review Gate
+## SBL-DATA-002 â€” Non-Image Asset Queue Finalization & Educator Review Gate
 
 - **Milestone** Content & Asset Governance (Non-Image Asset Finalization).
-- **Requirements** GDD-067..072, GDD-083..088, GDD-113..115, AGENTS.md § Binding source-owner directive & Exclusive asset routing.
+- **Requirements** GDD-067..072, GDD-083..088, GDD-113..115, AGENTS.md Â§ Binding source-owner directive & Exclusive asset routing.
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files**
@@ -748,7 +748,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-FIX-010 — Release-Tier Separation (Academic MVP vs. Full Release)
+## SBL-FIX-010 â€” Release-Tier Separation (Academic MVP vs. Full Release)
 
 - **Milestone** Invariant Hardening & Packaging Governance.
 - **Requirements** GDD-041, GDD-113, GDD-116, AGENTS.md Engineering Invariants ("Keep the 3-chapter academic MVP separate from the 5-chapter 2-ending full release").
@@ -782,10 +782,10 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-BLD-001 — Canonical Headless Test Runner
+## SBL-BLD-001 â€” Canonical Headless Test Runner
 
 - **Milestone** Test & CI Automation Infrastructure.
-- **Requirements** GDD-093, GDD-109, GDD-124, AGENTS.md § Engineering invariants & § Definition of done.
+- **Requirements** GDD-093, GDD-109, GDD-124, AGENTS.md Â§ Engineering invariants & Â§ Definition of done.
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files**
@@ -814,10 +814,10 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-FIX-011 — 960×540 Layout & Overflow Audit
+## SBL-FIX-011 â€” 960Ã—540 Layout & Overflow Audit
 
 - **Milestone** UX, Accessibility & Resolution Guard Hardening.
-- **Requirements** GDD-103 (960×540 logical resolution), TC-ACC-001 (Text scale 0.8–1.5x, High contrast), AGENTS.md Engineering Invariants.
+- **Requirements** GDD-103 (960Ã—540 logical resolution), TC-ACC-001 (Text scale 0.8â€“1.5x, High contrast), AGENTS.md Engineering Invariants.
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files**
@@ -835,9 +835,9 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ### Changes
 
-1. **Resolution & Text-Scale Overflow Audit.** Audited all six core UI panels/modals (SettingsSheet, InventorySheet, CharacterSheet, ChapterActivityDialog, AcademicCompletionModal, EndingModal) under the fixed 960×540 logical viewport at authored base scale (1.0×) and maximum accessibility scaling (1.5×).
-2. **SettingsSheet Scroll Integration.** Restructured `SettingsSheet` to place audio controls, accessibility toggles, and web backup controls inside a vertical `ScrollContainer` bounded within a 550×500 panel. At 1.0×, the panel fits without scroll clipping; at 1.5×, the scroll container absorbs content expansion, keeping the panel within `Rect2(0, 0, 960, 540)`.
-3. **CharacterSheet Layout Correction.** Remedied the 551px vertical overflow discovered during the initial audit. Replaced the unscrollable VBox with a 550×510 panel containing a vertical `ScrollContainer` for attribute allocation and Kurei talent trees. Bounded margins ensure `vbar.page >= vbar.max_value` at 1.0× (no clipping) and full viewport containment at 1.5×.
+1. **Resolution & Text-Scale Overflow Audit.** Audited all six core UI panels/modals (SettingsSheet, InventorySheet, CharacterSheet, ChapterActivityDialog, AcademicCompletionModal, EndingModal) under the fixed 960Ã—540 logical viewport at authored base scale (1.0Ã—) and maximum accessibility scaling (1.5Ã—).
+2. **SettingsSheet Scroll Integration.** Restructured `SettingsSheet` to place audio controls, accessibility toggles, and web backup controls inside a vertical `ScrollContainer` bounded within a 550Ã—500 panel. At 1.0Ã—, the panel fits without scroll clipping; at 1.5Ã—, the scroll container absorbs content expansion, keeping the panel within `Rect2(0, 0, 960, 540)`.
+3. **CharacterSheet Layout Correction.** Remedied the 551px vertical overflow discovered during the initial audit. Replaced the unscrollable VBox with a 550Ã—510 panel containing a vertical `ScrollContainer` for attribute allocation and Kurei talent trees. Bounded margins ensure `vbar.page >= vbar.max_value` at 1.0Ã— (no clipping) and full viewport containment at 1.5Ã—.
 4. **InventorySheet Equipment Column Scrolling.** Added a `ScrollContainer` for equipment slot rows (`WeaponRow`, `ArmorRow`, `Relic1Row`, `Relic2Row`) inside `EquipCol`.
 5. **AcademicCompletionModal & EndingModal Protection.** Wrapped the variable-length assessment competency summaries and epilogue narratives in `ScrollContainer`s with fixed action button anchors.
 6. **ChapterActivityDialog Guard.** Hardened `ChapterActivityDialog.setup_focus()` to guard against pre-tree invocation (`is_inside_tree()`).
@@ -847,17 +847,17 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 | Test Suite / Scope | Result | Evidence |
 |---|---|---|
-| `tests/headless/layout_audit_test.gd` (Phase 1: 1.0×) | Exit 0 | All 6 panels confirmed inside `Rect2(0, 0, 960, 540)`. All scroll containers report zero clipped content at 1.0× (`page >= max_value` or `max <= size.y`). |
-| `tests/headless/layout_audit_test.gd` (Phase 2: 1.5×) | Exit 0 | All 6 panels confirmed inside `Rect2(0, 0, 960, 540)` at 1.5× text scaling. Content growth fully absorbed by scroll containers. |
+| `tests/headless/layout_audit_test.gd` (Phase 1: 1.0Ã—) | Exit 0 | All 6 panels confirmed inside `Rect2(0, 0, 960, 540)`. All scroll containers report zero clipped content at 1.0Ã— (`page >= max_value` or `max <= size.y`). |
+| `tests/headless/layout_audit_test.gd` (Phase 2: 1.5Ã—) | Exit 0 | All 6 panels confirmed inside `Rect2(0, 0, 960, 540)` at 1.5Ã— text scaling. Content growth fully absorbed by scroll containers. |
 | `tests/headless/settings_accessibility_test.gd` | Exit 0 | 100% regression pass on live audio, contrast, text scaling, and clipboard-free backup text transfer. |
 | `tests/headless/ui_sheets_test.gd` | Exit 0 | 100% regression pass on hotkey toggles, mutual exclusivity, attribute allocation, and gear equip/unequip. |
 
 ---
 
-## SBL-FIX-012 — Save Compatibility, Extension Preservation & Recovery UX
+## SBL-FIX-012 â€” Save Compatibility, Extension Preservation & Recovery UX
 
 - **Milestone** Persistence Robustness & Fault Tolerance.
-- **Requirements** GDD-073–078 (Save invariants, 3 slots, revision rotation), GDD-125 (schema stability), FR-SAV-001 (schema versioning & validation), AGENTS.md Engineering Invariants.
+- **Requirements** GDD-073â€“078 (Save invariants, 3 slots, revision rotation), GDD-125 (schema stability), FR-SAV-001 (schema versioning & validation), AGENTS.md Engineering Invariants.
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files**
@@ -891,7 +891,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-VER-003 — Exported-Artifact Validator & Pipeline Chaining
+## SBL-VER-003 â€” Exported-Artifact Validator & Pipeline Chaining
 
 - **Milestone** Build Integrity, Artifact Governance & Platform Compatibility.
 - **Requirements** GDD-108 (Target platforms: Web + Windows Desktop), GDD-109 (gl_compatibility renderer), GDD-129 (automated verification), AGENTS.md Engineering Invariants (single-threaded Web, Compatibility renderer).
@@ -938,10 +938,10 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-MCP-002 — Godot-Compatible Community MCP Adapter Evaluation
+## SBL-MCP-002 â€” Godot-Compatible Community MCP Adapter Evaluation
 
 - **Milestone** Tooling & Workflow Validation.
-- **Requirements** AGENTS.md § AI Game Developer MCP caution.
+- **Requirements** AGENTS.md Â§ AI Game Developer MCP caution.
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files**
@@ -979,10 +979,10 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-DATA-003 — Decision-Ready Briefs for Combat Open Decisions
+## SBL-DATA-003 â€” Decision-Ready Briefs for Combat Open Decisions
 
 - **Milestone** Combat Architecture & Systems Governance.
-- **Requirements** GDD-016–023 (Turn structure, elemental magic, status effects), FR-CMB-001–005 (Combat engine), AGENTS.md Engineering Invariants (Zero invented statistics, coefficients, or drop probabilities; options and consequences only).
+- **Requirements** GDD-016â€“023 (Turn structure, elemental magic, status effects), FR-CMB-001â€“005 (Combat engine), AGENTS.md Engineering Invariants (Zero invented statistics, coefficients, or drop probabilities; options and consequences only).
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files**
@@ -1020,7 +1020,7 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-BLD-002 — Build-Time Release Tier Injection & Artifact Verification
+## SBL-BLD-002 â€” Build-Time Release Tier Injection & Artifact Verification
 
 - **Milestone** Build Integrity, Artifact Governance & Platform Compatibility.
 - **Requirements** GDD-041, GDD-113, GDD-116, AGENTS.md Engineering Invariants ("Keep the 3-chapter academic MVP separate from the 5-chapter 2-ending full release", "Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer").
@@ -1059,10 +1059,10 @@ Full dashboard logs are `codex-88b78ca9cbaf440ca35921a64370188f.log`, `agy-queue
 
 ---
 
-## SBL-MCP-003 — Reproducible Godot MCP Proof Harness
+## SBL-MCP-003 â€” Reproducible Godot MCP Proof Harness
 
 - **Milestone** Tooling & Workflow Validation.
-- **Requirements** AGENTS.md § AI Game Developer MCP caution ("demonstrate a Godot-compatible MCP/adapter on a disposable project: list scene tree, create/edit node, save scene, inspect errors, run headless validation... do not point at real project until it passes").
+- **Requirements** AGENTS.md Â§ AI Game Developer MCP caution ("demonstrate a Godot-compatible MCP/adapter on a disposable project: list scene tree, create/edit node, save scene, inspect errors, run headless validation... do not point at real project until it passes").
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files**
@@ -1136,7 +1136,7 @@ The `SliceProgress: Invalid data` warning seen when mounting a packed build came
 
 ---
 
-## SBL-FIX-013 — Keyboard Focus Auto-Scrolls Into View (Review Finding 1)
+## SBL-FIX-013 â€” Keyboard Focus Auto-Scrolls Into View (Review Finding 1)
 
 - **Milestone** M4 & M6 Hardening (Accessibility & UI Navigation).
 - **Requirements** GDD-103, TC-ACC-001, AGENTS.md Engineering Invariants.
@@ -1175,7 +1175,7 @@ The `SliceProgress: Invalid data` warning seen when mounting a packed build came
 
 ---
 
-## SBL-VER-004 — Validate Archive-Contained PCK Packages & Cross-Check Tier Settings (Review Finding 2)
+## SBL-VER-004 â€” Validate Archive-Contained PCK Packages & Cross-Check Tier Settings (Review Finding 2)
 
 - **Milestone** Build Integrity & Release Artifact Governance.
 - **Requirements** GDD-041, GDD-113, GDD-116, AGENTS.md Engineering Invariants ("Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer", "Keep the 3-chapter academic MVP separate from the 5-chapter 2-ending full release").
@@ -1214,10 +1214,10 @@ The `SliceProgress: Invalid data` warning seen when mounting a packed build came
 
 ---
 
-## SBL-MCP-004 — Reject Error Results, Stale Scenes & Isolate Tracked Reference (Review Finding 3)
+## SBL-MCP-004 â€” Reject Error Results, Stale Scenes & Isolate Tracked Reference (Review Finding 3)
 
 - **Milestone** Tooling & Workflow Validation.
-- **Requirements** AGENTS.md § AI Game Developer MCP caution.
+- **Requirements** AGENTS.md Â§ AI Game Developer MCP caution.
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files**
@@ -1253,7 +1253,7 @@ The `SliceProgress: Invalid data` warning seen when mounting a packed build came
 
 ---
 
-## SBL-BLD-003 — Prove Export Failure Path Restores Working Tree Byte-Identically
+## SBL-BLD-003 â€” Prove Export Failure Path Restores Working Tree Byte-Identically
 
 - **Milestone** Build Integrity & Infrastructure Governance.
 - **Requirements** GDD-041, GDD-113, GDD-116, AGENTS.md Engineering Invariants ("Keep the 3-chapter academic MVP separate from the 5-chapter 2-ending full release", "Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer").
@@ -1314,7 +1314,7 @@ The `SliceProgress: Invalid data` warning seen when mounting a packed build came
 
 ---
 
-## SBL-BLD-004 — Deterministic Export-Failure Injection & Non-Vacuous Tree Restoration
+## SBL-BLD-004 â€” Deterministic Export-Failure Injection & Non-Vacuous Tree Restoration
 
 - **Milestone** Build Integrity & Infrastructure Governance (Review Finding Remediation).
 - **Requirements** GDD-041, GDD-113, GDD-116, AGENTS.md Engineering Invariants ("Keep the 3-chapter academic MVP separate from the 5-chapter 2-ending full release", "Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer").
@@ -1418,7 +1418,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 
 ---
 
-## SBL-REV-001 — Profile-Owned Expedition Suspension and Terminal Commits
+## SBL-REV-001 â€” Profile-Owned Expedition Suspension and Terminal Commits
 
 - **Milestone** Remediation Batch A (M3 & M6 Hardening).
 - **Requirements** GDD-004, GDD-037, GDD-098..101, FR-DNG-002/003, FR-SAV-001, TC-DNG-002/003/004, TC-SAV-001/002, AGENTS.md Persistence Invariants ("Preserve secured gear, level/skills, story and educational records after expedition defeat; lose only approved unbanked items and temporary upgrades", "Suspend/resume an expedition does not count as extraction; validate exactly-once reward transfer").
@@ -1467,7 +1467,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 
 ---
 
-## SBL-REV-002 — Title-Aware Settings and Backup Overlay
+## SBL-REV-002 â€” Title-Aware Settings and Backup Overlay
 
 - **Milestone** Remediation Batch A (M6 & M10 Hardening).
 - **Requirements** GDD-092, GDD-098, GDD-102, FR-SET-001, FR-SAV-002, TC-ACC-001, TC-SAV-002, AGENTS.md Invariants ("single-threaded Godot web build; Compatibility renderer", "provide local web backup export/import").
@@ -1517,7 +1517,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 
 ---
 
-## SBL-REV-003 — Distinct New Journey and Safe Profile Activation
+## SBL-REV-003 â€” Distinct New Journey and Safe Profile Activation
 
 - **Milestone** Remediation Batch A (M1, M2 & M6 Hardening).
 - **Requirements** GDD-015, GDD-098, FR-SAV-001, FR-WLD-001/002, TC-SAV-001/002, TC-WLD-001, TC-DIM-001, AGENTS.md Invariants ("every explicit title activation returns to existing DEFAULT_START_REGION / DEFAULT_START_SPAWN in the physical dimension", "Preserve chapter progress, inventory, educational records and any suspended expedition. Returning to the starting region is not extraction").
@@ -1563,7 +1563,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 
 | Test Scope / Invocation | Result | Evidence |
 |---|---|---|
-| `profile_activation_test.gd` (Parts 1–6) | Exit 0 | Verified empty-slot selection: occupied slot 1 and corrupt slot 2 disabled; only empty slot 3 enabled; Back restores focus to NewGameBtn. Verified all-occupied state disables slots and focuses Back. Verified slot selection updates labels without starting gameplay. Verified Continue on empty slot redirects to new-game picker. Verified late-game profile 1 (Spirit dimension, non-zero pos/vel, suspended run, unlocked beta/whispering grove) cleanly isolates from fresh profile 3 (reset to physical, test_region_alpha, zero vel, locked whispering grove, no leaked snapshot). Verified activation during combat rejected with `ERR_BUSY`. Verified corrupt profile activation keeps TitleScreen open with error. |
+| `profile_activation_test.gd` (Parts 1â€“6) | Exit 0 | Verified empty-slot selection: occupied slot 1 and corrupt slot 2 disabled; only empty slot 3 enabled; Back restores focus to NewGameBtn. Verified all-occupied state disables slots and focuses Back. Verified slot selection updates labels without starting gameplay. Verified Continue on empty slot redirects to new-game picker. Verified late-game profile 1 (Spirit dimension, non-zero pos/vel, suspended run, unlocked beta/whispering grove) cleanly isolates from fresh profile 3 (reset to physical, test_region_alpha, zero vel, locked whispering grove, no leaked snapshot). Verified activation during combat rejected with `ERR_BUSY`. Verified corrupt profile activation keeps TitleScreen open with error. |
 | `title_screen_audio_test.gd` | Exit 0 | Regression suite passed; title screen audio cues, settings overlay, defense demo, and slot selection verified. |
 | `transition_test.gd` | Exit 0 | Regression suite passed with 0 errors; spawn bounds, portal transitions, and footprint validation verified. |
 | `dimension_test.gd` | Exit 0 | Regression suite passed; collision mask updates and physical/spirit dimension shifts verified. |
@@ -1626,7 +1626,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 
 | Test Scope / Invocation | Result | Evidence |
 |---|---|---|
-| `profile_activation_test.gd` (Parts 1–8) | Exit 0 | Verified empty-slot new journey picker, non-launching profile selection, safe profile activation, defense demo activation of title-selected profile (`profile_02`), byte-identical preservation of inactive profile (`profile_01`), and corrupt-slot failure path keeping title open with actionable error and zero file mutation. |
+| `profile_activation_test.gd` (Parts 1â€“8) | Exit 0 | Verified empty-slot new journey picker, non-launching profile selection, safe profile activation, defense demo activation of title-selected profile (`profile_02`), byte-identical preservation of inactive profile (`profile_01`), and corrupt-slot failure path keeping title open with actionable error and zero file mutation. |
 | Negative control: bypass selected-slot activation | Exit 1 | Demonstrated that mutating stale `_profile_slot` causes 11 test assertion failures in `profile_activation_test.gd` and exits code 1. |
 | `title_screen_audio_test.gd` | Exit 0 | Regression suite passed; procedural audio, title settings overlay, defense demo quick-start, and evaluator reopening verified. |
 | Full headless test runner (`run_headless_tests.ps1`) | Exit 0 (30/30 passed) | All 30 project headless suites pass with 0 Godot script/engine errors across all game systems. |
@@ -1754,7 +1754,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 ## SBL-REV-006 - Purchased-Skill Menus and Six-Slot Enforcement
 
 - **Milestone** Remediation Batch C (M3 Combat, Progression & Kurei Magic Hardening).
-- **Requirements** GDD-018..020, GDD-030, GDD-089, FR-CMB-003/004, TC-CMB-001/002, GDD/SRS §4.5 (six-equipped-spell check), GDD-092 / TC-ACC-001 (keyboard access). AGENTS.md Engineering Invariants ("Do not invent numerical stats, formula coefficients, drop probabilities, story revelations, or unsupported integrations. Mark such items TBD and seek change approval").
+- **Requirements** GDD-018..020, GDD-030, GDD-089, FR-CMB-003/004, TC-CMB-001/002, GDD/SRS Â§4.5 (six-equipped-spell check), GDD-092 / TC-ACC-001 (keyboard access). AGENTS.md Engineering Invariants ("Do not invent numerical stats, formula coefficients, drop probabilities, story revelations, or unsupported integrations. Mark such items TBD and seek change approval").
 - **Codex finding** Finding 5, P2 from Codex review session `01a1bee0-6c04-72b0-b38d-6bce20925f2f`:
   "`scenes/combat/battle_fixture.tscn` and `scenes/combat/boss_encounter.tscn` hardcode three starter skills (`FlameBurst`, `LuminaLance`, `TorrentSurge`) into the spell menu and ignore unlocked tree skills. The character sheet has no equip/unequip interface to assemble the 6-slot loadout required by GDD-018..020, GDD-030, FR-CMB-004."
 - **Implementation owner** agy. **Plan owner** Codex.
@@ -1790,7 +1790,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 
 3. **CharacterSheet Equip/Unequip UI & Slot Management (`scenes/ui/character_sheet.{tscn,gd}`)**:
    - Displays slot counter: `Equipped Spells (X/6 Slots Used)`.
-   - Displays `FeedbackLabel`: `"Unlocked — equip in Character"` when an active skill is unlocked while loadout slots are full (hidden when empty).
+   - Displays `FeedbackLabel`: `"Unlocked â€” equip in Character"` when an active skill is unlocked while loadout slots are full (hidden when empty).
    - Dynamically renders equipped spells in a 2-column GridContainer with `Unequip: <Spell>` buttons (disabled when equipped count is 1).
    - Dynamically renders unequipped unlocked active skills in `AvailableContainer` with `Equip: <Spell>` buttons (disabled when slots are 6/6).
    - Wired `setup_focus()` into `refresh()` so all dynamic buttons participate in the circular keyboard navigation chain with high-visibility focus borders (`_apply_visible_focus`).
@@ -1824,12 +1824,12 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 
 ---
 
-## SBL-REV-007 — Boss Menu Viewport Safety and Layout Audit (Fix 1)
+## SBL-REV-007 â€” Boss Menu Viewport Safety and Layout Audit (Fix 1)
 
 - **Milestone** Remediation Batch C (M3 Combat UI & Accessibility Hardening).
 - **Requirements** GDD-018..020, GDD-041, GDD-089, GDD-103, GDD-116, FR-CMB-001/002/003, TC-ACC-001 (viewport 960x540 and 1.5x accessibility text scale), AGENTS.md Invariants ("Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer", "Do not invent numerical stats, formula coefficients, drop probabilities, story revelations, or unsupported integrations. Mark such items TBD and seek change approval").
 - **Codex finding** Finding from Codex CLI review session `01a1c033-a580-7dc0-b15a-1a703f857eb0` [P2]:
-  "with three starters plus advanced skills equipped, long disabled notices in `BossEncounter` expand a non-wrapping HBox to approximately 1236px, clipping functional controls at the default 960×540 viewport."
+  "with three starters plus advanced skills equipped, long disabled notices in `BossEncounter` expand a non-wrapping HBox to approximately 1236px, clipping functional controls at the default 960Ã—540 viewport."
 - **Implementation owner** agy. **Plan owner** Codex.
 - **Branch** `feature/w4-5-vertical-slice`.
 - **Files**
@@ -1871,7 +1871,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 
 ---
 
-## SBL-REV-008 — Empty Equipped Loadout Validation and Starter Normalization (Fix 2)
+## SBL-REV-008 â€” Empty Equipped Loadout Validation and Starter Normalization (Fix 2)
 
 - **Milestone** Remediation Batch C (M3 Progression & Persistence Hardening).
 - **Requirements** GDD-018..020, GDD-030, GDD-098..101, FR-SAV-001, FR-CMB-003/004, TC-SAV-001/002, AGENTS.md Invariants ("Preserve legacy profiles with the field absent: they continue to default in memory to the existing starter loadout without write-on-load", "Keep validation atomic and preserve unrelated profile data on failure").
@@ -1927,7 +1927,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 
 ---
 
-## SBL-REV-009 — Fix Boss Layout Audit Initialization Order
+## SBL-REV-009 â€” Fix Boss Layout Audit Initialization Order
 
 - **Milestone** Remediation Batch C (M3 Combat UI & Accessibility Hardening Audit Fix).
 - **Requirements** GDD-018..020, GDD-041, GDD-089, GDD-103, GDD-116, FR-CMB-001/002/003, TC-ACC-001 (viewport 960x540 and 1.5x accessibility text scale), AGENTS.md Invariants ("Windows portable and single-threaded Godot 4.7.2 web build; Compatibility renderer", "Do not invent numerical stats, formula coefficients, drop probabilities, story revelations, or unsupported integrations. Mark such items TBD and seek change approval").
@@ -1970,7 +1970,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 
 ---
 
-## SBL-UX-001 — Persistent Keyboard/Mouse Rebinding
+## SBL-UX-001 â€” Persistent Keyboard/Mouse Rebinding
 
 - **Milestone** M4 / M6 Settings & Accessibility Hardening.
 - **Requirements** GDD-092 (configurable keyboard/mouse inputs and accessibility), FR-SET-001 (persist and consistently apply remapped inputs and existing settings), TC-ACC-001 (input rebinding, reduced motion, scalable text), supporting NFR-ACC-001 (readable UI, configurable keys, scalable interface).
@@ -2033,7 +2033,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 
 ---
 
-## SBL-UX-001-FIX — Rebinding Review Remediation (Atomic Reset, Entry Type Check & Test Isolation)
+## SBL-UX-001-FIX â€” Rebinding Review Remediation (Atomic Reset, Entry Type Check & Test Isolation)
 
 - **Milestone** M4 / M6 Settings & Accessibility Hardening.
 - **Requirements** GDD-092, FR-SET-001, TC-ACC-001, NFR-ACC-001, AGENTS.md Engineering Invariants.
@@ -2090,7 +2090,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 
 ---
 
-## SBL-EDU-005 — Persistent Learning Journal & Educational Reporting Engine
+## SBL-EDU-005 â€” Persistent Learning Journal & Educational Reporting Engine
 
 - **Milestone** M2 / M3 / M4 / M6 Educational Reporting Hardening.
 - **Requirements** GDD-071 (persistent activity/attempt records), GDD-072 (learning journal, CSV, and printable report export), GDD-091 (learning-journal screen), GDD-112 (educational report export), FR-EDU-002 (immutable first-attempt tracking), FR-EDU-004 (local CSV and printable report export), TC-EDU-002 (first-attempt score and retry records), TC-EDU-004 (CSV and printable report correctness), supporting NFR-SEC-001 (data validation & formula injection defense) and NFR-ACC-001 (readable UI, 960x540 reachability, 1.5x scalable interface).
@@ -2104,7 +2104,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
   - Negative control logs: `report/neg_journal_mutate_first_attempt.log`, `report/neg_journal_omit_html_escaping.log`, `report/neg_journal_stale_controller.log`, `report/neg_journal_claim_browser_delivery.log`.
 - **Asset provenance** None (pure GDScript, Control UI scene nodes, and test automation; zero image generation, zero audio generation).
 - **Review** REVIEWED by Codex CLI session `01a1c0bd-85d2-75a0-b5d9-7c25cb5d3bd8`; no actionable regressions. Test-profile isolation and active-profile report attribution are cleared.
-- **Open questions** `OD-012` remains open pending human educator review. Mandatory notice is prominently displayed in both journal and reports: `"Practice records. Educator review pending — OD-012. These records do not establish learning improvement."` Browser download/print execution remains PENDING human evaluation per AGENTS.md.
+- **Open questions** `OD-012` remains open pending human educator review. Mandatory notice is prominently displayed in both journal and reports: `"Practice records. Educator review pending â€” OD-012. These records do not establish learning improvement."` Browser download/print execution remains PENDING human evaluation per AGENTS.md.
 
 ### Changes
 
@@ -2166,7 +2166,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 
 ---
 
-## SBL-EDU-005-FIX — Learning Journal Test Isolation & Active-Profile Report Attribution
+## SBL-EDU-005-FIX â€” Learning Journal Test Isolation & Active-Profile Report Attribution
 
 - **Milestone** M2 / M3 / M4 / M6 Educational Reporting Hardening (remediation of the `SBL-EDU-005` Codex review findings).
 - **Requirements** GDD-071 (persistent activity/attempt records), GDD-072 (learning journal, CSV and printable report export), GDD-112 (educational report export), FR-EDU-002 (immutable first-attempt tracking), FR-EDU-004 (local CSV and printable report export), TC-EDU-004 (CSV and printable report correctness), NFR-SEC-001. Findings under review: P1 (fixture answers written to the real `user://profiles`) and P2 (`profile_01` hardcoded in completion HTML exports), Codex CLI session `01a1c094-60d4-70c0-aaa6-37f8ffbce421`.
@@ -2175,7 +2175,7 @@ Every implementation entry from `e25491d..e0ed0b5` is now `REVIEWED`. Human mile
 - **Files** `tests/headless/learning_journal_test.gd`, `scenes/ui/academic_completion_modal.gd`, `scenes/main/game_root.gd`, plus `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`, `report/sbl_edu_005_fix_report.md`, `report/implementation-review-ledger.md`, `report/README.md`.
 - **Asset provenance** None (pure GDScript, Control UI wiring, and documentation; zero image generation, zero audio generation, zero new educational content).
 - **Review** REVIEW_PENDING_CODEX. Nothing in this slice has been reviewed; Codex CLI must review before any status may change to `REVIEWED`.
-- **Open questions** `OD-012` educator-pending language is retained verbatim in every report output and no learning-improvement claim was added. Browser execution remains PENDING human evaluation. New observation: five other suites still write the real `user://profiles/profile_01` (see Changes 4 / Open question 2) — pre-existing behavior outside this approved slice.
+- **Open questions** `OD-012` educator-pending language is retained verbatim in every report output and no learning-improvement claim was added. Browser execution remains PENDING human evaluation. New observation: five other suites still write the real `user://profiles/profile_01` (see Changes 4 / Open question 2) â€” pre-existing behavior outside this approved slice.
 
 ### Required report block
 
@@ -2190,19 +2190,19 @@ FILES CHANGED: tests/headless/learning_journal_test.gd, scenes/ui/academic_compl
 ASSET PROVENANCE: none
 TESTS RUN + RESULTS: learning_journal_test.gd exit 0 (9 parts, 116 PASS / 0 FAIL, in-suite byte-identity INVARIANTs for real user://profiles and user://reports PASS, external SHA-256 manifest diff 0); full runner exit 0 (32/32); pre-fix reproduction run exit 0 but added 3 fixture revisions to the real user://profiles and rotated out 3 real revisions (P1), restored byte-identically from backup
 REVIEW: REVIEW_PENDING_CODEX
-OPEN QUESTIONS: OD-012 educator sign-off; browser execution PENDING human evaluation; five other suites (ending_chapter5_test, evaluator_debug_bar_test, release_tier_test, title_screen_audio_test, verify_exported_tier) still write real user://profiles/profile_01 — pre-existing, out of scope for this slice
+OPEN QUESTIONS: OD-012 educator sign-off; browser execution PENDING human evaluation; five other suites (ending_chapter5_test, evaluator_debug_bar_test, release_tier_test, title_screen_audio_test, verify_exported_tier) still write real user://profiles/profile_01 â€” pre-existing, out of scope for this slice
 ```
 
 ### Changes
 
-1. **Disposable ProfileStore fixtures in the journal test (P1).** `tests/headless/learning_journal_test.gd` now builds every `ProfileStore` under the suite's disposable `_test_root` (`_test_root/profiles`) for the profile-isolation part, and injects that store into the GameRoot fixture before `add_child` (`game_root.profile_store = ProfileStore.new(_disposable_store_root)`), which `_init_slice_progress()` preserves because it only constructs a default store when none is present. Desktop CSV/HTML exports in the delivery part were redirected to `_test_root/learning_report.{csv,html}`; the path-traversal rejection probe is unchanged. Disposable cleanup is now recursive so the nested `profiles/` fixture tree is removed. **Production save semantics were not changed** — `ProfileStore`, `AssessmentController`, and `GameRoot` write paths are untouched.
+1. **Disposable ProfileStore fixtures in the journal test (P1).** `tests/headless/learning_journal_test.gd` now builds every `ProfileStore` under the suite's disposable `_test_root` (`_test_root/profiles`) for the profile-isolation part, and injects that store into the GameRoot fixture before `add_child` (`game_root.profile_store = ProfileStore.new(_disposable_store_root)`), which `_init_slice_progress()` preserves because it only constructs a default store when none is present. Desktop CSV/HTML exports in the delivery part were redirected to `_test_root/learning_report.{csv,html}`; the path-traversal rejection probe is unchanged. Disposable cleanup is now recursive so the nested `profiles/` fixture tree is removed. **Production save semantics were not changed** â€” `ProfileStore`, `AssessmentController`, and `GameRoot` write paths are untouched.
 2. **Real-directory byte-identity invariant (P1).** The suite takes a recursive pre-suite snapshot (relative path -> raw bytes) of the real `user://profiles` and `user://reports` and, after all nine parts, asserts both are byte-identical (same file set, same bytes), printing `ADDED` / `MODIFIED` / `REMOVED` diagnostics on any drift.
 3. **Active profile attribution through GameRoot (P2).** `AcademicCompletionModal` gains `profile_slot` (default `profile_01`) assigned in `configure(..., slot)` and used by `LearningReport.generate_html()` and `LearningReport.export_html_file()` in **both** the desktop file path and the Web/injectable-bridge path. `GameRoot._open_academic_modal()` and `GameRoot._on_debug_academic_modal()` now pass `_profile_slot`. CSV rows carry no profile column (profile schema unchanged), so the CSV generators are unchanged; both CSV export paths now use the overridable `report_export_dir` (default `user://reports`, same testability pattern as the pre-existing `injectable_download_bridge`) so tests never write the real reports directory.
 4. **Regression coverage with `profile_02` (Part 9).** New suite part asserts: the modal holds the configured `profile_02`; the Web HTML buffer attributes the report to `profile_02` and contains no `profile_01` fallback; the desktop HTML file written to a disposable directory attributes to `profile_02`, retains the mandatory OD-012 notice and the recorded activity rows, and never claims browser execution; the Web CSV buffer still carries the RFC-4180 header; and a GameRoot instance whose active slot is `profile_02` opens the completion modal with `profile_slot == "profile_02"`.
 
 ### Preserved invariants
 
-- First-attempt correctness behavior is unchanged: all pre-existing Parts 1–8 assertions (immutable first attempt across wrong-first/correct-retry, legacy "Not recorded", completion gating, CSV formula neutralization, HTML escaping/print CSS, OD-012 exact text, no browser-execution claims, 4 negative controls) still pass unmodified.
+- First-attempt correctness behavior is unchanged: all pre-existing Parts 1â€“8 assertions (immutable first attempt across wrong-first/correct-retry, legacy "Not recorded", completion gating, CSV formula neutralization, HTML escaping/print CSS, OD-012 exact text, no browser-execution claims, 4 negative controls) still pass unmodified.
 - Report escaping, allowlisted filenames, and `LearningReport` output format are unchanged; only the slot passed into HTML generation and the export directory are now supplied by the caller.
 - No profile schema change, no new educational content, no numeric values or formula coefficients invented, no images or audio, no OD resolution.
 
@@ -2210,10 +2210,10 @@ OPEN QUESTIONS: OD-012 educator sign-off; browser execution PENDING human evalua
 
 | Command / probe | Result |
 |---|---|
-| Pre-fix reproduction: changes stashed, `run_headless_tests.ps1 -Suite learning_journal_test` at `e45f7d8` | Exit 0 (suite does not detect its own defect), but the SHA-256 manifest diff of the real user data shows **3 ADDED** fixture revisions (`profiles/profile_01/profile.0000000000000418.21372.907546.json`, `profiles/profile_01/profile.0000000000000419.21372.914726.json`, `profiles/profile_02/profile.0000000000000009.21372.936191.json`) and **3 REMOVED** real revisions (`profiles/profile_01/profile.0000000000000416.10180.912338.json`, `profiles/profile_01/profile.0000000000000417.10180.924200.json`, `profiles/profile_02/profile.0000000000000007.4800.909876.json`) — **P1 reproduced**. Real user data was restored from a verified backup before continuing (5 files, 0 diffs vs the pre-run manifest). |
+| Pre-fix reproduction: changes stashed, `run_headless_tests.ps1 -Suite learning_journal_test` at `e45f7d8` | Exit 0 (suite does not detect its own defect), but the SHA-256 manifest diff of the real user data shows **3 ADDED** fixture revisions (`profiles/profile_01/profile.0000000000000418.21372.907546.json`, `profiles/profile_01/profile.0000000000000419.21372.914726.json`, `profiles/profile_02/profile.0000000000000009.21372.936191.json`) and **3 REMOVED** real revisions (`profiles/profile_01/profile.0000000000000416.10180.912338.json`, `profiles/profile_01/profile.0000000000000417.10180.924200.json`, `profiles/profile_02/profile.0000000000000007.4800.909876.json`) â€” **P1 reproduced**. Real user data was restored from a verified backup before continuing (5 files, 0 diffs vs the pre-run manifest). |
 | `run_headless_tests.ps1 -Suite learning_journal_test` (post-fix) | Exit 0 in 2.03 s. 9 parts, **116 PASS / 0 FAIL**. `INVARIANT: real user://profiles (4 file(s)) is byte-identical before and after the suite` PASS; `INVARIANT: real user://reports (1 file(s)) is byte-identical before and after the suite` PASS. External SHA-256 manifest diff after the run: **0**. No leftover `test_learning_journal_*` directory (`report/learning_journal_test.log`). |
 | Part 9 assertions (post-fix) | PASS: modal holds configured slot `profile_02`; Web HTML buffer attributes report to `profile_02` with no `profile_01` fallback; Web CSV buffer carries `LearningReport.CSV_HEADER`; desktop HTML file written under the disposable root attributes to `profile_02`, keeps the OD-012 notice and activity rows; status reports a prepared buffer and never claims browser execution; `INVARIANT: GameRoot passes its active profile slot (profile_02) into the modal`. |
-| Full regression `run_headless_tests.ps1` | Exit 0 — **32/32 suites passed**, including `e2e_academic_playthrough_test`, `evaluator_debug_bar_test`, `chapter_progression_test`, `layout_audit_test`, `education_report_test`, and `web_backup_test`. |
+| Full regression `run_headless_tests.ps1` | Exit 0 â€” **32/32 suites passed**, including `e2e_academic_playthrough_test`, `evaluator_debug_bar_test`, `chapter_progression_test`, `layout_audit_test`, `education_report_test`, and `web_backup_test`. |
 | Isolation probe: all 32 suites run individually with a before/after SHA-256 manifest of the real `user://profiles` + `user://reports` | `learning_journal_test.gd`: **0 changes**. Pre-existing writers of the real `user://profiles/profile_01` (out of scope for this slice): `ending_chapter5_test.gd`, `evaluator_debug_bar_test.gd`, `release_tier_test.gd`, `title_screen_audio_test.gd`, `verify_exported_tier.gd`. Real user data was restored byte-identically afterwards (5 files, 0 diffs). |
 
 ### Open questions for Codex review
@@ -2223,7 +2223,7 @@ OPEN QUESTIONS: OD-012 educator sign-off; browser execution PENDING human evalua
 
 ---
 
-## SBL-BLD-005 — Archive-Contained JSON Provenance Manifests
+## SBL-BLD-005 â€” Archive-Contained JSON Provenance Manifests
 
 - **Milestone** M6 Release Candidate Foundation / Build Integrity & Artifact Governance.
 - **Requirements** GDD-110, GDD-124, GDD-131, FR-REL-001, TC-REL-001, GDD-093, GDD-095, GDD-107, GDD-108, GDD-109, GDD-129, NFR-BUILD-001, NFR-SEC-001, NFR-MAINT-001. Scope and evidence are recorded in the [traceability matrix](traceability-matrix.md) and the [full report](../report/sbl_bld_005_release_manifest_report.md).
@@ -2254,7 +2254,7 @@ OPEN QUESTIONS: OD-012 educator sign-off; browser execution PENDING human evalua
 | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\run_headless_tests.ps1 -Export -Tier all` | Exit 0 | **Exit 0**; 32/32 suites; 3 packages exported with manifest+receipt; self-verification, byte validation and all 3 archive-contained PCK gates pass; chained manifest suite 62/62; isolation intact |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\test_export_failure_restoration.ps1` | Exit 0 | **Exit 0**; mutation observed, `SIMULATED_EXPORT_FAILURE` caught, `project.godot` byte-identical, root marker absent, staging root removed, dist unchanged (6 artifacts) |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\test_export_failure_restoration.ps1 -DisableRestore` | Exit 1 | **Exit 1**; `[NON-VACUOUS PROOF CONFIRMED]` (`project.godot` differs, `build_tier.txt` remained); safety cleanup restored the tree |
-| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\export_release.ps1 -Tier all` (clean tree after `30305d6`) | Exit 0 | **Exit 0**; all three manifests record `commit=30305d6…`, `dirty=false`, `status_porcelain_sha256=e3b0c442…` (empty status); `git status` empty afterwards |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\export_release.ps1 -Tier all` (clean tree after `30305d6`) | Exit 0 | **Exit 0**; all three manifests record `commit=30305d6â€¦`, `dirty=false`, `status_porcelain_sha256=e3b0c442â€¦` (empty status); `git status` empty afterwards |
 
 ### Final artifacts (clean-tree export after implementation commit `30305d6`)
 
@@ -2282,7 +2282,7 @@ Pipeline unrolling collapsed parsed JSON arrays (fixed-size `Object[]`) and abor
 
 ---
 
-## SBL-OD-009 — OD-009 MVP Save Boundary
+## SBL-OD-009 â€” OD-009 MVP Save Boundary
 
 ```text
 TASK ID: SBL-OD-009
@@ -2300,7 +2300,7 @@ OPEN QUESTIONS: see below
 
 - **Milestone** Release Hardening & Scope Boundary Management (owner-ratified `OD-009` MVP fallback).
 - **Requirements** GDD-098, GDD-099, GDD-100, FR-SAV-001, FR-CMB-001, TC-SAV-001/002, TC-DNG-002/003/004. Scope of record: `docs/agy-next-queue.md`. Evidence: [OD-009 report](../report/od009_save_boundary_report.md), [traceability](traceability-matrix.md).
-- **Implementation owner** `opencode-go/mimo-v2.6-flash` (MiMo execution). **Plan owner** Codex. **Reviewer** Codex CLI — deferred; Codex CLI review was explicitly not called for this slice.
+- **Implementation owner** `opencode-go/mimo-v2.6-flash` (MiMo execution). **Plan owner** Codex. **Reviewer** Codex CLI â€” deferred; Codex CLI review was explicitly not called for this slice.
 - **Branch and commit** `feature/w4-5-vertical-slice`, implementation commit `e285514` (docs committed immediately afterwards in the same batch), both tagged `[REVIEW_PENDING_CODEX]`.
 - **Files** `scenes/main/game_root.gd`, `scenes/dungeon/dungeon_expedition.gd`, `scripts/persistence/profile_store.gd`, `tests/headless/dungeon_scene_test.gd`, plus this queue, `docs/traceability-matrix.md`, `docs/testing.md`, `report/od009_save_boundary_report.md`, `report/README.md`.
 - **Asset provenance** None. No images, audio, generated content, or gameplay numbers; no save-data format change.
@@ -2312,16 +2312,16 @@ OPEN QUESTIONS: see below
 1. **Boundary gate and save-request entry point (`scenes/main/game_root.gd`).** New OD-009 section with `OD009_SAVE_BLOCKED_HINT`, `get_save_blocker()`, `check_save_boundary()`, `request_save(reason)` and `_persist_exploration_boundary()`. A save request is evaluated against the blocker list **before** `ProfileStore` is touched; on a blocker it returns `ERR_BUSY` and emits an actionable `push_warning` naming the blocker (live battle phase, pending encounter, boss encounter, active/parked expedition, at-risk satchel) plus the OD-009 hint, and states that no profile data was written. The allowed path is a single atomic load-modify-save of character stats, the Kurei tree (refreshed from the live controller so the rewrite cannot drop stored skills/talents) and inventory. Education, chapter, slice, ending and expedition records keep their existing event-based writers.
 2. **Expedition boundary documentation and snapshot guard (`scenes/dungeon/dungeon_expedition.gd`).** Header, `serialize_expedition()` and `suspend_expedition()` document the room/exploration boundary, the absence of any combat/turn state in the snapshot, and that suspend is never an extraction. `serialize_expedition()` now returns `{}` while an extraction commit is in flight so a snapshot cannot interleave with the atomic terminal write (state `suspend_expedition()` already refused, so no reachable behavior changed).
 3. **Writer contract documentation (`scripts/persistence/profile_store.gd`).** `save_profile()` documents that ProfileStore performs no combat-state serialization and that mid-battle/partial-turn requests are rejected upstream before the writer is reached. No logic, validation, or schema change (`schema_version` stays `1`).
-4. **Regression coverage (`tests/headless/dungeon_scene_test.gd`).** New `_test_od009_save_boundary()` with 59 assertions plus `_profile_revision_count()` / `_profile_revision_files()` helpers: session boot writes nothing; mid-battle, `phase=ENEMY` partial-turn, pending-encounter, boss and expedition requests all return `ERR_BUSY`; after all probes the profile export text, committed-revision count and JSON snapshots of character, inventory, education, story, Kurei tree, slice stage, region and suspended-run state are identical; suspend writes `world.active_expedition` without banking (≠ extraction) and a parked run still defers; resume → extraction clears the snapshot and banks exactly once; the allowed boundary save returns `OK`, commits exactly one revision, round-trips xp and banked inventory into a fresh session, writes an empty satchel, and leaves story/education/expedition records untouched.
+4. **Regression coverage (`tests/headless/dungeon_scene_test.gd`).** New `_test_od009_save_boundary()` with 59 assertions plus `_profile_revision_count()` / `_profile_revision_files()` helpers: session boot writes nothing; mid-battle, `phase=ENEMY` partial-turn, pending-encounter, boss and expedition requests all return `ERR_BUSY`; after all probes the profile export text, committed-revision count and JSON snapshots of character, inventory, education, story, Kurei tree, slice stage, region and suspended-run state are identical; suspend writes `world.active_expedition` without banking (â‰  extraction) and a parked run still defers; resume â†’ extraction clears the snapshot and banks exactly once; the allowed boundary save returns `OK`, commits exactly one revision, round-trips xp and banked inventory into a fresh session, writes an empty satchel, and leaves story/education/expedition records untouched.
 
 ### Verification (Godot 4.7.2 Stable `ed1daf0bf`, Windows headless, disposable user data)
 
 | Command | Observed result |
 |---|---|
-| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\run_headless_tests.ps1 -Suite dungeon_scene_test` | **Exit 0, PASS (2.02 s)**. Import clean. `--- Running OD-009 MVP Save Boundary Test ---` → `OD-009 save boundary checks: 59 run, 0 failed` → `=== ALL DUNGEON SCENE TESTS PASSED SUCCESSFULLY ===` (`report/dungeon_scene_test.log`). |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\run_headless_tests.ps1 -Suite dungeon_scene_test` | **Exit 0, PASS (2.02 s)**. Import clean. `--- Running OD-009 MVP Save Boundary Test ---` â†’ `OD-009 save boundary checks: 59 run, 0 failed` â†’ `=== ALL DUNGEON SCENE TESTS PASSED SUCCESSFULLY ===` (`report/dungeon_scene_test.log`). |
 | Same run, stderr | **6 actionable OD-009 diagnostics**, one per rejected probe (battle `phase=PLAYER`, battle `phase=ENEMY`, pending encounter, boss, active expedition, parked snapshot), each ending "no profile data was written" (`report/dungeon_scene_test.err`). |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\run_headless_tests.ps1` | **Exit 0, 32/32 suites PASS** (incl. `save_model_test`, `save_compatibility_recovery_test`, `web_backup_test`, `dungeon_scene_test`). `realUserDataUnchanged=True`, `disposableFiles=654`, `rootRemoved=True`. |
-| Negative control: mid-battle branch disabled in `get_save_blocker()`, targeted suite re-run | **Exit 1, 7 failed assertions**, including `Rejected saves leave profile bytes unchanged` and `Rejected saves commit no profile revision` — proving the guard is load-bearing and the test detects an unguarded mid-battle write. Guard restored; targeted suite re-run **exit 0**. |
+| Negative control: mid-battle branch disabled in `get_save_blocker()`, targeted suite re-run | **Exit 1, 7 failed assertions**, including `Rejected saves leave profile bytes unchanged` and `Rejected saves commit no profile revision` â€” proving the guard is load-bearing and the test detects an unguarded mid-battle write. Guard restored; targeted suite re-run **exit 0**. |
 
 ### Preserved invariants
 
@@ -2337,7 +2337,7 @@ OPEN QUESTIONS: see below
 3. `push_warning` is the current actionable-diagnostic channel; confirm whether the MVP requires a player-facing message instead.
 ---
 
-## SBL-OD-013 — OD-013 Performance Evidence (Owner-Ratified)
+## SBL-OD-013 â€” OD-013 Performance Evidence (Owner-Ratified)
 
 - **Milestone** Release Hardening (OD-013 performance evidence).
 - **Requirements** GDD-093, GDD-094, GDD-095, GDD-096, GDD-097, GDD-104, GDD-107, GDD-123, GDD-124, GDD-129, FR-REL-001, TC-REL-001, TC-WEB-001, TC-WEB-002, NFR-PERF-001, NFR-WEB-001, NFR-BUILD-001. Ratification: [`report/od013-ratification.md`](../report/od013-ratification.md); scope of record: [`docs/agy-next-queue.md`](agy-next-queue.md). [Traceability](traceability-matrix.md).
@@ -2410,28 +2410,28 @@ OPEN QUESTIONS: see below
 1. **OD-002 initiative engine (`scripts/combat/initiative_order.gd`, new).** Registers combatants with a stable actor ID (registration/spawn order), snapshots *effective Agility* (authored base + haste/slow modifier) at every `begin_round()`, sorts by effective Agility descending then stable actor ID ascending (registration order as a final total-order tiebreak), and budgets exactly one main action per actor per round (`record_action` / `can_act` / `is_round_complete`). The engine contains no time input and no random input, so ATB and initiative rolls cannot occur; `get_next_actors(3)` powers the HUD preview.
 2. **OD-002 wiring in both combat scenes.** `BattleFixture` and `BossEncounter` register `ren` + `enemy`/`boss`, open round 1 in `_ready()`, reject any `request_action` while Ren has already spent the round's action (zero mutation), record Ren's accepted action, and hand play to the next actor through `_resolve_next_actor()` (round boundary + haste/slow application). Opponent-first rounds resolve the opponent before Ren's input; the fixture defers its opponent turn only while an in-round action is pending, which prevents a phantom extra turn when Ren's action closes the round. A `TurnOrderLabel` in each scene shows the next three actors (`Next: Ren > Adversary > Ren`). Ren's initiative value comes from the authored `CharacterStats` default; opponent/boss Agility is unauthored `TBD` held at 0 so existing balance is preserved.
 3. **OD-003 Kurei roles (`scripts/magic/kurei_system.gd`).** `CATEGORY_ROLES` plus `get_category_role()` / `get_skill_role()` record the six approved roles (Flame `damage/Burn`, Torrent `heal/cleanse`, Gale `haste/evasion`, Earth `shield/mitigation`, Lumina `pierce/focus`, Umbra `drain/debuff`). No multiplier/weakness/resistance/affinity/counter field and no chart constant was added; authored pip costs, cooldowns, base powers, SP baselines (2 / 3, Phase Mastery 4) are unchanged, and no regeneration/critical/resistance/damage/boss-effect formula was authored. Unsupported advanced boss effects stay disabled with the pending-design notice.
-4. **OD-004 status policy (`scripts/combat/status_engine.gd`).** `OD004_DEFAULT_DURATIONS` (Burn/Poison/Bleed/Regeneration 3, Defense Up/Down 2, Silence 1, Stun 1, Shield 3) is the single source of truth and acts as default and cap; reapplication refreshes to the larger duration and larger potency with `stacks` pinned to 1; `cleanse_negative()` removes negative statuses only; `consume_stun()` implements "Stun skips exactly one action"; Shield still expires when depleted. Both scenes consume the Stun instead of resolving the skipped action (the telegraph does not advance) and apply the approved durations (Flame Burst Burn 2→3, Glacial Aegis Shield 2→3, Void Shift Defense Up 1→2, boss Defend Defense Up 1→2, boss Torrent Surge Regeneration 2→3). Torrent Surge now cleanses (approved Torrent role). Bosses share the identical engine - no hidden resistance.
+4. **OD-004 status policy (`scripts/combat/status_engine.gd`).** `OD004_DEFAULT_DURATIONS` (Burn/Poison/Bleed/Regeneration 3, Defense Up/Down 2, Silence 1, Stun 1, Shield 3) is the single source of truth and acts as default and cap; reapplication refreshes to the larger duration and larger potency with `stacks` pinned to 1; `cleanse_negative()` removes negative statuses only; `consume_stun()` implements "Stun skips exactly one action"; Shield still expires when depleted. Both scenes consume the Stun instead of resolving the skipped action (the telegraph does not advance) and apply the approved durations (Flame Burst Burn 2â†’3, Glacial Aegis Shield 2â†’3, Void Shift Defense Up 1â†’2, boss Defend Defense Up 1â†’2, boss Torrent Surge Regeneration 2â†’3). Torrent Surge now cleanses (approved Torrent role). Bosses share the identical engine - no hidden resistance.
 5. **Regression coverage.** New `tests/headless/initiative_test.gd` (115 checks) covers ordering, stable-ID ties, one-action-per-round, no-extra-turn controls, determinism (no rolls/ATB), round-boundary haste/slow, next-three HUD in both scenes, opponent-first and boss-first flows, and duplicate-action zero-mutation controls. `status_engine_test.gd` (64 checks) adds the OD-004 policy section (approved durations, caps, refresh/no-stack, expiry ladder, depleted Shield, cleanse, Stun consume) and aligns the Silence expectation with the approved 1 turn. `kurei_combat_test.gd` (103 checks) adds the OD-003 role/value/no-chart controls and OD-004 fixture controls (Burn duration/refresh, Stun skip, Torrent cleanse). `boss_combat_test.gd` (108 checks) adds boss HUD/round/one-action controls, boss-vs-Ren status parity, Stun skipping one boss action, and an 8-action unsupported-skill snapshot suite.
 
 ### Verification (Godot 4.7.2 Stable `ed1daf0bf`, Windows headless, disposable user data)
 
 | Command | Observed result |
 |---|---|
-| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\run_headless_tests.ps1 -Suite initiative_test` | **Exit 0, PASS (1.02 s)** — new OD-002 suite, 115 checks. |
-| `... -Suite combat_test` | **Exit 0, PASS** — `combat_test`, `kurei_combat_test`, `boss_combat_test` all green (baseline before the change was green too). |
-| `... -Suite status_engine_test` | **Exit 0, PASS (1.01 s)** — 64 checks incl. OD-004. |
-| `... -Suite layout_audit_test` | **Exit 0, PASS (1.01 s)** — BossEncounter panel and Kurei-menu rects stay inside 960x540 at 1.0x and 1.5x with the new HUD label (first attempt failed at 1.5x; the label was moved into the fighter row and re-verified). |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\run_headless_tests.ps1 -Suite initiative_test` | **Exit 0, PASS (1.02 s)** â€” new OD-002 suite, 115 checks. |
+| `... -Suite combat_test` | **Exit 0, PASS** â€” `combat_test`, `kurei_combat_test`, `boss_combat_test` all green (baseline before the change was green too). |
+| `... -Suite status_engine_test` | **Exit 0, PASS (1.01 s)** â€” 64 checks incl. OD-004. |
+| `... -Suite layout_audit_test` | **Exit 0, PASS (1.01 s)** â€” BossEncounter panel and Kurei-menu rects stay inside 960x540 at 1.0x and 1.5x with the new HUD label (first attempt failed at 1.5x; the label was moved into the fighter row and re-verified). |
 | `... run_headless_tests.ps1` (canonical) | **Exit 0, 33/33 suites PASS** (import clean, `realUserDataUnchanged=True`, `disposableFiles=654`, `rootRemoved=True`). |
-| Negative control: `InitiativeOrder.can_act()` budget disabled | **Exit 1, 12 failed checks** in `initiative_test` (duplicate main action accepted, rejected-action mutation checks failed) → guard restored, suite green. |
-| Negative control: status refresh increments `stacks` | **Exit 1, 2 failed checks** in `status_engine_test` (`Same-name refresh never stacks intensity (OD-004)`) → rule restored, suite green. |
-| Negative control: `flame_burst.base_power` 18 → 17 | **Exit 1, 2 failed checks** in `kurei_combat_test` (`flame_burst base_power stays at the authored 18`) → value restored, suite green. |
+| Negative control: `InitiativeOrder.can_act()` budget disabled | **Exit 1, 12 failed checks** in `initiative_test` (duplicate main action accepted, rejected-action mutation checks failed) â†’ guard restored, suite green. |
+| Negative control: status refresh increments `stacks` | **Exit 1, 2 failed checks** in `status_engine_test` (`Same-name refresh never stacks intensity (OD-004)`) â†’ rule restored, suite green. |
+| Negative control: `flame_burst.base_power` 18 â†’ 17 | **Exit 1, 2 failed checks** in `kurei_combat_test` (`flame_burst base_power stays at the authored 18`) â†’ value restored, suite green. |
 
 Raw transcripts: `report/initiative_test.log`, `report/status_engine_test.log`, `report/kurei_combat_test.log`, `report/boss_combat_test.log`, `report/combat_test.log`, `report/layout_audit_test.log`, plus the gitignored `report/neg_od002_one_action_budget.log`, `report/neg_od004_status_stacking.log`, `report/neg_od003_authored_base_power.log`.
 
 ### Preserved invariants
 
 - **OD-009 save boundaries:** initiative/round state is runtime-only and never serialized; `ProfileStore`, `game_root.request_save` and `dungeon_expedition` are untouched, and `dungeon_scene_test` (59 OD-009 checks), `save_model_test`, `save_compatibility_recovery_test`, `web_backup_test` pass unmodified.
-- **Extraction/defeat:** no change to defeat preservation, exactly-once extraction, or suspend ≠ extraction; `vertical_slice_loop_test`, `overworld_gateway_test`, `e2e_academic_playthrough_test` are green.
+- **Extraction/defeat:** no change to defeat preservation, exactly-once extraction, or suspend â‰  extraction; `vertical_slice_loop_test`, `overworld_gateway_test`, `e2e_academic_playthrough_test` are green.
 - **Authored content:** pip costs, cooldowns, base powers, SP baselines, HP/pip values, damage numbers, rewards, story and educational content are unchanged; no new formula coefficients were authored.
 - **Scope:** only the OD-002/003/004 ledger rows were updated; every other OD (including OD-001, OD-005..OD-017) keeps its existing status and blocked items.
 
@@ -2540,7 +2540,7 @@ OPEN QUESTIONS: see below
 
 - **Milestone** Release Hardening & Scope Boundary Management; owner-approved `OD-010` (narrative/quest branch-and-reconverge structure) and `OD-011` (dungeon 3-floor/6-slot grammar and knowledge/access mastery markers) per `docs/agy-next-queue.md` and `report/complete-od002-011-proposal.md` Stage C.
 - **Requirements** GDD-036..048, GDD-061..066, FR-WLD-001, FR-QST-001, FR-DNG-001/003, TC-WLD-001, TC-DNG-001/004, TC-SAV-001. [Traceability](traceability-matrix.md); full evidence: [OD-010/011 report](../report/od010_011_narrative_dungeon_report.md).
-- **Implementation owner** agy (`opencode-go/mimo-v2.6-flash` in `835a19b` and `opencode-go/gemini-4-argon` in `b8ecffb`). **Plan owner** Codex/OpenCode. **Reviewer** Codex CLI — explicitly **not called** for this slice; nothing here is `REVIEWED`.
+- **Implementation owner** agy (`opencode-go/mimo-v2.6-flash` in `835a19b` and `opencode-go/gemini-4-argon` in `b8ecffb`). **Plan owner** Codex/OpenCode. **Reviewer** Codex CLI â€” explicitly **not called** for this slice; nothing here is `REVIEWED`.
 - **Branch and commit** `feature/w4-5-vertical-slice` (worktree `soulbound-overworld`), WIP commit `835a19b`, completion commit `b8ecffb` (docs committed immediately afterwards in the same batch), all tagged `[REVIEW_PENDING_CODEX]`.
 - **Files** see the block above. `scripts/dungeon/dungeon_generator.gd`, `scenes/dungeon/dungeon_expedition.gd`, `scripts/story/chapter_manager.gd`, `scenes/vertical_slice/*`, `scripts/education/*`, `scripts/combat/*`, `scripts/progression/*`, `scripts/inventory/*`, `scripts/persistence/profile_store.gd`, `scenes/main/game_root.gd`, `project.godot` and export configuration are untouched.
 - **Asset provenance** None. No images, audio, dialogue, lore reveals, NPC rosters, faction definitions, educational questions, or drop probabilities were generated or invented.
@@ -2548,7 +2548,7 @@ OPEN QUESTIONS: see below
 
 ### Changes
 
-1. **OD-010 branch-and-reconverge quest structure (`scripts/story/quest_branch_model.gd`, `scripts/persistence/gameplay_profile_validator.gd`).** `QuestBranchModel` defaults to `MODE_ACADEMIC_MVP`, where `record_choice()` and `reconverge_at_gate()` return `ERR_UNAVAILABLE` and `configure(MODE_ACADEMIC_MVP)` refuses any non-empty model (`ERR_INVALID_DATA`), keeping the Chapters I–III academic MVP strictly linear. In `MODE_FULL_RELEASE`, `record_choice(chapter, cluster_id, branch_id)` enforces at most one local choice cluster per chapter (`1..5`), is idempotent on identical `(cluster_id, branch_id)`, and returns `ERR_ALREADY_EXISTS` on a competing cluster in the same chapter. `reconverge_at_gate(chapter)` marks the chapter's cluster `"reconverged": true`, records the gate in `reconverged_chapters`, and freezes the chapter against subsequent local choices. `_parse()` and `serialize()` normalize `chapter` and `reconverged_chapters` to `int` within safe integer bounds (`MIN_SAFE_INT..MAX_SAFE_INT`) so `JSON.parse_string` float conversion (`1 -> 1.0`) never breaks `serialize -> store -> load -> serialize` or backup byte-identity. `QuestBranchModel.validate_record()` and `GameplayProfileValidator._validate_world()` enforce exact keys and reject deferred `reputation` or `faction` fields at both the profile and backup import boundaries.
+1. **OD-010 branch-and-reconverge quest structure (`scripts/story/quest_branch_model.gd`, `scripts/persistence/gameplay_profile_validator.gd`).** `QuestBranchModel` defaults to `MODE_ACADEMIC_MVP`, where `record_choice()` and `reconverge_at_gate()` return `ERR_UNAVAILABLE` and `configure(MODE_ACADEMIC_MVP)` refuses any non-empty model (`ERR_INVALID_DATA`), keeping the Chapters Iâ€“III academic MVP strictly linear. In `MODE_FULL_RELEASE`, `record_choice(chapter, cluster_id, branch_id)` enforces at most one local choice cluster per chapter (`1..5`), is idempotent on identical `(cluster_id, branch_id)`, and returns `ERR_ALREADY_EXISTS` on a competing cluster in the same chapter. `reconverge_at_gate(chapter)` marks the chapter's cluster `"reconverged": true`, records the gate in `reconverged_chapters`, and freezes the chapter against subsequent local choices. `_parse()` and `serialize()` normalize `chapter` and `reconverged_chapters` to `int` within safe integer bounds (`MIN_SAFE_INT..MAX_SAFE_INT`) so `JSON.parse_string` float conversion (`1 -> 1.0`) never breaks `serialize -> store -> load -> serialize` or backup byte-identity. `QuestBranchModel.validate_record()` and `GameplayProfileValidator._validate_world()` enforce exact keys and reject deferred `reputation` or `faction` fields at both the profile and backup import boundaries.
 2. **OD-011 3-floor / 6-slot full-release dungeon grammar (`scripts/dungeon/multi_floor_layout.gd`).** `MultiFloorLayout` preserves `DungeonGenerator` and `DungeonExpedition` untouched for the academic MVP (both 4-room and 6-room seeded DAGs remain intact) and implements the full-release structure: `FLOOR_COUNT = 3`, `ROOMS_PER_FLOOR = 6` (`ROOM_TOTAL = 18`), deterministic seeded spanning-DAG generation per floor using the MVP cardinal head-growing grammar, inter-floor route links (`floor_exit -> next_floor_entry`), exactly one `TYPE_SPAWN` entry (`id = 0`), and one `TYPE_EXTRACTION` endpoint at the furthest room on Floor 3. `validate_layout()` enforces exact schema keys (rejecting invented probability fields such as `drop_rate` or `loot_chance`), floor/slot counts, approved room types only (`spawn`/`normal`/`combat`/`extraction`), `risk = true` only on existing reward-path rooms (`normal`/`combat`), symmetric neighbor edges with safe-int bounds, full graph connectivity via BFS from `entry_id`, and extraction reachability via `find_route()`.
 3. **OD-011 dungeon mastery markers (`scripts/dungeon/dungeon_mastery.gd`, `scripts/persistence/gameplay_profile_validator.gd`).** `DungeonMastery` persists `world["dungeon_mastery"]` under schema `"sbl-dungeon-mastery/1"` with exact keys `["schema", "markers"]` and unique bounded string marker IDs. `grant_marker()` is idempotent and has no path to `CharacterStats`, `KureiTree`, or `InventoryManager`. Any stat or combat-power field (`"power"`, `"attack"`, `"level"`, etc.), non-string marker, or duplicate marker is rejected by `DungeonMastery.validate_record()` and `GameplayProfileValidator._validate_world()`.
 4. **Regression coverage (`tests/headless/od010_011_test.gd`).** New **244-check** suite covering OD-010 academic linearity + `ChapterManager` completion-gated progression, full-release local choice clusters + gate reconvergence + byte-identical store round-trip, cross-profile and backup isolation (same-slot unmodified backup round-trip, cross-slot `profile_id` mismatch rejection, retargeted `profile_03` round-trip, and validator-boundary rejection of tampered `reputation` and `faction` backups with zero target-slot mutation), OD-011 4-room and 6-room MVP DAG preservation, 3-floor/6-slot layout validation and 72-seed sweep, 18 invalid-graph rejection controls with source-layout zero-mutation proof, and mastery marker persistence/isolation/power-field rejection.
@@ -2557,15 +2557,15 @@ OPEN QUESTIONS: see below
 
 | Command | Observed result |
 |---|---|
-| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\run_headless_tests.ps1 -Suite od010_011_test` | **Exit 0, PASS (1.02 s)** — new suite, **244 checks / 0 failures**, 0 lines in `report/od010_011_test.err`. |
-| Targeted save/transition/dungeon/story suites (`save_model_test`, `web_backup_test`, `save_compatibility_recovery_test`, `profile_activation_test`, `transition_test`, `dungeon_scene_test`, `overworld_gateway_test`, `chapter_progression_test`, `vertical_slice_test`, `vertical_slice_loop_test`, `m3_systems_test`, `progression_economy_test`) | **Exit 0, PASS** — all 12 targeted suites green with zero regressions. |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\run_headless_tests.ps1 -Suite od010_011_test` | **Exit 0, PASS (1.02 s)** â€” new suite, **244 checks / 0 failures**, 0 lines in `report/od010_011_test.err`. |
+| Targeted save/transition/dungeon/story suites (`save_model_test`, `web_backup_test`, `save_compatibility_recovery_test`, `profile_activation_test`, `transition_test`, `dungeon_scene_test`, `overworld_gateway_test`, `chapter_progression_test`, `vertical_slice_test`, `vertical_slice_loop_test`, `m3_systems_test`, `progression_economy_test`) | **Exit 0, PASS** â€” all 12 targeted suites green with zero regressions. |
 | `run_headless_tests.ps1` (canonical) | **Exit 0, 35/35 suites PASS** (import clean, `realUserDataUnchanged=True`, `disposableFiles=655`, `rootRemoved=True`). |
 | Negative control 1: allow `record_choice()` in `MODE_ACADEMIC_MVP` | **Exit 1, 7 failed checks** (`Academic MVP refuses a local choice cluster at chapter 1..5`, `No branch state was created in academic MVP mode`, `Academic mode is accepted on an empty model`) -> guard restored, suite green. |
 | Negative control 2: disable duplicate-chapter check in `record_choice()` | **Exit 1, 15 failed checks** (`Exactly one local choice cluster per chapter`, `No duplicate cluster record was appended`, plus persistence/validator checks) -> guard restored, suite green. |
 | Negative control 3: disable BFS connectivity / extraction reachability check in `MultiFloorLayout.validate_layout()` | **Exit 1, 2 failed checks** (`Disconnected graph rejected`, `Unreachable extraction endpoint rejected (TC-DNG-001)`) -> validator restored, suite green. |
 | Negative control 4: disable `_exact_keys` check in `DungeonMastery._parse()` | **Exit 1, 1 failed check** (`Combat-power field inside the mastery record rejected`) -> validator restored, suite green. |
-| `run_headless_tests.ps1 -Export -Tier all` | **Exit 0 (canonical release gate)** — 35/35 suites, Web + Windows + Academic MVP exports, `ALL RELEASE ARTIFACTS AND PRESETS VALIDATED SUCCESSFULLY` (incl. 3 PCK gates), **62/62 manifest controls**, OD-013 performance evidence **5/5 PASS** (129.0–144.9 avg FPS), isolation proof `realUserDataUnchanged=True`. |
-| `scripts\build\test_export_failure_restoration.ps1` | **Exit 0** — injected post-mutation export failure restored `project.godot` byte-identically (SHA-256 `5C65BBCD...`), staging root removed, all 6 dist artifacts unchanged. |
+| `run_headless_tests.ps1 -Export -Tier all` | **Exit 0 (canonical release gate)** â€” 35/35 suites, Web + Windows + Academic MVP exports, `ALL RELEASE ARTIFACTS AND PRESETS VALIDATED SUCCESSFULLY` (incl. 3 PCK gates), **62/62 manifest controls**, OD-013 performance evidence **5/5 PASS** (129.0â€“144.9 avg FPS), isolation proof `realUserDataUnchanged=True`. |
+| `scripts\build\test_export_failure_restoration.ps1` | **Exit 0** â€” injected post-mutation export failure restored `project.godot` byte-identically (SHA-256 `5C65BBCD...`), staging root removed, all 6 dist artifacts unchanged. |
 
 ### Preserved invariants
 
@@ -2582,3 +2582,31 @@ OPEN QUESTIONS: see below
 ### Review history
 
 - None yet. Codex CLI review was explicitly deferred by the task instruction; this entry is queued as `REVIEW_PENDING_CODEX` under AGENTS.md rule 5.
+## SBL-TEST-ISOLATION-001 â€” Five-suite real-profile write isolation
+
+- **Milestone** M6 QA / save-data protection hardening.
+- **Requirements** GDD-098/099/100/109/124, FR-SAV-001, TC-SAV-001, NFR-MAINT-001, TC-AGY-001.
+- **Implementation owner** agy. **Plan owner** Codex.
+- **Branch and commit** isolated detached worktree `od013-test-isolation-kimi`, based on `835a19b`; this commit is tagged `[REVIEW_PENDING_CODEX]` and its hash is supplied in the final handoff.
+- **Files** `tests/support/profile_test_isolation.gd` and UID; `tests/headless/{ending_chapter5_test,evaluator_debug_bar_test,release_tier_test,title_screen_audio_test,verify_exported_tier}.gd`; `docs/testing.md`; this queue; [`report/sbl_test_isolation_001_report.md`](../report/sbl_test_isolation_001_report.md).
+- **Asset provenance** None. No production save semantics, profile schema, gameplay values, OD-010/011 implementation, combat, images, audio, or browser code changed.
+- **Review** `REVIEW_PENDING_CODEX`. No review has occurred; human release acceptance remains pending.
+- **Open questions** No design questions. Codex CLI review is pending. Exported PCK packaging and browser gates were not run or claimed.
+
+### Implementation and evidence
+
+Each affected suite now snapshots the real `user://profiles/profile_01` file set and raw bytes, injects a seeded disposable `ProfileStore` before GameRoot `_ready`, asserts byte identity after its fixture writes, and removes its unique test root. The shared helper is under `tests/support`, so the canonical runner does not enumerate it as a test suite.
+
+| Verification | Observed result |
+|---|---|
+| Five affected suites via `run_headless_tests.ps1 -Suite ...` | **5/5 exit 0, PASS**; canonical outer isolation reported `realUserDataUnchanged=True`. |
+| Five affected suites invoked directly with no `APPDATA`/`LOCALAPPDATA` override | **5/5 exit 0, PASS**. Independent SHA-256 manifests after each run found real `profile_01` **2 files before/after; 0 added, 0 removed, 0 modified**. |
+| Final external real `user://profiles` comparison | **5 files before/after; 0 added, 0 removed, 0 modified** against the pre-implementation baseline. Both real `profile_01` revisions retained their exact original bytes/hashes. |
+| Disposable cleanup | **0** `test_profile_isolation_*` directories left in the real Soulbound user folder. |
+| Canonical `run_headless_tests.ps1` | **Exit 0; import clean; 35/35 suites PASS**; `realUserDataUnchanged=True`, `disposableFiles=655`, `rootRemoved=True`. |
+
+Full commands, per-suite results, profile hashes, and boundaries are in the [scoped report](../report/sbl_test_isolation_001_report.md). Raw direct-run logs and manifests are retained under `%LOCALAPPDATA%\Temp\opencode\od013-profile-test-isolation-kimi` on the test machine.
+
+### Review history
+
+- None. This independent test-only slice is queued for Codex CLI review as `REVIEW_PENDING_CODEX`; it must not be represented as reviewed.

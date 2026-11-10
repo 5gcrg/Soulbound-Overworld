@@ -14,8 +14,11 @@ extends SceneTree
 ## 3. In full_release tier:
 ##    - All Chapter V / ending pathways function normally.
 
+const ProfileTestIsolationScript = preload("res://tests/support/profile_test_isolation.gd")
+
 var _failures: int = 0
 var _game_root: Control = null
+var _profile_isolation: ProfileTestIsolation = null
 
 func _init() -> void:
 	call_deferred("_run_tests")
@@ -29,6 +32,7 @@ func _check(condition: bool, message: String) -> void:
 
 func _run_tests() -> void:
 	print("--- Running SBL-FIX-010 Release-Tier Separation Test Suite ---")
+	_profile_isolation = ProfileTestIsolationScript.new("release_tier")
 
 	# 1. Default Setting Verification
 	_check(ReleaseTier.get_tier() == ReleaseTier.TIER_FULL_RELEASE, "Default release tier is full_release")
@@ -39,6 +43,7 @@ func _run_tests() -> void:
 	var root_scene: PackedScene = load("res://scenes/main/game_root.tscn")
 	_check(root_scene != null, "GameRoot scene loaded")
 	_game_root = root_scene.instantiate() as Control
+	_game_root.profile_store = _profile_isolation.make_store()
 	root.add_child(_game_root)
 	await process_frame
 	await process_frame
@@ -122,8 +127,11 @@ func _run_tests() -> void:
 	_check(_game_root.world_router.is_region_available("void_citadel") == true, "Cleared override: void_citadel is available again")
 	_check(not QuestionBank.get_question("q_meta_01").is_empty(), "Cleared override: q_meta_01 accessible again")
 
-	# Clean up
+	# Clean up and prove that no fixture revision reached the real profile.
 	_game_root.queue_free()
+	await process_frame
+	_check(_profile_isolation.real_profile_is_unchanged(), "Real user://profiles/profile_01 is byte-identical before and after the suite")
+	_profile_isolation.cleanup()
 
 	if _failures == 0:
 		print("--- SBL-FIX-010 Release-Tier Separation Test Suite PASSED ---")

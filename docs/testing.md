@@ -127,6 +127,19 @@ root, and the redirection is **proved before execution** by a headless probe tha
 - Evidence is appended to `report/godot_user_data_isolation.log` (probe path,
   `realUserDataUnchanged`, disposable file count, root removal).
 
+### Suite-local ProfileStore fixtures
+
+`ending_chapter5_test.gd`, `evaluator_debug_bar_test.gd`, `release_tier_test.gd`,
+`title_screen_audio_test.gd`, and `verify_exported_tier.gd` also use
+`tests/support/profile_test_isolation.gd`. The helper snapshots the real
+`user://profiles/profile_01` file set and raw bytes, injects a seeded disposable
+`ProfileStore` into GameRoot **before** `_ready`, asserts byte identity after the
+fixture writes, and recursively removes its unique `test_profile_isolation_*`
+root. This suite-local guard also protects real profile data when a suite is run
+directly with `godot --headless --script`, without the canonical runner's outer
+`APPDATA` redirection. Production `ProfileStore` defaults and save behavior are
+unchanged.
+
 ## OD-013 Performance Evidence Gate (SBL-OD-013)
 
 Performance evidence is a PowerShell gate, **not** one of the 35 GDScript suites in `tests/headless/`.

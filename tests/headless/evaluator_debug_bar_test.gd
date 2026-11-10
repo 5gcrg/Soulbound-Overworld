@@ -3,7 +3,10 @@ extends SceneTree
 ## SBL-EVAL-001 Evaluator Debug Bar Headless Test Suite
 ## Requirements: GDD-116, Defense Presentation Tools, AGENTS.md Invariants.
 
+const ProfileTestIsolationScript = preload("res://tests/support/profile_test_isolation.gd")
+
 var _failures: int = 0
+var _profile_isolation: ProfileTestIsolation = null
 
 func _check(ok: bool, msg: String) -> bool:
 	if not ok:
@@ -16,11 +19,13 @@ func _init() -> void:
 
 func _run_test() -> void:
 	print("--- Running SBL-EVAL-001 Evaluator Debug Bar Test Suite ---")
+	_profile_isolation = ProfileTestIsolationScript.new("evaluator_debug_bar")
 
 	var root_scene: PackedScene = load("res://scenes/main/game_root.tscn")
 	_check(root_scene != null, "game_root.tscn loaded successfully")
 
 	var game_root: Control = root_scene.instantiate() as Control
+	game_root.profile_store = _profile_isolation.make_store()
 	root.add_child(game_root)
 	await process_frame
 	await process_frame
@@ -204,6 +209,11 @@ func _run_test() -> void:
 	await process_frame
 	_check(game_root._chapter_dialog == null, "Chapter dialog closed")
 	_check(game_root.has_blocking_modal() == false, "has_blocking_modal() is false after closing chapter dialog")
+
+	game_root.queue_free()
+	await process_frame
+	_check(_profile_isolation.real_profile_is_unchanged(), "Real user://profiles/profile_01 is byte-identical before and after the suite")
+	_profile_isolation.cleanup()
 
 	if _failures > 0:
 		printerr("EVALUATOR DEBUG BAR TESTS FAILED: ", _failures)
