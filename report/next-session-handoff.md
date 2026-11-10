@@ -8,12 +8,7 @@
 ## Immediate issue to investigate
 
 - **Keyboard bug:** the `A` key does not move Ren left.
-- Reproduce in the current Godot build and test both authored defaults and the
-  persistent rebinding path.
-- Check `project.godot` `move_left` defaults, `InputBindings` physical-key
-  serialization/application, `InputMap` state, capture consumption, and any
-  conflict/reset behavior.
-- Add a regression test before changing behavior.
+- The next session should fix the rebinding/input behavior.
 
 ## Completed this session
 
