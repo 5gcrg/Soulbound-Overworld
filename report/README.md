@@ -2,6 +2,12 @@
 
 This directory stores the official engineering and milestone implementation reports for the Soulbound project.
 
+- [SBL-BLD-005 Release Provenance Manifest Report (November 10, 2026)](sbl_bld_005_release_manifest_report.md)
+  - Archive-contained schema-version-1 `release-manifest.json` + external `<archive>.manifest.sha256` receipt for all three release ZIPs
+  - Shared archive-byte verifier (strict JSON with duplicate-member rejection, path/type/duplicate/case-collision safety, payload hashes, identity, archived configuration semantics), archive-contained PCK gates, proven disposable user-data isolation
+  - Evidence: `test_release_manifest.ps1` 62/62 exit 0; canonical suite 32/32 exit 0; `-Export -Tier all` exit 0; restoration controls exit 0 / exit 1; final artifact hashes/sizes
+  - Status: `REVIEW_PENDING_CODEX`
+
 - [SBL-EDU-005-FIX Remediation Report (November 9, 2026)](sbl_edu_005_fix_report.md)
   - Fixes P1: learning journal test isolation (disposable ProfileStore root, disposable CSV/HTML export paths, real `user://profiles` + `user://reports` byte-identity invariant)
   - Fixes P2: active profile slot passed from GameRoot into AcademicCompletionModal desktop/Web HTML reports (regression-covered with `profile_02`)

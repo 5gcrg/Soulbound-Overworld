@@ -193,6 +193,42 @@ entries:
 - **Review status:** `REVIEW_PENDING_CODEX` awaiting Codex CLI re-review of session `01a1c094-60d4-70c0-aaa6-37f8ffbce421` findings P1 and P2. Nothing in this slice is `REVIEWED`.
 - **Open observation:** `ending_chapter5_test.gd`, `evaluator_debug_bar_test.gd`, `release_tier_test.gd`, `title_screen_audio_test.gd`, and `verify_exported_tier.gd` still write the real `user://profiles/profile_01` (pre-existing, outside the approved remediation plan; a separate approved slice is recommended).
 
+## SBL-BLD-005 implementation (archive-contained JSON provenance manifests)
+
+- **Task:** `SBL-BLD-005` — queue entry in `docs/agent-review-queue.md`; full evidence in
+  `report/sbl_bld_005_release_manifest_report.md`.
+- **Implementation commit:** `30305d6` on `feature/w4-5-vertical-slice` (documentation committed
+  in the same batch immediately afterwards). `REVIEW_PENDING_CODEX`; nothing is `REVIEWED`.
+- **Files:** created `scripts/build/release_manifest.ps1`, `scripts/build/test_release_manifest.ps1`;
+  modified `scripts/build/{export_release,validate_release,run_headless_tests,test_export_failure_restoration}.ps1`
+  plus `docs/{agent-review-queue,traceability-matrix,testing}.md` and this ledger.
+- **Asset provenance:** none. No OD was resolved; `OD-017`, browser smoke, `OD-012`, combat ODs
+  remain open.
+- **Verification (all exit as required):** `test_release_manifest.ps1` **62/62 controls, exit 0**;
+  `run_headless_tests.ps1` **32/32 suites, exit 0** with seeded disposable user data proved before
+  execution (`realUserDataUnchanged=True`, `disposableFiles=654`, `rootRemoved=True`);
+  `run_headless_tests.ps1 -Export -Tier all` **exit 0** (3 packages exported with manifest +
+  external receipt, self-verification, byte validation, 3 archive-contained PCK gates, chained
+  manifest suite 62/62); `test_export_failure_restoration.ps1` **exit 0** (byte-identical
+  restoration, staging removed, dist unchanged) and `-DisableRestore` **exit 1**
+  (non-vacuous proof confirmed).
+- **Final artifacts (clean-tree export after `30305d6`; manifests record `dirty=false`, commit
+  `30305d6`, empty-status digest):**
+  `Soulbound-AcademicMVP-Web.zip` 10,806,918 B `950c5ba8…39810`, manifest/receipt `1b423257…3fa5d7`;
+  `Soulbound-Web.zip` 10,806,906 B `88423fe2…40cf2`, manifest/receipt `3f033216…b925e`;
+  `Soulbound-Windows-Portable.zip` 86,680,630 B `57ea5e09…b6f9`, manifest/receipt `f5ff9244…7a75c`
+  (full hashes in the report).
+- **Execution-time defects fixed before the final runs:** JSON-array pipeline unrolling
+  (fixed-size `Object[]` abort), case-insensitive exact-path tracking (case collisions
+  misclassified as duplicates), drive-path check order (order-dependent expectation), empty
+  clean-status digest vs mandatory empty-array binding, export templates hidden by disposable
+  user data (exporter subprocesses restored to pre-isolation env, real data proven unchanged),
+  `ending_chapter5_test.gd` baseline `profile_01` dependency satisfied via the runner's seeded
+  disposable (test file untouched), and MAX_PATH-safe robocopy seeding plus `\\?\` hash/delete
+  fallbacks.
+- **Observation:** an unrelated docs commit `18ffb02` from another agent landed mid-session; the
+  source-timing control caught the mismatch and passed again after a fresh export.
+
 ## Rule
 
 Every future implementation, review, finding, negative control, and disposition

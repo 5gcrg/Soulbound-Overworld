@@ -2220,3 +2220,62 @@ OPEN QUESTIONS: OD-012 educator sign-off; browser execution PENDING human evalua
 
 1. `OD-012` educator sign-off and browser execution/PWA evaluation remain pending human authority; no report text changed in this slice.
 2. Five non-journal suites still write the real `user://profiles/profile_01` (probe above). This is pre-existing behavior that predates `SBL-EDU-005` and was **not** in the approved remediation plan, so it is recorded here rather than fixed. Recommend a separate approved slice to give those suites the same disposable-store injection.
+
+---
+
+## SBL-BLD-005 — Archive-Contained JSON Provenance Manifests
+
+- **Milestone** M6 Release Candidate Foundation / Build Integrity & Artifact Governance.
+- **Requirements** GDD-110, GDD-124, GDD-131, FR-REL-001, TC-REL-001, GDD-093, GDD-095, GDD-107, GDD-108, GDD-109, GDD-129, NFR-BUILD-001, NFR-SEC-001, NFR-MAINT-001. Scope and evidence are recorded in the [traceability matrix](traceability-matrix.md) and the [full report](../report/sbl_bld_005_release_manifest_report.md).
+- **Implementation owner** agy (paused; executed by `opencode-go/mimo-v2.6-flash` under the approved plan). **Plan owner** Codex. **Reviewer** Codex CLI.
+- **Branch and implementation commit** `feature/w4-5-vertical-slice`, implementation `30305d6` (documentation committed in the same batch immediately afterwards).
+- **Files**
+  - Create: `scripts/build/release_manifest.ps1`, `scripts/build/test_release_manifest.ps1`, `report/sbl_bld_005_release_manifest_report.md`.
+  - Modify: `scripts/build/export_release.ps1`, `scripts/build/validate_release.ps1`, `scripts/build/run_headless_tests.ps1`, `scripts/build/test_export_failure_restoration.ps1`, `docs/agent-review-queue.md`, `docs/traceability-matrix.md`, `docs/testing.md`, `report/implementation-review-ledger.md`, `report/README.md`.
+- **Asset provenance** None. Build automation and documentation only; no image, audio, or generated content; no gameplay/save/settings/test-`.gd` changes.
+- **Review** REVIEW_PENDING_CODEX. Nothing in this slice is `REVIEWED`; Codex CLI reviews the implementation commit, negative controls, archive evidence, source-status capture timing, and restoration behavior.
+- **Open questions** `OD-017` (shipping default tier) untouched and deferred to human release authority; browser smoke execution remains blocked; `OD-012` and combat ODs untouched. No OD was resolved.
+
+### Changes
+
+1. **Shared manifest library (`scripts/build/release_manifest.ps1`).** Strict RFC 8259 JSON parser with duplicate-member rejection and line/column diagnostics; source provenance captured before any staging or mutation (`git rev-parse HEAD`, `git status --porcelain=v1 --untracked-files=all` with documented LF normalization, `dirty`, `status_porcelain_sha256`; Git failures throw); real `godot --version` output (required `4.7.2.stable.*`) plus executable SHA-256; fixed specs for the three release archives; schema-version-1 manifest creation; ZIP creation with forward-slash entry names; receipt writing for the exact archived manifest bytes; `Test-SblReleaseArchive` byte verifier (entry types incl. symlink/reparse/directory rejection, path safety, ordinal case-sensitive duplicate tracking plus separate case-collision tracking before any hash lookup, exactly one root `release-manifest.json`, receipt digest, strict schema/types/enums/digests with unknown-member rejection, archive identity/tier/platform/preset, exact payload correspondence with streamed raw-byte length and lowercase SHA-256, archived configuration semantics read only from `provenance/` bytes inside the archive, `build_tier.txt` marker, entry points, forbidden files, size constraints); archive-contained PCK gate; proven disposable user-data isolation (probe-first, real-directory byte-identity on exit, seeded copy-on-enter via robocopy, containment-checked long-path-safe cleanup).
+2. **Exporter (`export_release.ps1`).** Strict engine resolution with no silent fallback; provenance captured before staging/mutation; fresh GUID staging root with one isolated directory per package (stale output cannot enter a new package); tier marker + configuration snapshots; manifest from staged payload bytes; ZIP payload+manifest; external receipt; re-open and verify the new ZIP against its receipt before packaging succeeds; publish to `builds/` replacing prior contents (manifest/provenance excluded); `-SkipZip` creates no archive/receipt and performs no archive validation; byte-identical `project.godot`/marker restoration and containment-checked staging cleanup retained on every failure path (the three strings consumed by the `-DisableRestore` control preserved).
+3. **Validator (`validate_release.ps1`).** Every selected archive validated from archive bytes and its external receipt only (never local `builds/` or local configuration as archive evidence); missing Godot fails instead of falling back or skipping the gate; each archive that passes byte verification runs its own extracted-PCK gate under proven disposable user data; real user data must be byte-identical afterwards.
+4. **Canonical runner (`run_headless_tests.ps1`).** Strict engine resolution; enters seeded disposable user-data isolation and proves it before `--import` and every suite; fails if real user data changes; the `-Export` path chains `test_release_manifest.ps1` after successful export/validation and propagates failures.
+5. **Restoration test (`test_export_failure_restoration.ps1`).** Additionally snapshots all `dist/` archives+receipts and asserts in both modes that the failed export leaves no `.staging_*` directory and no dist change (violation exits 2, cannot hide behind the disabled control's expected exit 1).
+6. **Manifest test suite (`test_release_manifest.ps1`).** 62 disposable controls using the same verifier functions as production validation, plus subprocess controls for literal non-zero exits.
+
+### Verification (all commands from the repo root)
+
+| Command | Expected | Observed |
+|---|---|---|
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\test_release_manifest.ps1` | Exit 0 | **Exit 0; 62/62 controls PASS** (negative 32, positive 8, git 5, export 5, engine 4, subprocess 3, restoration 2, preflight 1, sanity 1, isolation 1) |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\run_headless_tests.ps1` | Exit 0 | **Exit 0; 32/32 suites PASS**; disposable user data proved before execution; `realUserDataUnchanged=True`, `disposableFiles=654`, `rootRemoved=True` |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\run_headless_tests.ps1 -Export -Tier all` | Exit 0 | **Exit 0**; 32/32 suites; 3 packages exported with manifest+receipt; self-verification, byte validation and all 3 archive-contained PCK gates pass; chained manifest suite 62/62; isolation intact |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\test_export_failure_restoration.ps1` | Exit 0 | **Exit 0**; mutation observed, `SIMULATED_EXPORT_FAILURE` caught, `project.godot` byte-identical, root marker absent, staging root removed, dist unchanged (6 artifacts) |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\test_export_failure_restoration.ps1 -DisableRestore` | Exit 1 | **Exit 1**; `[NON-VACUOUS PROOF CONFIRMED]` (`project.godot` differs, `build_tier.txt` remained); safety cleanup restored the tree |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\export_release.ps1 -Tier all` (clean tree after `30305d6`) | Exit 0 | **Exit 0**; all three manifests record `commit=30305d6…`, `dirty=false`, `status_porcelain_sha256=e3b0c442…` (empty status); `git status` empty afterwards |
+
+### Final artifacts (clean-tree export after implementation commit `30305d6`)
+
+| Archive | Size (bytes) | ZIP SHA-256 | Payload entries | Archived manifest SHA-256 = receipt |
+|---|---|---|---|---|
+| `dist/Soulbound-AcademicMVP-Web.zip` | 10,806,918 | `950c5ba87d938efab8ce96d951fe313a1bccbf6d505a8a6ba9091204f4e39810` | 12 | `1b423257b764283c9589f62e221d0d52864a9a2cc781fbcd9de02487203fa5d7` |
+| `dist/Soulbound-Web.zip` | 10,806,906 | `88423fe24d28260d1614d185bf177fd4291364371c6dc3056044c31e9bb40cf2` | 12 | `3f0332167b6a097a4ac826e64c2107f96aacae30094fb4117a707009db1b925e` |
+| `dist/Soulbound-Windows-Portable.zip` | 86,680,630 | `57ea5e09049013dff1f6ec46c3cd655005665209059b503334b4ecbce999b6f9` | 5 | `f5ff924408f83defaf3a8c1be48eb84df299049247b3b65090f962fd7777a75c` |
+
+All manifests record `manifest_schema_version=1`, full commit `30305d64eeec74efae983125314904c1461a7004`, `dirty=false`, empty-status digest, `godot.version=4.7.2.stable.official.ed1daf0bf`, executable SHA-256 `c8f0a6bc45a19b33541501e57f6f7cd972ab18453743266339d495cbbe846643`, `renderer=gl_compatibility`, Web `web_thread_support=false` / Windows `null`. Receipt contents equal the archived manifest digests exactly.
+
+### Control highlights (full list in the report)
+
+Missing manifest/receipt (no fallback), malformed and future schema JSON, duplicate JSON member names, `source.commit`/`source.dirty` tampering (receipt mismatch with payload untouched), older same-tier manifest substitution, same-size payload byte flip and length change, deleted/added payload files, duplicate and case-colliding ZIP/payload paths, duplicate and case-variant manifest entries, traversal/absolute/backslash/drive/empty-component paths with a nothing-written-outside-temp-root assertion, unsupported symlink/reparse/directory entries, swapped manifests across tiers (both directions), renderer/thread/tier configuration tampering, snapshot byte and snapshot-semantic tampering, corrupt archive bytes, garbage/wrong receipts, `validate_release.ps1` subprocess exits 1 with matching diagnostics, explicit-invalid and missing-default engine failures with no silent fallback and no gate-skip text, clean/dirty/pre-mutation Git fixture capture and non-repo throw, stale seeded output excluded from the fresh package, `-SkipZip` leaving all dist artifacts byte-identical with no validation, manifest source equal to a live post-run capture, and real user data byte-identical across the suite.
+
+### Execution-time defects fixed before the final runs (for reviewer context)
+
+Pipeline unrolling collapsed parsed JSON arrays (fixed-size `Object[]`) and aborted the suite; case-insensitive exact-path tracking misclassified case collisions (now ordinal `HashSet[string]`); the drive-path diagnostic order made an expectation order-dependent (drive check first, forward-slash control entry); the empty clean-status digest hit mandatory empty-array binding (`[AllowEmptyCollection()]`); export subprocesses needed pre-isolation user data because Godot resolves export templates from `%APPDATA%\Godot\export_templates` (exports proven to leave real user data byte-identical); `ending_chapter5_test.gd` keeps its pre-existing `profile_01` baseline via the runner's seeded disposable (test file untouched, out of batch scope); deep seeded shader-cache paths beyond MAX_PATH required robocopy seeding plus `\\?\` hashing/deletion fallbacks.
+
+### Notes for Codex CLI
+
+- An unrelated docs commit `18ffb02` landed from another agent mid-session; the source-timing control correctly failed against it and passed again after a fresh export. Final manifests record `30305d6`.
+- The receipt is an integrity reference, not a signature; coordinated archive+receipt replacement remains out of scope. Dirty builds are permitted and honestly recorded.
+- Raw evidence logs (gitignored): `report/release_manifest_test.log`, `report/godot_user_data_isolation.log`, `report/verify_pck_*.log|.err`; run transcripts in the session temp directory.

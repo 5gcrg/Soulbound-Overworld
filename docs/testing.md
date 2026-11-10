@@ -80,3 +80,46 @@ At current development baseline (SBL-EDU-005 learning journal & reporting engine
 
 - The script exits `0` if and only if Godot `--import` succeeds and every enumerated suite passes.
 - If any suite exits non-zero, the runner prints a failure summary and terminates with exit code `1`.
+
+## Release Manifest Tests (SBL-BLD-005)
+
+The canonical runner chains the release-manifest suite after a successful `-Export`, and it can
+be run standalone:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\test_release_manifest.ps1
+```
+
+- The suite exits `0` only when **all 62 controls** behave as specified; any unexpected result
+  exits `1`. Controls cover valid synthetic fixtures, the three real packages plus their
+  archive-contained PCK gates, missing/malformed/future manifests and receipts, metadata/payload
+  tampering, duplicate/case-colliding/traversal/unsupported entry paths and types, swapped
+  manifests, configuration tampering, clean/dirty/pre-mutation Git capture, stale output,
+  `-SkipZip`, engine failures (explicit-invalid and missing-default, with no silent fallback),
+  the existing restoration controls, and real-user-data byte identity.
+- It uses the **same verifier functions** as production validation
+  (`scripts/build/release_manifest.ps1`), and every tampered archive is a disposable copy under a
+  fresh temporary directory that is removed on exit.
+- Full control list, artifact hashes/sizes, and command/exit evidence:
+  [`report/sbl_bld_005_release_manifest_report.md`](../report/sbl_bld_005_release_manifest_report.md).
+  Raw log: `report/release_manifest_test.log`.
+
+## Disposable User-Data Isolation for Godot Runs
+
+Every Godot test and PCK gate runs with `APPDATA`/`LOCALAPPDATA` redirected to a fresh temporary
+root, and the redirection is **proved before execution** by a headless probe that prints
+`OS.get_user_data_dir()` under that root:
+
+- `run_headless_tests.ps1` (import + all suites), `validate_release.ps1` (PCK gates), and
+  `test_release_manifest.ps1` (its gates) each enter isolation, then compare SHA-256 digests of
+  the real roaming/local Godot directories before and after the run; a change fails the run.
+- The runner additionally **seeds** its disposable from a copy-on-enter snapshot of the real
+  `%APPDATA%\Godot` (robocopy, verified by file count) so suites keep the historical baseline
+  state they depend on (e.g. pre-existing `profile_01`) and chained exporters can resolve
+  `%APPDATA%\Godot\export_templates`; every write still lands in the disposable copy, which is
+  removed at exit through a containment-checked, long-path-safe cleanup.
+- Exporter subprocesses spawned by the manifest suite are restored to the pre-isolation
+  environment solely because Godot resolves export templates from `%APPDATA%\Godot`; an
+  empirical before/after digest proves an export leaves the real directory byte-identical.
+- Evidence is appended to `report/godot_user_data_isolation.log` (probe path,
+  `realUserDataUnchanged`, disposable file count, root removal).
