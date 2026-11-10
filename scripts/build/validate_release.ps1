@@ -2,6 +2,11 @@
 # SBL-VER-003 / SBL-BLD-002: Asserts entry points, single-threaded web configuration, compatibility renderer,
 # clean non-debug artifact contents, plausible binary/pck sizes, release tier marker verification,
 # and end-to-end headless gate assertion.
+# SBL-BLD-005: strictly verifies archive-contained release-manifest.json + external receipt, payload
+# raw-byte sizes/SHA-256, duplicate/case-colliding/unsafe paths, unsupported entry types, package
+# identity (archive/platform/tier/preset) and archived configuration semantics using archive bytes
+# only - never local builds/ payloads or local configuration as archive evidence. The live PCK gate
+# requires Godot and runs under proven disposable user data; a missing engine fails instead of skipping.
 
 param (
     [string]$DistDir = "dist",
@@ -24,14 +29,13 @@ $ResolvedDist = if ([System.IO.Path]::IsPathRooted($DistDir)) { $DistDir } else 
 $ResolvedPresets = if ([System.IO.Path]::IsPathRooted($PresetsPath)) { $PresetsPath } else { Join-Path $ProjectRoot $PresetsPath }
 $ResolvedGodotConfig = if ([System.IO.Path]::IsPathRooted($ProjectGodotPath)) { $ProjectGodotPath } else { Join-Path $ProjectRoot $ProjectGodotPath }
 
-if (-not (Test-Path $GodotPath)) {
-    $fallbackGui = "C:\Users\ALCOHOL\Downloads\Godot_v4.7.2-stable_win64.exe\godot.exe"
-    if (Test-Path $fallbackGui) {
-        $GodotPath = $fallbackGui
-    } else {
-        $cmd = Get-Command "godot" -ErrorAction SilentlyContinue
-        if ($cmd) { $GodotPath = $cmd.Source }
-    }
+. (Join-Path $PSScriptRoot "release_manifest.ps1")
+
+# The live archive-contained PCK gate is REQUIRED. A missing engine (default
+# or explicit) fails immediately: no silent fallback to a GUI/PATH binary and
+# no successful skip of the gate (SBL-BLD-005).
+if (-not (Test-Path -LiteralPath $GodotPath)) {
+    throw "Godot executable not found at '$GodotPath'; the required archive-contained PCK gate cannot run. No fallback or skip is attempted."
 }
 
 Write-Host "=========================================" -ForegroundColor Cyan
@@ -41,7 +45,8 @@ Write-Host "Target Tier: $Tier" -ForegroundColor Gray
 
 $Failures = @()
 
-# 1. Preset & Configuration Validation
+# 1. Preset & Configuration Validation (local repository configuration only;
+#    archive evidence is verified separately from archive bytes below).
 Write-Host "`n[1/5] Validating Export Presets & Renderer Settings..." -ForegroundColor Yellow
 
 if (-not (Test-Path $ResolvedPresets)) {
@@ -71,99 +76,31 @@ if (-not (Test-Path $ResolvedGodotConfig)) {
     }
 }
 
-# Helper to inspect zip
-function Validate-ZipArchive {
+# Helper: verify one selected archive with the shared verifier (archive bytes
+# and external receipt only) and return its diagnostics.
+function Test-SelectedArchive {
     param (
         [string]$ZipPath,
         [string]$PlatformName,
         [string]$ExpectedTier,
-        [string[]]$RequiredEntries,
+        [string]$ExpectedPlatform,
+        [string]$ExpectedPreset,
         [hashtable]$SizeConstraints
     )
-
-    if (-not (Test-Path $ZipPath)) {
-        return @("Missing distribution package for ${PlatformName}: $ZipPath")
+    $verifyErrors = Test-SblReleaseArchive `
+        -ArchivePath $ZipPath `
+        -ExpectedTier $ExpectedTier `
+        -ExpectedPlatform $ExpectedPlatform `
+        -ExpectedPreset $ExpectedPreset `
+        -SizeConstraints $SizeConstraints
+    if ($verifyErrors.Count -eq 0) {
+        Write-Host "  PASS: [$PlatformName] release-manifest.json, external receipt, payload sizes/SHA-256, entry paths, and package identity verified from archive bytes." -ForegroundColor Green
+        return ,([string[]]@())
     }
-
-    $errors = @()
-    $zip = $null
-    try {
-        $zip = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
-        $entryNames = @($zip.Entries | ForEach-Object { $_.FullName })
-        $entryMap = @{}
-        foreach ($e in $zip.Entries) {
-            $entryMap[$e.FullName] = $e.Length
-        }
-
-        # Check required entry points
-        foreach ($req in $RequiredEntries) {
-            if ($entryNames -notcontains $req) {
-                $errors += "[$PlatformName] Missing required entry point: '$req'"
-            } else {
-                Write-Host "  PASS: [$PlatformName] Contains required entry point '$req' ($($entryMap[$req]) bytes)." -ForegroundColor Green
-            }
-        }
-
-        # Check build_tier.txt marker
-        $tierEntry = $zip.GetEntry("build_tier.txt")
-        if ($null -eq $tierEntry) {
-            $errors += "[$PlatformName] Missing 'build_tier.txt' marker inside $ZipPath"
-        } else {
-            $stream = $tierEntry.Open()
-            $reader = New-Object System.IO.StreamReader($stream)
-            $actualMarker = $reader.ReadToEnd().Trim()
-            $reader.Dispose()
-            $stream.Dispose()
-
-            if (-not [string]::IsNullOrWhiteSpace($ExpectedTier)) {
-                if ($actualMarker -ne $ExpectedTier) {
-                    $errors += "[$PlatformName] build_tier.txt marker '$actualMarker' does not match expected tier '$ExpectedTier'."
-                } else {
-                    Write-Host "  PASS: [$PlatformName] build_tier.txt marker matches expected tier '$ExpectedTier'." -ForegroundColor Green
-                }
-            }
-        }
-
-        # Check for forbidden leftovers (debug, editor, temp, import metadata)
-        $forbiddenExtensions = @(".uid", ".import", ".tmp", ".bak", ".swp", ".log", ".err")
-        $forbiddenPrefixes = @(".godot/", ".git/", "tests/", "report/")
-
-        foreach ($entry in $entryNames) {
-            foreach ($ext in $forbiddenExtensions) {
-                if ($entry.EndsWith($ext, [System.StringComparison]::OrdinalIgnoreCase)) {
-                    $errors += "[$PlatformName] Contains forbidden editor/build artifact: '$entry'"
-                }
-            }
-            foreach ($pfx in $forbiddenPrefixes) {
-                if ($entry.StartsWith($pfx, [System.StringComparison]::OrdinalIgnoreCase)) {
-                    $errors += "[$PlatformName] Contains forbidden debug/test path: '$entry'"
-                }
-            }
-        }
-
-        # Check size constraints
-        foreach ($entryName in $SizeConstraints.Keys) {
-            if ($entryMap.ContainsKey($entryName)) {
-                $len = $entryMap[$entryName]
-                $min = $SizeConstraints[$entryName].Min
-                $max = $SizeConstraints[$entryName].Max
-                if ($null -ne $min -and $len -lt $min) {
-                    $errors += "[$PlatformName] '$entryName' size $len bytes is below minimum threshold of $min bytes."
-                }
-                if ($null -ne $max -and $len -gt $max) {
-                    $errors += "[$PlatformName] '$entryName' size $len bytes exceeds maximum threshold of $max bytes."
-                }
-            }
-        }
-    } catch {
-        $errors += "[$PlatformName] Failed reading zip archive: $_"
-    } finally {
-        if ($null -ne $zip) {
-            $zip.Dispose()
-        }
+    foreach ($verifyError in $verifyErrors) {
+        Write-Host "  FAIL: [$PlatformName] $verifyError" -ForegroundColor Red
     }
-
-    return $errors
+    return ,([string[]]$verifyErrors)
 }
 
 # Determine which packages to validate
@@ -179,164 +116,88 @@ if ($Tier -eq "auto") {
 }
 
 # 2. Validate Academic MVP Package (if applicable)
-Write-Host "`n[2/5] Validating Academic MVP distribution package..." -ForegroundColor Yellow
+Write-Host "`n[2/5] Validating Academic MVP distribution package (manifest + payload)..." -ForegroundColor Yellow
+$gateTargets = @()
 if ($checkAcademicMvp) {
     $MvpWebZipPath = Join-Path $ResolvedDist "Soulbound-AcademicMVP-Web.zip"
-    $MvpWebRequired = @("index.html", "index.wasm", "index.pck", "build_tier.txt")
     $MvpWebConstraints = @{
         "index.pck"  = @{ Min = $MinPckSizeBytes; Max = $MaxPckSizeBytes }
         "index.wasm" = @{ Min = $MinWasmSizeBytes; Max = $null }
     }
-    $mvpErrors = Validate-ZipArchive -ZipPath $MvpWebZipPath -PlatformName "AcademicMVP-Web" -ExpectedTier "academic_mvp" -RequiredEntries $MvpWebRequired -SizeConstraints $MvpWebConstraints
+    $mvpErrors = Test-SelectedArchive -ZipPath $MvpWebZipPath -PlatformName "AcademicMVP-Web" -ExpectedTier "academic_mvp" -ExpectedPlatform "web" -ExpectedPreset "Web" -SizeConstraints $MvpWebConstraints
     $Failures += $mvpErrors
+    if ($mvpErrors.Count -eq 0) {
+        $gateTargets += @{ ZipPath = $MvpWebZipPath; Spec = Get-SblPackageSpec -ArchiveName "Soulbound-AcademicMVP-Web.zip" }
+    }
 } else {
     Write-Host "  Skipped (not requested for tier '$Tier')." -ForegroundColor Gray
 }
 
 # 3. Validate Full Release Packages (if applicable)
-Write-Host "`n[3/5] Validating Full Release distribution packages..." -ForegroundColor Yellow
+Write-Host "`n[3/5] Validating Full Release distribution packages (manifest + payload)..." -ForegroundColor Yellow
 if ($checkFullRelease) {
     # Full Web
     $WebZipPath = Join-Path $ResolvedDist "Soulbound-Web.zip"
-    $WebRequired = @("index.html", "index.wasm", "index.pck", "build_tier.txt")
     $WebConstraints = @{
         "index.pck"  = @{ Min = $MinPckSizeBytes; Max = $MaxPckSizeBytes }
         "index.wasm" = @{ Min = $MinWasmSizeBytes; Max = $null }
     }
-    $webErrors = Validate-ZipArchive -ZipPath $WebZipPath -PlatformName "FullRelease-Web" -ExpectedTier "full_release" -RequiredEntries $WebRequired -SizeConstraints $WebConstraints
+    $webErrors = Test-SelectedArchive -ZipPath $WebZipPath -PlatformName "FullRelease-Web" -ExpectedTier "full_release" -ExpectedPlatform "web" -ExpectedPreset "Web" -SizeConstraints $WebConstraints
     $Failures += $webErrors
+    if ($webErrors.Count -eq 0) {
+        $gateTargets += @{ ZipPath = $WebZipPath; Spec = Get-SblPackageSpec -ArchiveName "Soulbound-Web.zip" }
+    }
 
     # Full Windows
     $WinZipPath = Join-Path $ResolvedDist "Soulbound-Windows-Portable.zip"
-    $WinRequired = @("Soulbound.exe", "Soulbound.pck", "build_tier.txt")
     $WinConstraints = @{
         "Soulbound.pck" = @{ Min = $MinPckSizeBytes; Max = $MaxPckSizeBytes }
         "Soulbound.exe" = @{ Min = $MinExeSizeBytes; Max = $null }
     }
-    $winErrors = Validate-ZipArchive -ZipPath $WinZipPath -PlatformName "FullRelease-Windows" -ExpectedTier "full_release" -RequiredEntries $WinRequired -SizeConstraints $WinConstraints
+    $winErrors = Test-SelectedArchive -ZipPath $WinZipPath -PlatformName "FullRelease-Windows" -ExpectedTier "full_release" -ExpectedPlatform "windows" -ExpectedPreset "Windows Desktop" -SizeConstraints $WinConstraints
     $Failures += $winErrors
+    if ($winErrors.Count -eq 0) {
+        $gateTargets += @{ ZipPath = $WinZipPath; Spec = Get-SblPackageSpec -ArchiveName "Soulbound-Windows-Portable.zip" }
+    }
 } else {
     Write-Host "  Skipped (not requested for tier '$Tier')." -ForegroundColor Gray
 }
 
-# 4. End-to-End Headless Gate Verification via Mounted PCK
+# 4. End-to-End Headless Gate Verification via each archive's OWN mounted PCK.
+#    Runs only for archives that passed manifest verification, under proven
+#    disposable user data (probe first, byte-identity assertion after).
 Write-Host "`n[4/5] Running End-to-End Headless Gate Verification on Artifact PCKs..." -ForegroundColor Yellow
-$verifyScript = "res://tests/headless/verify_exported_tier.gd"
 
-if (Test-Path $GodotPath) {
-    # Helper to test pck extracted from archive
-    function Test-PckGate {
-        param (
-            [string]$PckPath,
-            [string]$TierName,
-            [string]$PlatformName
-        )
-        if (-not (Test-Path $PckPath)) {
-            return "[$PlatformName] PCK file not found for verification: $PckPath"
-        }
-        $logPath = Join-Path $ProjectRoot "report\verify_pck_${PlatformName}.log"
-        $errPath = Join-Path $ProjectRoot "report\verify_pck_${PlatformName}.err"
-        
-        $proc = Start-Process -FilePath $GodotPath `
-            -ArgumentList @(
-                "--headless",
-                "--main-pack", $PckPath,
-                "--script", $verifyScript,
-                "--quit-after", "600",
-                "--", $TierName
-            ) `
-            -NoNewWindow -Wait -PassThru `
-            -RedirectStandardOutput $logPath -RedirectStandardError $errPath
-
-        if ($proc.ExitCode -ne 0) {
-            $errText = Get-Content $errPath -Raw -ErrorAction SilentlyContinue
-            return "Headless gate verification failed for '$TierName' on $PlatformName ($PckPath) (Exit $($proc.ExitCode)): $errText"
-        }
-        Write-Host "  PASS: [$PlatformName] Headless gate verification succeeded on extracted $PckPath (tier '$TierName')." -ForegroundColor Green
-        return $null
-    }
-
-    $targetsToVerify = @()
-    if ($checkAcademicMvp) {
-        $targetsToVerify += @{
-            ZipName = "Soulbound-AcademicMVP-Web.zip"
-            PckEntry = "index.pck"
-            PlatformName = "AcademicMVP-Web"
-            ExpectedMarker = "academic_mvp"
-        }
-    }
-    if ($checkFullRelease) {
-        $targetsToVerify += @{
-            ZipName = "Soulbound-Web.zip"
-            PckEntry = "index.pck"
-            PlatformName = "FullRelease-Web"
-            ExpectedMarker = "full_release"
-        }
-        $targetsToVerify += @{
-            ZipName = "Soulbound-Windows-Portable.zip"
-            PckEntry = "Soulbound.pck"
-            PlatformName = "FullRelease-Windows"
-            ExpectedMarker = "full_release"
-        }
-    }
-
-    $tempExtractDir = Join-Path ([System.IO.Path]::GetTempPath()) ("sb_validate_pck_" + [System.Guid]::NewGuid().ToString("N"))
-    New-Item -ItemType Directory -Path $tempExtractDir -Force | Out-Null
-
+if ($gateTargets.Count -eq 0) {
+    Write-Host "  No archive passed manifest verification; PCK gates not executed (validation is already failing)." -ForegroundColor Yellow
+} else {
+    $isolation = Enter-SblGodotUserDataIsolation -GodotPath $GodotPath -ProjectRoot $ProjectRoot.Path -Label "validate_release"
+    Write-Host "  Disposable user data proved before gates: $($isolation.ProbeUserDir)" -ForegroundColor Gray
+    $isolationResult = $null
     try {
-        foreach ($target in $targetsToVerify) {
-            $zipPath = Join-Path $ResolvedDist $target.ZipName
-            if (-not (Test-Path $zipPath)) {
-                $Failures += "[$($target.PlatformName)] Archive not found: $zipPath"
-                continue
-            }
-
-            $zip = $null
-            $markerTier = ""
-            $extractedPckPath = Join-Path $tempExtractDir "$($target.PlatformName)_$($target.PckEntry)"
-            try {
-                $zip = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
-                $tierEntry = $zip.GetEntry("build_tier.txt")
-                if ($null -eq $tierEntry) {
-                    $Failures += "[$($target.PlatformName)] Missing 'build_tier.txt' in $zipPath"
-                    continue
-                }
-                $stream = $tierEntry.Open()
-                $reader = New-Object System.IO.StreamReader($stream)
-                $markerTier = $reader.ReadToEnd().Trim()
-                $reader.Dispose()
-                $stream.Dispose()
-
-                if (-not [string]::IsNullOrWhiteSpace($target.ExpectedMarker) -and $markerTier -ne $target.ExpectedMarker) {
-                    $Failures += "[$($target.PlatformName)] build_tier.txt marker '$markerTier' does not match expected tier '$($target.ExpectedMarker)'."
-                }
-
-                $pckEntry = $zip.GetEntry($target.PckEntry)
-                if ($null -eq $pckEntry) {
-                    $Failures += "[$($target.PlatformName)] Missing '$($target.PckEntry)' in $zipPath"
-                    continue
-                }
-
-                [System.IO.Compression.ZipFileExtensions]::ExtractToFile($pckEntry, $extractedPckPath, $true)
-            } catch {
-                $Failures += "[$($target.PlatformName)] Failed extracting from zip: $_"
-                continue
-            } finally {
-                if ($null -ne $zip) { $zip.Dispose() }
-            }
-
-            $gateErr = Test-PckGate -PckPath $extractedPckPath -TierName $markerTier -PlatformName $target.PlatformName
-            if ($gateErr) {
-                $Failures += $gateErr
+        foreach ($target in $gateTargets) {
+            $gateError = Invoke-SblArchivePckGate `
+                -ArchivePath $target.ZipPath `
+                -GodotPath $GodotPath `
+                -Spec $target.Spec `
+                -ReportDir (Join-Path $ProjectRoot "report")
+            if ($gateError) {
+                $Failures += $gateError
+            } else {
+                Write-Host "  PASS: [$($target.Spec.Label)] Headless gate verification succeeded on the archive's own extracted PCK (tier '$($target.Spec.Tier)')." -ForegroundColor Green
             }
         }
     } finally {
-        if (Test-Path $tempExtractDir) {
-            Remove-Item -Path $tempExtractDir -Recurse -Force -ErrorAction SilentlyContinue
-        }
+        $isolationResult = Exit-SblGodotUserDataIsolation -State $isolation
     }
-} else {
-    Write-Host "  Godot binary not found at '$GodotPath'; skipping live headless PCK gate execution." -ForegroundColor Yellow
+
+    $isolationLog = Join-Path $ProjectRoot "report\godot_user_data_isolation.log"
+    Add-Content -Path $isolationLog -Value "[$(Get-Date -Format o)] validate_release: probe=$($isolationResult.ProbeUserDir); realUserDataUnchanged=$($isolationResult.RealDataUnchanged); disposableFiles=$($isolationResult.DisposableFileCount); rootRemoved=$($isolationResult.RootRemoved)"
+    if (-not $isolationResult.RealDataUnchanged) {
+        $Failures += "Disposable user-data isolation proof failed: real Godot user data changed during validation."
+    } else {
+        Write-Host "  PASS: real Godot user data byte-identical before/after (disposable root used, $($isolationResult.DisposableFileCount) file(s) written there)." -ForegroundColor Green
+    }
 }
 
 # 5. Summary and Result

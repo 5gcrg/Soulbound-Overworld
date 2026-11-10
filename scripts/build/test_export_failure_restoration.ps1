@@ -3,6 +3,9 @@
 # Proves that the failure is injected AFTER release_tier and build_tier.txt mutations occur,
 # that the exporter's finally block restores project.godot byte-identically and removes build_tier.txt,
 # and proves the test is non-vacuous by verifying that running with restore disabled fails (exits 1).
+# SBL-BLD-005: additionally covers the new temporary export state - the fresh staging root must be
+# removed and dist/ archives plus receipts must remain byte-identical on the failed run (both modes;
+# a violation exits 2 so it cannot hide behind the expected exit 1 of the disabled control).
 #
 # Usage:
 #   Normal test (exits 0 on success):
@@ -22,9 +25,31 @@ Set-Location $ProjectRoot
 
 $godotConfig = Join-Path $ProjectRoot "project.godot"
 $markerPath = Join-Path $ProjectRoot "build_tier.txt"
+$buildsRoot = Join-Path $ProjectRoot "builds"
+$distRoot = Join-Path $ProjectRoot "dist"
 
 if (-not (Test-Path $godotConfig)) {
     throw "project.godot not found at: $godotConfig"
+}
+
+function Get-DistPackageState {
+    # name -> "length:sha256" for every dist archive and manifest receipt.
+    $state = @{}
+    if (-not (Test-Path -LiteralPath $distRoot)) { return $state }
+    foreach ($file in @(Get-ChildItem -LiteralPath $distRoot -File -Force | Where-Object { $_.Name -like "*.zip" -or $_.Name -like "*.manifest.sha256" })) {
+        $state[$file.Name] = "$($file.Length):$((Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash)"
+    }
+    return $state
+}
+
+function Test-DistPackageStateEqual {
+    param($Before, $After)
+    if ($Before.Count -ne $After.Count) { return $false }
+    foreach ($key in $Before.Keys) {
+        if (-not $After.ContainsKey($key)) { return $false }
+        if ($After[$key] -cne $Before[$key]) { return $false }
+    }
+    return $true
 }
 
 Write-Host "=========================================" -ForegroundColor Cyan
@@ -39,6 +64,8 @@ $markerPreExisted = Test-Path $markerPath
 
 Write-Host "Pre-test project.godot SHA256: $preSha" -ForegroundColor Gray
 Write-Host "Pre-test build_tier.txt exists: $markerPreExisted" -ForegroundColor Gray
+$preDist = Get-DistPackageState
+Write-Host "Pre-test dist archives/receipts: $($preDist.Count) artifact(s) snapshotted." -ForegroundColor Gray
 
 $tempScriptPath = $null
 $stdoutFile = [System.IO.Path]::GetTempFileName()
@@ -118,6 +145,26 @@ try {
     if (-not $failureInjected) {
         Write-Error "FAIL: SIMULATED_EXPORT_FAILURE was NOT observed in output!"
         exit 1
+    }
+
+    # 5b. Temporary export state (SBL-BLD-005): the fresh staging root must be
+    #     removed and dist/ archives + receipts must remain byte-identical,
+    #     because the injected failure occurs before packaging. Checked in both
+    #     modes; a violation exits 2 so it cannot hide behind the disabled
+    #     control's expected exit 1.
+    $stagingLeftovers = @(Get-ChildItem -LiteralPath $buildsRoot -Directory -Force -ErrorAction SilentlyContinue | Where-Object { $_.Name -like ".staging_*" })
+    $stagingClean = ($stagingLeftovers.Count -eq 0)
+    $postDist = Get-DistPackageState
+    $distUnchanged = Test-DistPackageStateEqual -Before $preDist -After $postDist
+    Write-Host "  Staging root removed after failure: $stagingClean"
+    Write-Host "  dist archives/receipts unchanged:   $distUnchanged ($($postDist.Count) artifact(s) snapshotted)"
+    if (-not $stagingClean) {
+        Write-Error "FAIL: staging leftovers after failed export: $($stagingLeftovers.Name -join ', ')"
+        exit 2
+    }
+    if (-not $distUnchanged) {
+        Write-Error "FAIL: dist archives/receipts changed during the failed export run!"
+        exit 2
     }
 
     # 6. Branch on Restore Mode
