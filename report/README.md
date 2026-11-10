@@ -2,6 +2,13 @@
 
 This directory stores the official engineering and milestone implementation reports for the Soulbound project.
 
+- [OD-002/003/004 Owner-Approved Combat Batch Report (November 10, 2026)](od002_003_004_combat_report.md)
+  - OD-002 initiative: effective Agility ordering, stable actor ID ascending ties, one main action per actor per round, no ATB/extra turns/reaction attacks/rolls, haste-slow applied only at the round boundary, next-three-actor battle HUD
+  - OD-003 Kurei roles: six categories with role identity only (no rock-paper-scissors multiplier chart), authored base_power/pip costs/cooldowns and SP baselines 2 / 3 / 4 unchanged, unsupported advanced boss effects stay disabled and mutation-free
+  - OD-004 statuses: refresh to larger duration/potency with no intensity stacking, approved durations (3/2/1), Stun skips exactly one action, Shield 3 turns or depleted, cleanse removes negatives only, bosses share the policy with no hidden resistance
+  - Evidence: targeted combat suites exit 0, canonical suite 33/33 exit 0, negative controls exit 1
+  - Status: `REVIEW_PENDING_CODEX`
+
 - [OD-009 MVP Save Boundary Report (November 10, 2026)](od009_save_boundary_report.md)
   - Owner-ratified OD-009 MVP scope: persist only at room/exploration boundaries; mid-battle and partial-turn state is never serialized; future fields stay `TBD`
   - Explicit save-boundary guards (`GameRoot.get_save_blocker` / `check_save_boundary` / `request_save`) rejecting before any profile mutation with actionable diagnostics; OD-009 documentation and an in-flight-extraction snapshot guard in `DungeonExpedition`; boundary contract documented on `ProfileStore.save_profile`

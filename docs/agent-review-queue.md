@@ -2379,3 +2379,71 @@ Control detail: `report/performance_evidence_test.log` (gitignored) plus the tab
 ### Review history
 
 - None yet. Codex CLI review was explicitly deferred by the task instruction; this entry is queued as `REVIEW_PENDING_CODEX` under AGENTS.md rule 5.
+---
+
+## SBL-OD-002/003/004 - Owner-Approved Combat Batch
+
+```text
+TASK ID: SBL-OD-002/003/004
+REQUIREMENTS: GDD-016, GDD-017, GDD-018, GDD-019, GDD-020, GDD-021, GDD-022, GDD-023, GDD-030, GDD-089, FR-CMB-001, FR-CMB-002, FR-CMB-003, FR-CMB-004, FR-MAG-001, FR-MAG-002, TC-CMB-001, TC-CMB-002, TC-CMB-003, TC-SAV-001
+MILESTONE: Release Hardening & Scope Boundary Management (owner-approved OD-002/003/004 combat batch)
+OWNER: agy (executed by opencode-go/mimo-v2.6-flash under the owner-approved plan)
+PLAN OWNER: Codex (docs/agy-next-queue.md; approved values report/complete-od002-011-proposal.md Stage A)
+BRANCH/COMMIT: feature/w4-5-vertical-slice (implementation commit recorded below)
+FILES CHANGED: scripts/combat/initiative_order.gd (new), scripts/combat/status_engine.gd, scripts/magic/kurei_system.gd, scenes/combat/battle_fixture.gd, scenes/combat/battle_fixture.tscn, scenes/combat/boss_encounter.gd, scenes/combat/boss_encounter.tscn, tests/headless/initiative_test.gd (new), tests/headless/status_engine_test.gd, tests/headless/kurei_combat_test.gd, tests/headless/boss_combat_test.gd, docs/agent-review-queue.md, docs/traceability-matrix.md, docs/testing.md, docs/open-decisions-ledger.md, report/od002_003_004_combat_report.md, report/README.md
+ASSET PROVENANCE: none
+TESTS RUN + RESULTS: targeted initiative_test, combat_test, kurei_combat_test, boss_combat_test, status_engine_test and layout_audit_test exit 0; three negative controls exit 1 (12 / 2 / 2 failed checks) and were restored; canonical suite 33/33 exit 0 with real user data unchanged
+REVIEW: REVIEW_PENDING_CODEX
+OPEN QUESTIONS: see below
+```
+
+- **Milestone** Release Hardening & Scope Boundary Management; owner-approved `OD-002` (initiative), `OD-003` (Kurei roles/costs) and `OD-004` (status policy) per `docs/agy-next-queue.md` and `report/complete-od002-011-proposal.md`.
+- **Requirements** GDD-016..023, GDD-030, GDD-089, FR-CMB-001/002/003/004, FR-MAG-001/002, TC-CMB-001/002/003, TC-SAV-001. [Traceability](traceability-matrix.md); full evidence: [OD-002/003/004 report](../report/od002_003_004_combat_report.md).
+- **Implementation owner** `opencode-go/mimo-v2.6-flash` (MiMo execution) under the agy contract. **Plan owner** Codex/OpenCode. **Reviewer** Codex CLI - explicitly **not called** for this slice; nothing here is `REVIEWED`.
+- **Branch and commit** `feature/w4-5-vertical-slice` (worktree `soulbound-overworld`), implementation commit `494c412` (docs committed immediately afterwards in the same batch), both tagged `[REVIEW_PENDING_CODEX]`.
+- **Files** see the block above. `scenes/main/game_root.gd`, `scripts/persistence/*`, `scripts/magic/kurei_tree.gd`, dungeon/story/education code, `project.godot` and export configuration are untouched.
+- **Asset provenance** None. No images, audio, generated content or new gameplay numbers; only approved OD-002/003/004 behavior and documentation.
+- **Review** `REVIEW_PENDING_CODEX`. Human release sign-off also pending.
+
+### Changes
+
+1. **OD-002 initiative engine (`scripts/combat/initiative_order.gd`, new).** Registers combatants with a stable actor ID (registration/spawn order), snapshots *effective Agility* (authored base + haste/slow modifier) at every `begin_round()`, sorts by effective Agility descending then stable actor ID ascending (registration order as a final total-order tiebreak), and budgets exactly one main action per actor per round (`record_action` / `can_act` / `is_round_complete`). The engine contains no time input and no random input, so ATB and initiative rolls cannot occur; `get_next_actors(3)` powers the HUD preview.
+2. **OD-002 wiring in both combat scenes.** `BattleFixture` and `BossEncounter` register `ren` + `enemy`/`boss`, open round 1 in `_ready()`, reject any `request_action` while Ren has already spent the round's action (zero mutation), record Ren's accepted action, and hand play to the next actor through `_resolve_next_actor()` (round boundary + haste/slow application). Opponent-first rounds resolve the opponent before Ren's input; the fixture defers its opponent turn only while an in-round action is pending, which prevents a phantom extra turn when Ren's action closes the round. A `TurnOrderLabel` in each scene shows the next three actors (`Next: Ren > Adversary > Ren`). Ren's initiative value comes from the authored `CharacterStats` default; opponent/boss Agility is unauthored `TBD` held at 0 so existing balance is preserved.
+3. **OD-003 Kurei roles (`scripts/magic/kurei_system.gd`).** `CATEGORY_ROLES` plus `get_category_role()` / `get_skill_role()` record the six approved roles (Flame `damage/Burn`, Torrent `heal/cleanse`, Gale `haste/evasion`, Earth `shield/mitigation`, Lumina `pierce/focus`, Umbra `drain/debuff`). No multiplier/weakness/resistance/affinity/counter field and no chart constant was added; authored pip costs, cooldowns, base powers, SP baselines (2 / 3, Phase Mastery 4) are unchanged, and no regeneration/critical/resistance/damage/boss-effect formula was authored. Unsupported advanced boss effects stay disabled with the pending-design notice.
+4. **OD-004 status policy (`scripts/combat/status_engine.gd`).** `OD004_DEFAULT_DURATIONS` (Burn/Poison/Bleed/Regeneration 3, Defense Up/Down 2, Silence 1, Stun 1, Shield 3) is the single source of truth and acts as default and cap; reapplication refreshes to the larger duration and larger potency with `stacks` pinned to 1; `cleanse_negative()` removes negative statuses only; `consume_stun()` implements "Stun skips exactly one action"; Shield still expires when depleted. Both scenes consume the Stun instead of resolving the skipped action (the telegraph does not advance) and apply the approved durations (Flame Burst Burn 2→3, Glacial Aegis Shield 2→3, Void Shift Defense Up 1→2, boss Defend Defense Up 1→2, boss Torrent Surge Regeneration 2→3). Torrent Surge now cleanses (approved Torrent role). Bosses share the identical engine - no hidden resistance.
+5. **Regression coverage.** New `tests/headless/initiative_test.gd` (115 checks) covers ordering, stable-ID ties, one-action-per-round, no-extra-turn controls, determinism (no rolls/ATB), round-boundary haste/slow, next-three HUD in both scenes, opponent-first and boss-first flows, and duplicate-action zero-mutation controls. `status_engine_test.gd` (64 checks) adds the OD-004 policy section (approved durations, caps, refresh/no-stack, expiry ladder, depleted Shield, cleanse, Stun consume) and aligns the Silence expectation with the approved 1 turn. `kurei_combat_test.gd` (103 checks) adds the OD-003 role/value/no-chart controls and OD-004 fixture controls (Burn duration/refresh, Stun skip, Torrent cleanse). `boss_combat_test.gd` (108 checks) adds boss HUD/round/one-action controls, boss-vs-Ren status parity, Stun skipping one boss action, and an 8-action unsupported-skill snapshot suite.
+
+### Verification (Godot 4.7.2 Stable `ed1daf0bf`, Windows headless, disposable user data)
+
+| Command | Observed result |
+|---|---|
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\run_headless_tests.ps1 -Suite initiative_test` | **Exit 0, PASS (1.02 s)** — new OD-002 suite, 115 checks. |
+| `... -Suite combat_test` | **Exit 0, PASS** — `combat_test`, `kurei_combat_test`, `boss_combat_test` all green (baseline before the change was green too). |
+| `... -Suite status_engine_test` | **Exit 0, PASS (1.01 s)** — 64 checks incl. OD-004. |
+| `... -Suite layout_audit_test` | **Exit 0, PASS (1.01 s)** — BossEncounter panel and Kurei-menu rects stay inside 960x540 at 1.0x and 1.5x with the new HUD label (first attempt failed at 1.5x; the label was moved into the fighter row and re-verified). |
+| `... run_headless_tests.ps1` (canonical) | **Exit 0, 33/33 suites PASS** (import clean, `realUserDataUnchanged=True`, `disposableFiles=654`, `rootRemoved=True`). |
+| Negative control: `InitiativeOrder.can_act()` budget disabled | **Exit 1, 12 failed checks** in `initiative_test` (duplicate main action accepted, rejected-action mutation checks failed) → guard restored, suite green. |
+| Negative control: status refresh increments `stacks` | **Exit 1, 2 failed checks** in `status_engine_test` (`Same-name refresh never stacks intensity (OD-004)`) → rule restored, suite green. |
+| Negative control: `flame_burst.base_power` 18 → 17 | **Exit 1, 2 failed checks** in `kurei_combat_test` (`flame_burst base_power stays at the authored 18`) → value restored, suite green. |
+
+Raw transcripts: `report/initiative_test.log`, `report/status_engine_test.log`, `report/kurei_combat_test.log`, `report/boss_combat_test.log`, `report/combat_test.log`, `report/layout_audit_test.log`, plus the gitignored `report/neg_od002_one_action_budget.log`, `report/neg_od004_status_stacking.log`, `report/neg_od003_authored_base_power.log`.
+
+### Preserved invariants
+
+- **OD-009 save boundaries:** initiative/round state is runtime-only and never serialized; `ProfileStore`, `game_root.request_save` and `dungeon_expedition` are untouched, and `dungeon_scene_test` (59 OD-009 checks), `save_model_test`, `save_compatibility_recovery_test`, `web_backup_test` pass unmodified.
+- **Extraction/defeat:** no change to defeat preservation, exactly-once extraction, or suspend ≠ extraction; `vertical_slice_loop_test`, `overworld_gateway_test`, `e2e_academic_playthrough_test` are green.
+- **Authored content:** pip costs, cooldowns, base powers, SP baselines, HP/pip values, damage numbers, rewards, story and educational content are unchanged; no new formula coefficients were authored.
+- **Scope:** only the OD-002/003/004 ledger rows were updated; every other OD (including OD-001, OD-005..OD-017) keeps its existing status and blocked items.
+
+### Open questions for Codex review
+
+1. Profile Agility is not wired into encounters because `scenes/main/game_root.gd` is outside this slice's approved file list; `BattleFixture`/`BossEncounter` read the authored `CharacterStats` default. Confirm the follow-up wiring.
+2. Opponent/boss Agility has no authored value (held at 0, marked `TBD`); encounter content must be authored before a faster opponent ever opens a round in shipped content.
+3. Haste/slow modifier support exists and is tested, but no unlockable skill applies one (`gale_flurry`'s authored `effect: "haste"` is not in the authored tree) and GDD-022's Slow status has no source; both need content approval.
+4. Cleanse is wired to Torrent Surge only (approved Torrent role); confirm whether Glacial Aegis should also cleanse.
+5. Silence lasts the approved 1 turn, but nothing casts it and `request_action` does not yet enforce `can_use_skills()` (that gating was not in the approved list).
+6. The next-three-actor HUD label sits between the fighter panels so BossEncounter stays inside 960x540 at 1.5x accessibility scale; confirm the placement.
+
+### Review history
+
+- None yet. Codex CLI review was explicitly deferred by the task instruction; this entry is queued as `REVIEW_PENDING_CODEX` under AGENTS.md rule 5.

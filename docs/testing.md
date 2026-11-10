@@ -39,19 +39,20 @@ On Windows, the default Godot executable (`godot.exe`) is compiled targeting the
 
 ## Suite Count and Inventory
 
-At current development baseline (SBL-EDU-005 learning journal & reporting engine, hardened by SBL-EDU-005-FIX), there are **32 headless test suites**:
+At current development baseline (OD-002/003/004 owner-approved combat batch), there are **33 headless test suites**:
 
 | Suite Name | Scope & Verification Invariants |
 |---|---|
 | `smoke_test.gd` | M1 engine bootstrap, version check, 960x540 viewport, GL Compatibility renderer |
 | `transition_test.gd` | W2 overworld displacement, physics frames, atomic portal signals, spawn rollbacks |
 | `combat_test.gd` | W3 simple combat, intent cycle, guarded pips, victory/loss, portal racing |
+| `initiative_test.gd` | OD-002 owner-approved initiative: effective Agility ordering, higher acts first, stable actor ID ascending ties, one main action per actor per round (no extra turns, no reaction attacks), determinism controls proving no ATB/rolls, haste/slow applied only at the round boundary, next-three-actor battle HUD preview in BattleFixture and BossEncounter, opponent/boss-first ordering flows, and zero-mutation duplicate-action negative controls |
 | `save_model_test.gd` | W3 ProfileStore, 3 slots, atomic saves, corrupt fallback, strict JSON schema 1.0 |
 | `vertical_slice_test.gd` | M2 quest progression, assessment completion gating, save round-trips |
 | `vertical_slice_loop_test.gd` | Full vertical slice loop: NPC -> practice -> combat -> turn-in -> ProfileStore |
 | `m3_systems_test.gd` | Character leveling, inventory defeat wipe vs. bank preservation, Kurei 6-spell pips, BFS dungeon reachability |
 | `dimension_test.gd` | Physical/spirit plane shifting, player collision mask sync, zero-embed safety |
-| `kurei_combat_test.gd` | In-battle Kurei spell menu, SP pip consumption, cooldown tracking, SBL-REV-005 Phase Mastery 4 SP capacity, SBL-REV-006 dynamic 6-slot menu generation, rejection of unequipped skills, casting of equipped skills, cancel and Escape dismissal, SBL-REV-008 empty loadout starter normalization regression test |
+| `kurei_combat_test.gd` | In-battle Kurei spell menu, SP pip consumption, cooldown tracking, SBL-REV-005 Phase Mastery 4 SP capacity, SBL-REV-006 dynamic 6-slot menu generation, rejection of unequipped skills, casting of equipped skills, cancel and Escape dismissal, SBL-REV-008 empty loadout starter normalization regression test, OD-003 six-category role metadata + exact authored pip cost/cooldown/base-power values + SP baselines (2 / 4 / 3) + no-multiplier-chart negative controls, OD-004 fixture Burn duration & refresh/no-stack, Stun skip, and Torrent heal/cleanse |
 | `dungeon_scene_test.gd` | Procedural room layout, at-risk satchel, commit-first suspend/resume, session callback guarding, exact-once extraction, and OD-009 MVP save boundary (mid-battle/partial-turn/pending-encounter/boss/expedition save requests rejected before any profile mutation with byte-identical profile evidence, room/exploration boundary save round-trip, suspend ≠ extraction) |
 | `overworld_gateway_test.gd` | Overworld dungeon shrine entrance, town bank transfers, defeat wipes |
 | `education_report_test.gd` | Question bank, immutable first-attempt tracking, RFC-4180 CSV export |
@@ -62,11 +63,11 @@ At current development baseline (SBL-EDU-005 learning journal & reporting engine
 | `e2e_academic_playthrough_test.gd` | Complete student journey: Ch I -> Ch II -> Ch III -> Academic Modal -> CSV |
 | `educator_analytics_test.gd` | 12-student cohort batch simulation across archetypes, CSV generation |
 | `web_backup_test.gd` | Web profile JSON backup export/import, invalid JSON rejection, clipboard bridge, suspended run roundtrip, SBL-REV-002 title-selected slot context isolation |
-| `status_engine_test.gd` | DoT/HoT status ticks, shield absorption, stun/silence action blocking, serialization |
+| `status_engine_test.gd` | DoT/HoT status ticks, shield absorption, stun/silence action blocking, serialization, plus the OD-004 policy: approved default durations (Burn/Poison/Bleed/Regeneration 3, Defense Up/Down 2, Silence 1, Stun 1, Shield 3), duration caps, same-name refresh to the larger duration/potency with no intensity stacking, expiry ladder, depleted-Shield expiry, cleanse-negative-only, and Stun consume-by-skip |
 | `evaluator_debug_bar_test.gd` | F1 debug tools, warps, instant cheats, terminal modal input exclusivity |
 | `title_screen_audio_test.gd` | Procedural AudioStreamWAV synthesis, 9 sound cues, title screen slot selection, SBL-REV-002 Title Settings and Backup layer 9 overlay, SBL-REV-004 idempotent bus creation, routing to Master, player SFX assignment |
 | `ending_chapter5_test.gd` | Chapter V Void Citadel warp, dual-ending altars (A & B), capstone question |
-| `boss_combat_test.gd` | Void Sovereign multi-phase combat, Astral Shield, Cataclysm 2-turn telegraph, SBL-REV-005 Phase Mastery 4 SP capacity, SBL-REV-006 dynamic spell menu, starter functionality, OD-003/004 advanced skill disabled state with notice, and zero mutation on unsupported skills, SBL-REV-007 4-column GridContainer viewport safety, starter/Cancel keyboard reachability, and SBL-REV-008 empty loadout starter normalization regression test |
+| `boss_combat_test.gd` | Void Sovereign multi-phase combat, Astral Shield, Cataclysm 2-turn telegraph, SBL-REV-005 Phase Mastery 4 SP capacity, SBL-REV-006 dynamic spell menu, starter functionality, OD-003/004 advanced skill disabled state with notice, and zero mutation on unsupported skills, SBL-REV-007 4-column GridContainer viewport safety, starter/Cancel keyboard reachability, and SBL-REV-008 empty loadout starter normalization regression test, plus OD-002 next-three-actor HUD/round/one-action controls, OD-004 boss-vs-Ren status parity (same Burn duration, no hidden resistance) and Stun skipping exactly one boss action, and an 8-action unsupported-skill snapshot suite proving zero mutation (HP, SP, barrier, turn counter, phase, intent, cooldowns, statuses, initiative) |
 | `kurei_tree_test.gd` | 4-branch 2-tier skill tree, talent points, tier prerequisites, respec refund, SBL-REV-005 Phase Mastery unlock, SBL-REV-006 6-slot equip lifecycle, minimum 1 skill invariant, auto-equip to 6, 7th unequipped, SBL-REV-008 atomic deserialize failure preservation, explicit empty loadout rejection, legacy starter defaulting, and starter normalization |
 | `learning_journal_test.gd` | SBL-EDU-005 Learning journal & educational reporting engine (SBL-EDU-005-FIX hardened): immutable first-attempt correctness across wrong-first/correct-retry cycles, legacy records lacking first_response displaying 'Not recorded' without data inference, transient rows sorted by question ID, RFC-4180 CSV export with transport formula neutralization (=, +, -, @, \t, \r), standalone UTF-8 printable HTML report with print CSS, zero scripts, zero external resources, zero remote requests, zero inline handlers, zero auto-print, entity-escaped dynamic values, mandatory OD-012 notice, 'Last recorded activity' timestamp labeling, Exploration HUD button-only opening on SheetLayer (zero keyboard action), player movement freeze & restore, menu hotkeys & Escape consumption, modal exclusivity & stacking prevention, cross-profile isolation (Profile A -> B -> A), successful backup import refresh & failed import old-record preservation, desktop allowlisted exports redirected to the disposable `_test_root`, injectable web download buffer preparation with exact UTF-8 bytes and MIME without claiming browser execution, 4 disposable negative controls (mutating first-attempt data, omitting HTML escaping, stale controller after profile switch, claiming browser delivery), disposable `ProfileStore` root injected into the GameRoot fixture so no fixture answer reaches the real `user://profiles`, a recursive pre/post byte-identity invariant proving the real `user://profiles` and `user://reports` are untouched by the suite, and Part 9 regression coverage asserting the Academic Completion Modal attributes desktop and Web HTML reports to the active `profile_02` (no `profile_01` fallback) with GameRoot passing its active slot through `configure()` |
 | `layout_audit_test.gd` | SBL-FIX-011 / SBL-REV-007 / SBL-REV-009 / SBL-EDU-005 960x540 viewport boundary & overflow audit across SettingsSheet, InventorySheet, CharacterSheet, ChapterActivityDialog, AcademicCompletionModal, EndingModal, BossEncounter, and LearningJournal at 1.0x and 1.5x accessibility text scale (SBL-REV-009 SceneTree attachment lifecycle order fix) |
@@ -126,7 +127,7 @@ root, and the redirection is **proved before execution** by a headless probe tha
 
 ## OD-013 Performance Evidence Gate (SBL-OD-013)
 
-Performance evidence is a PowerShell gate, **not** one of the 32 GDScript suites in `tests/headless/`.
+Performance evidence is a PowerShell gate, **not** one of the 33 GDScript suites in `tests/headless/`.
 It is chained into the canonical release path so a release run always records it:
 
 ```powershell
