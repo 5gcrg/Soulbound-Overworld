@@ -860,6 +860,8 @@ func get_save_blocker() -> String:
 		return "a suspended expedition snapshot is held (expedition-state save path)"
 	if not inventory_manager.satchel_items.is_empty():
 		return "at-risk satchel loot is present (expedition-state save path)"
+	if inventory_manager.satchel_coins > 0:
+		return "at-risk satchel currency is present (expedition-state save path)"
 	return ""
 
 ## OD-009 boundary gate: OK when a save request may proceed, ERR_BUSY when it must be

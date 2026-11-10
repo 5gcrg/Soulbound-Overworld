@@ -2,7 +2,8 @@ class_name DungeonExpedition
 extends Control
 
 ## DungeonExpedition — SBL-W8-002 M3 procedural dungeon expedition scene & interactive modal.
-## Requirements: GDD-031/032/033/034/035, FR-DNG-001/002, AGENTS.md Invariants.
+## Requirements: GDD-031/032/033/034/035, GDD-037, FR-DNG-001/002/003, TC-DNG-003/004,
+## OD-007/008 owner-approved rules, AGENTS.md Invariants.
 ##
 ## Spawns modular dungeon rooms from DungeonGenerator, manages at-risk satchel loot,
 ## and provides an extraction portal at the verified endpoint.
@@ -12,6 +13,11 @@ extends Control
 ## Defeat (atomic terminal commits). Mid-battle and partial-turn combat state is never
 ## serialized by this scene; every future mid-battle field or resume behavior remains TBD
 ## pending Persistence Architecture Review. Suspend never counts as extraction.
+##
+## OD-007/008: the suspend snapshot carries the at-risk satchel items AND satchel currency
+## so suspension never secures or drops unbanked state; extraction transfers the satchel
+## exactly once and clears the persisted snapshot; defeat loses all unbanked satchel
+## contents while banked/equipped/permanent data stays untouched.
 
 signal expedition_completed(extracted_items: Dictionary)
 signal expedition_failed(lost_items: Dictionary)
@@ -290,8 +296,9 @@ func cancel_expedition() -> void:
 	expedition_cancelled.emit()
 
 ## OD-009 save boundary: captures room/exploration-boundary state only (seed, path, step,
-## at-risk satchel). No combat, turn or partial-turn state exists in this snapshot, and no
-## future mid-battle field may be added here without Persistence Architecture Review.
+## at-risk satchel items and at-risk satchel currency). No combat, turn or partial-turn
+## state exists in this snapshot, and no future mid-battle field may be added here without
+## Persistence Architecture Review.
 ## Returns {} while an extraction commit is in flight so a snapshot can never interleave
 ## with the atomic terminal write.
 func serialize_expedition() -> Dictionary:
@@ -303,7 +310,8 @@ func serialize_expedition() -> Dictionary:
 		"room_count": generator.rooms.size(),
 		"current_step": current_step,
 		"expedition_path": expedition_path.duplicate(),
-		"satchel_items": inventory.satchel_items.duplicate()
+		"satchel_items": inventory.satchel_items.duplicate(),
+		"satchel_coins": inventory.satchel_coins
 	}
 
 func restore_expedition(data: Dictionary) -> bool:
@@ -319,14 +327,28 @@ func restore_expedition(data: Dictionary) -> bool:
 	var satchel: Variant = data.get("satchel_items", {})
 	if typeof(satchel) != TYPE_DICTIONARY:
 		return false
+	var satchel_types: int = 0
 	for item_id: Variant in (satchel as Dictionary).keys():
 		if typeof(item_id) != TYPE_STRING or String(item_id).is_empty():
 			return false
 		var count: Variant = (satchel as Dictionary)[item_id]
 		if typeof(count) != TYPE_INT and typeof(count) != TYPE_FLOAT:
 			return false
-		if int(count) <= 0:
+		if int(count) <= 0 or int(count) != float(count):
 			return false
+		# OD-007 stack/slot boundaries: a snapshot may never carry an over-cap stack.
+		if int(count) > InventoryManager.MAX_STACK_SIZE:
+			return false
+		satchel_types += 1
+	if satchel_types > InventoryManager.MAX_INVENTORY_SLOTS:
+		return false
+	# OD-007: optional at-risk currency (legacy snapshots carry none => 0).
+	var coins_var: Variant = data.get("satchel_coins", 0)
+	if typeof(coins_var) != TYPE_INT and typeof(coins_var) != TYPE_FLOAT:
+		return false
+	var coins_val: int = int(coins_var)
+	if coins_val < 0 or int(coins_var) != float(coins_var):
+		return false
 	var seed_val: int = int(data.get("seed", 1337))
 
 	# Preflight generation and layout/path validation before applying mutations
@@ -360,6 +382,9 @@ func restore_expedition(data: Dictionary) -> bool:
 	expedition_path = calculated_path
 	current_step = step_val
 	inventory.satchel_items = (satchel as Dictionary).duplicate()
+	# OD-007: restore the at-risk currency carried by this snapshot (0 for legacy
+	# snapshots) so suspension never secures or silently drops satchel currency.
+	inventory.satchel_coins = coins_val
 	is_active = true
 	_is_extracting = false
 	if is_inside_tree():

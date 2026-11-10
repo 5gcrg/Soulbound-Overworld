@@ -2,7 +2,8 @@ class_name CharacterSheet
 extends Control
 
 ## CharacterSheet — SBL-W6-003 Character Progression UI Sheet
-## Requirements: GDD-005/006/007/098/099, FR-PRO-001.
+## Requirements: GDD-005/006/007, GDD-028/029, GDD-098/099, FR-PRO-001, FR-PRG-001/002,
+## TC-PRG-001 (OD-005 level cap display).
 
 signal closed
 
@@ -151,7 +152,12 @@ func refresh() -> void:
 	if stats == null:
 		return
 	level_label.text = "Level %d" % stats.level
-	xp_label.text = "XP: %d / %d" % [stats.xp, stats.get_xp_for_next_level()]
+	# OD-005: at the approved cap the XP readout shows the cap instead of a
+	# threshold that can no longer be reached.
+	if stats.is_at_level_cap():
+		xp_label.text = "XP: Max Level %d (Cap)" % CharacterStats.LEVEL_CAP
+	else:
+		xp_label.text = "XP: %d / %d" % [stats.xp, stats.get_xp_for_next_level()]
 	unspent_label.text = "Available Attribute Points: %d" % stats.unspent_points
 
 	vit_label.text = "%d" % stats.vitality

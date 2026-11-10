@@ -2,7 +2,8 @@ class_name InventorySheet
 extends Control
 
 ## InventorySheet — SBL-W6-004 Town Bank & Expedition Satchel UI Sheet
-## Requirements: GDD-025/026/027/028/029/030, FR-INV-001, AGENTS.md Invariants.
+## Requirements: GDD-025/026/027/028/029/030, GDD-032/034/035/036/037, FR-INV-001/002,
+## FR-ITM-001/002, TC-INV-001/002, OD-006/007 owner-approved rules, AGENTS.md Invariants.
 
 signal closed
 signal equipment_changed(slot: StringName, item_id: String)
@@ -110,23 +111,28 @@ func refresh() -> void:
 	if inventory == null:
 		return
 
-	# Banked Items
+	# Banked Items — OD-007 shared slot budget + secured Spirit Coins, OD-006 tiers
+	var bank_lines: Array[String] = []
+	bank_lines.append("[Slots %d/%d  |  Coins %d secured]" % [
+		inventory.inventory_slot_count(), InventoryManager.MAX_INVENTORY_SLOTS, inventory.banked_coins])
 	if inventory.banked_items.is_empty():
-		bank_list_label.text = "(No secured items)"
+		bank_lines.append("(No secured items)")
 	else:
-		var lines: Array[String] = []
 		for item_id: String in inventory.banked_items.keys():
-			lines.append("• %s (x%d)" % [item_id, inventory.banked_items[item_id]])
-		bank_list_label.text = "\n".join(lines)
+			bank_lines.append("• %s (x%d) [%s]" % [
+				item_id, int(inventory.banked_items[item_id]), inventory.get_item_tier_name(item_id)])
+	bank_list_label.text = "\n".join(bank_lines)
 
-	# Satchel Items
+	# Satchel Items — at risk until extraction; satchel currency follows the loss policy
+	var satchel_lines: Array[String] = []
+	satchel_lines.append("[At risk until extraction  |  Coins %d]" % inventory.satchel_coins)
 	if inventory.satchel_items.is_empty():
-		satchel_list_label.text = "(Satchel empty)"
+		satchel_lines.append("(Satchel empty)")
 	else:
-		var lines: Array[String] = []
 		for item_id: String in inventory.satchel_items.keys():
-			lines.append("• %s (x%d)" % [item_id, inventory.satchel_items[item_id]])
-		satchel_list_label.text = "\n".join(lines)
+			satchel_lines.append("• %s (x%d) [%s]" % [
+				item_id, int(inventory.satchel_items[item_id]), inventory.get_item_tier_name(item_id)])
+	satchel_list_label.text = "\n".join(satchel_lines)
 
 	# Equipment
 	var w: String = inventory.equipment.get("weapon", "")

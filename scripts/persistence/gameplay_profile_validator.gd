@@ -13,8 +13,12 @@ extends RefCounted
 ## - Bounded integral values: accepts JSON floats representing exact integers.
 ## - Inventory: banked/satchel counts must be positive exact safe integers;
 ##   known equipment slots ("weapon", "armor", "relic_1", "relic_2") must have String values.
+##   OD-007 currency ("banked_coins", "satchel_coins") and OD-006 tiers ("tiers")
+##   are optional; when present they must be non-negative bounded integers and a
+##   String -> tier-index map inside the approved five-tier range.
 ## - Character: runtime numeric fields (level, xp, vitality, resonance, agility,
-##   focus, unspent_points, max_hp, spirit_power) must be bounded integers in safe range.
+##   focus, unspent_points, max_hp, spirit_power) must be bounded integers in safe range;
+##   level is additionally bounded by the OD-005 cap of 30 (CharacterStats.LEVEL_CAP).
 ## - World & Education cross-record invariants:
 ##   * Chapter progression: current_chapter (1..4), unlocked_chapters (exact contiguous
 ##     format [1], [1,2], [1,2,3] with completion 4 keeping [1,2,3]), is_academic_complete
@@ -24,6 +28,8 @@ extends RefCounted
 ##     requires q_crit_02. Pre-P1 bypass saves lacking records are rejected.
 ##   * M2 Vertical Slice consistency: delegated to SliceProgress.validate_profile(profile).
 ##   * Assessment records: verified via AssessmentController.deserialize.
+##   * Active expedition snapshots: OD-007 satchel stack/slot boundaries and
+##     non-negative at-risk currency are enforced on top of the OD-009 shape checks.
 
 const KNOWN_EQUIP_SLOTS: Array[StringName] = [
 	&"weapon",
@@ -97,9 +103,10 @@ static func _validate_character(character: Dictionary) -> Error:
 	if not character.has("level") or not character.has("xp"):
 		return ERR_INVALID_DATA
 
-	# Runtime numeric fields within safe integer range (no arbitrary balancing caps)
+	# Runtime numeric fields within safe integer range. Level is additionally
+	# bounded by the OD-005 owner-approved cap of 30 (GDD-029 / TC-PRG-001).
 	if character.has("level"):
-		if not _is_bounded_int(character["level"], 1, MAX_SAFE_INT):
+		if not _is_bounded_int(character["level"], 1, CharacterStats.LEVEL_CAP):
 			return ERR_INVALID_DATA
 
 	if character.has("xp"):
@@ -204,6 +211,29 @@ static func _validate_inventory(inventory: Dictionary) -> Error:
 			if eq.has(slot_str):
 				if typeof(eq[slot_str]) != TYPE_STRING:
 					return ERR_INVALID_DATA
+
+	# OD-007 Spirit Coins: optional non-negative bounded integers (secured bank /
+	# at-risk satchel). Absent keys mean 0 for legacy profiles.
+	for coin_key in ["banked_coins", "satchel_coins"]:
+		if inventory.has(coin_key):
+			if not _is_bounded_int(inventory[coin_key], 0, MAX_SAFE_INT):
+				return ERR_INVALID_DATA
+
+	# OD-006 item tiers: optional String -> tier-index map inside the approved
+	# Common..Legendary range; absent keys mean every item defaults to Common.
+	if inventory.has("tiers"):
+		var tiers_val: Variant = inventory["tiers"]
+		if typeof(tiers_val) != TYPE_DICTIONARY:
+			return ERR_INVALID_DATA
+		var tiers: Dictionary = tiers_val as Dictionary
+		for item_id: Variant in tiers.keys():
+			if typeof(item_id) != TYPE_STRING or (item_id as String).is_empty():
+				return ERR_INVALID_DATA
+			if not _is_int_value(tiers[item_id]):
+				return ERR_INVALID_DATA
+			var tier_i: int = int(tiers[item_id])
+			if tier_i < InventoryManager.TIER_COMMON or tier_i > InventoryManager.TIER_LEGENDARY:
+				return ERR_INVALID_DATA
 
 	return OK
 
@@ -312,10 +342,20 @@ static func _validate_active_expedition(value: Variant) -> Error:
 	if typeof(state.get("satchel_items")) != TYPE_DICTIONARY:
 		return ERR_INVALID_DATA
 	var satchel: Dictionary = state["satchel_items"] as Dictionary
+	var satchel_types: int = 0
 	for item_id: Variant in satchel.keys():
 		if typeof(item_id) != TYPE_STRING or String(item_id).is_empty():
 			return ERR_INVALID_DATA
-		if not _is_bounded_int(satchel[item_id], 1, MAX_SAFE_INT):
+		# OD-007: at-risk stacks respect the approved 99-unit ceiling and the
+		# snapshot holds at most the approved 20 distinct item stacks.
+		if not _is_bounded_int(satchel[item_id], 1, InventoryManager.MAX_STACK_SIZE):
+			return ERR_INVALID_DATA
+		satchel_types += 1
+	if satchel_types > InventoryManager.MAX_INVENTORY_SLOTS:
+		return ERR_INVALID_DATA
+	# OD-007: optional at-risk currency (legacy snapshots carry none => 0).
+	if state.has("satchel_coins"):
+		if not _is_bounded_int(state["satchel_coins"], 0, MAX_SAFE_INT):
 			return ERR_INVALID_DATA
 	return OK
 
