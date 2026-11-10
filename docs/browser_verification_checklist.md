@@ -82,3 +82,43 @@ Per AGENTS.md, results cannot be represented as passed without actual execution 
    ```
 3. Open `http://localhost:8000` in Google Chrome and Mozilla Firefox.
 4. Execute steps `WEB-SMK-01` through `WEB-SMK-10` above and record confirmation.
+
+---
+
+## 5. OD-013 Performance Evidence and Manual Profiling Register (SBL-OD-013)
+
+Owner-ratified [OD-013](../report/od013-ratification.md) makes performance evidence part of the
+canonical release gate. This section records how that evidence is split between automation and
+human execution so no browser result is ever implied by an automated run.
+
+### 5.1 Automated vs. manual evidence
+
+| Evidence stream | Produced by | What it proves | Status |
+|---|---|---|---|
+| Reference machine + engine/configuration capture | `scripts/build/performance_evidence.ps1` preflight (WMI/CIM + `godot --version` + config audit) | Exact owner-machine specs, Godot 4.7.2 Stable hash, `gl_compatibility` (standard + Web), single-threaded Web preset | Automated, runs on every gate execution |
+| Five-scene frame timing (title, overworld, combat, dungeon, learning journal) | Automated Godot-native capture (headless, plus windowed native rendered capture when requested) | Average/minimum FPS, average/min/max frame timing, scene, environment and adapter metadata | Automated; recorded in `report/od013_performance_evidence.json` and `report/od013_performance_report.md` |
+| Browser frame cost in Chromium / Firefox / owner-selected browser | **Human** (DevTools or in-engine profiler) | Rendered performance and smoke behaviour in a real browser | **PENDING HUMAN EXECUTION** |
+| Browser smoke acceptance (WEB-SMK-01..12) | **Human** per sections 2-4 of this checklist | Browser compatibility acceptance | **PENDING HUMAN EXECUTION** |
+
+### 5.2 Manual browser performance rows (fill in during human execution)
+
+Target: **60 FPS**; documented fallback: **30 FPS**. A below-target reading is recorded as a
+warning for human triage - it never fails the automated gate by itself.
+
+| Browser | Scene | Average FPS | Minimum FPS | Frame timing notes | Status |
+|---|---|---|---|---|---|
+| Chromium (Chrome / Edge, latest stable) | title, overworld, combat, dungeon, learning journal | not recorded | not recorded | not recorded | PENDING HUMAN EXECUTION |
+| Mozilla Firefox (latest stable) | title, overworld, combat, dungeon, learning journal | not recorded | not recorded | not recorded | PENDING HUMAN EXECUTION |
+| Additional owner-selected browser (name TBD by owner) | title, overworld, combat, dungeon, learning journal | not recorded | not recorded | not recorded | PENDING HUMAN EXECUTION |
+
+### 5.3 Manual profiling procedure
+
+1. Serve the exported Web build over HTTP (section 4 instructions) and open it in the browser.
+2. Open DevTools (F12) -> Performance, or use the in-engine profiler, and record a short trace
+   for each of the five scenes (title screen, overworld movement, combat encounter, dungeon
+   expedition, learning journal).
+3. Record average FPS, minimum FPS, and frame timing in section 5.2 above, with the browser
+   version and machine from section 2 of `report/od013_performance_report.md`.
+4. Attach the numbers to the release evidence; human release sign-off remains required.
+
+**No browser smoke acceptance is claimed by the automated OD-013 performance evidence.**

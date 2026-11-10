@@ -1,0 +1,282 @@
+{
+    "schema":  "sbl-od013-performance-evidence/1",
+    "decision":  "OD-013",
+    "ratification":  "report/od013-ratification.md",
+    "plan_status":  "PLAN_DRAFT_NOT_CODEX",
+    "review":  "REVIEW_PENDING_CODEX",
+    "generated_utc":  "2026-11-10T13:45:15.2562648Z",
+    "target_fps":  60,
+    "fallback_fps":  30,
+    "build_size_budget":  null,
+    "build_size_note":  "No maximum build-size budget is imposed (OD-013 ratification); no size limit was introduced by this slice.",
+    "capture_mode":  "both",
+    "warmup_frames":  60,
+    "measured_frames":  300,
+    "preflight":  {
+                      "engine_path":  "C:\\Users\\ALCOHOL\\Downloads\\Godot_v4.7.2-stable_win64.exe\\Godot_v4.7.2-stable_win64_console.exe",
+                      "engine_version":  "4.7.2.stable.official.ed1daf0bf",
+                      "engine_executable_sha256":  "c8f0a6bc45a19b33541501e57f6f7cd972ab18453743266339d495cbbe846643",
+                      "expected_version_prefix":  "4.7.2.stable",
+                      "rendering_method":  "gl_compatibility",
+                      "rendering_method_web":  "gl_compatibility",
+                      "web_thread_support":  false,
+                      "single_threaded_web":  true,
+                      "main_scene":  "res://scenes/main/game_root.tscn",
+                      "viewport_width":  960,
+                      "viewport_height":  540
+                  },
+    "machine":  {
+                    "captured_utc":  "2026-11-10T13:44:47.8436738Z",
+                    "hostname":  "ALCOHOL",
+                    "os_caption":  "Microsoft Windows 11 Pro",
+                    "os_version":  "10.0.26300",
+                    "os_build":  "26300",
+                    "os_architecture":  "64-bit",
+                    "memory_gb":  23.9,
+                    "cpu_name":  "AMD Ryzen 7 5700X 8-Core Processor",
+                    "cpu_count":  1,
+                    "cpu_cores":  8,
+                    "cpu_logical_processors":  16,
+                    "gpu_adapters":  [
+                                         "AMD Radeon RX590 GME"
+                                     ],
+                    "powershell_version":  "5.1.26100.9711",
+                    "clr_version":  "4.0.30319.42000",
+                    "timezone":  "Singapore Standard Time"
+                },
+    "captures":  [
+                     {
+                         "mode":  "headless",
+                         "display_server":  "headless",
+                         "renderer":  "",
+                         "renderer_vendor":  "",
+                         "refresh_rate_hz":  -1,
+                         "engine_reported_fps":  130,
+                         "engine_errors_total":  0,
+                         "engine_warnings_total":  5,
+                         "warmup_frames":  60,
+                         "measured_frames":  300,
+                         "scenes":  [
+                                        {
+                                            "id":  "title",
+                                            "label":  "Title screen",
+                                            "scene":  "res://scenes/ui/title_screen.tscn",
+                                            "frames":  300,
+                                            "avg_frame_ms":  6.9,
+                                            "min_frame_ms":  6.589,
+                                            "max_frame_ms":  7.248,
+                                            "avg_fps":  144.9,
+                                            "min_fps":  138,
+                                            "setup_ms":  77.5,
+                                            "engine_errors":  0,
+                                            "status":  "PASS",
+                                            "notes":  ""
+                                        },
+                                        {
+                                            "id":  "overworld",
+                                            "label":  "Overworld",
+                                            "scene":  "res://scenes/main/game_root.tscn",
+                                            "frames":  300,
+                                            "avg_frame_ms":  7.813,
+                                            "min_frame_ms":  0.029,
+                                            "max_frame_ms":  16.645,
+                                            "avg_fps":  128,
+                                            "min_fps":  60.1,
+                                            "setup_ms":  599.4,
+                                            "engine_errors":  0,
+                                            "status":  "PASS",
+                                            "notes":  ""
+                                        },
+                                        {
+                                            "id":  "combat",
+                                            "label":  "Combat",
+                                            "scene":  "res://scenes/combat/battle_fixture.tscn",
+                                            "frames":  300,
+                                            "avg_frame_ms":  7.789,
+                                            "min_frame_ms":  0.033,
+                                            "max_frame_ms":  16.627,
+                                            "avg_fps":  128.4,
+                                            "min_fps":  60.1,
+                                            "setup_ms":  5.5,
+                                            "engine_errors":  0,
+                                            "status":  "PASS",
+                                            "notes":  ""
+                                        },
+                                        {
+                                            "id":  "dungeon",
+                                            "label":  "Dungeon",
+                                            "scene":  "res://scenes/dungeon/dungeon_expedition.tscn",
+                                            "frames":  300,
+                                            "avg_frame_ms":  7.81,
+                                            "min_frame_ms":  0.033,
+                                            "max_frame_ms":  16.983,
+                                            "avg_fps":  128,
+                                            "min_fps":  58.9,
+                                            "setup_ms":  44.4,
+                                            "engine_errors":  0,
+                                            "status":  "PASS",
+                                            "notes":  ""
+                                        },
+                                        {
+                                            "id":  "learning_journal",
+                                            "label":  "Learning journal",
+                                            "scene":  "res://scenes/ui/learning_journal.tscn",
+                                            "frames":  300,
+                                            "avg_frame_ms":  7.793,
+                                            "min_frame_ms":  0.03,
+                                            "max_frame_ms":  17.304,
+                                            "avg_fps":  128.3,
+                                            "min_fps":  57.8,
+                                            "setup_ms":  27.4,
+                                            "engine_errors":  0,
+                                            "status":  "PASS",
+                                            "notes":  ""
+                                        }
+                                    ]
+                     },
+                     {
+                         "mode":  "windowed",
+                         "display_server":  "Windows",
+                         "renderer":  "AMD Radeon RX590 GME",
+                         "renderer_vendor":  "ATI Technologies Inc.",
+                         "refresh_rate_hz":  240,
+                         "engine_reported_fps":  240,
+                         "engine_errors_total":  0,
+                         "engine_warnings_total":  5,
+                         "warmup_frames":  60,
+                         "measured_frames":  300,
+                         "scenes":  [
+                                        {
+                                            "id":  "title",
+                                            "label":  "Title screen",
+                                            "scene":  "res://scenes/ui/title_screen.tscn",
+                                            "frames":  300,
+                                            "avg_frame_ms":  4.168,
+                                            "min_frame_ms":  2.927,
+                                            "max_frame_ms":  5.386,
+                                            "avg_fps":  239.9,
+                                            "min_fps":  185.7,
+                                            "setup_ms":  132.5,
+                                            "engine_errors":  0,
+                                            "status":  "PASS",
+                                            "notes":  ""
+                                        },
+                                        {
+                                            "id":  "overworld",
+                                            "label":  "Overworld",
+                                            "scene":  "res://scenes/main/game_root.tscn",
+                                            "frames":  300,
+                                            "avg_frame_ms":  4.166,
+                                            "min_frame_ms":  2.913,
+                                            "max_frame_ms":  5.394,
+                                            "avg_fps":  240.1,
+                                            "min_fps":  185.4,
+                                            "setup_ms":  731.1,
+                                            "engine_errors":  0,
+                                            "status":  "PASS",
+                                            "notes":  ""
+                                        },
+                                        {
+                                            "id":  "combat",
+                                            "label":  "Combat",
+                                            "scene":  "res://scenes/combat/battle_fixture.tscn",
+                                            "frames":  300,
+                                            "avg_frame_ms":  4.168,
+                                            "min_frame_ms":  3.281,
+                                            "max_frame_ms":  5.348,
+                                            "avg_fps":  240,
+                                            "min_fps":  187,
+                                            "setup_ms":  13.5,
+                                            "engine_errors":  0,
+                                            "status":  "PASS",
+                                            "notes":  ""
+                                        },
+                                        {
+                                            "id":  "dungeon",
+                                            "label":  "Dungeon",
+                                            "scene":  "res://scenes/dungeon/dungeon_expedition.tscn",
+                                            "frames":  300,
+                                            "avg_frame_ms":  4.167,
+                                            "min_frame_ms":  3.297,
+                                            "max_frame_ms":  4.977,
+                                            "avg_fps":  240,
+                                            "min_fps":  200.9,
+                                            "setup_ms":  44.6,
+                                            "engine_errors":  0,
+                                            "status":  "PASS",
+                                            "notes":  ""
+                                        },
+                                        {
+                                            "id":  "learning_journal",
+                                            "label":  "Learning journal",
+                                            "scene":  "res://scenes/ui/learning_journal.tscn",
+                                            "frames":  300,
+                                            "avg_frame_ms":  4.167,
+                                            "min_frame_ms":  3.198,
+                                            "max_frame_ms":  5.184,
+                                            "avg_fps":  240,
+                                            "min_fps":  192.9,
+                                            "setup_ms":  16.4,
+                                            "engine_errors":  0,
+                                            "status":  "PASS",
+                                            "notes":  ""
+                                        }
+                                    ]
+                     }
+                 ],
+    "browser_evidence":  {
+                             "status":  "PENDING_HUMAN_EXECUTION",
+                             "acceptance_claimed":  false,
+                             "automated":  false,
+                             "coverage_required":  [
+                                                       "Chromium",
+                                                       "Firefox",
+                                                       "additional available owner-selected browser"
+                                                   ],
+                             "scenes":  [
+                                            "title",
+                                            "overworld",
+                                            "combat",
+                                            "dungeon",
+                                            "learning_journal"
+                                        ],
+                             "method":  "manual browser profiling (DevTools/in-engine profiler) recorded in docs/browser_verification_checklist.md",
+                             "rows":  [
+                                          {
+                                              "browser":  "Chromium (Chrome/Edge latest stable)",
+                                              "test_case":  "TC-WEB-001",
+                                              "status":  "PENDING",
+                                              "avg_fps":  null,
+                                              "min_fps":  null
+                                          },
+                                          {
+                                              "browser":  "Mozilla Firefox (latest stable)",
+                                              "test_case":  "TC-WEB-002",
+                                              "status":  "PENDING",
+                                              "avg_fps":  null,
+                                              "min_fps":  null
+                                          },
+                                          {
+                                              "browser":  "Additional owner-selected browser (TBD by owner)",
+                                              "test_case":  "OD-013 ratification",
+                                              "status":  "PENDING",
+                                              "avg_fps":  null,
+                                              "min_fps":  null
+                                          }
+                                      ]
+                         },
+    "summary":  {
+                    "rows_total":  10,
+                    "pass":  10,
+                    "warn":  0,
+                    "fail":  0,
+                    "warnings":  [
+
+                                 ]
+                },
+    "artifacts":  {
+                      "evidence_json":  "C:\\Users\\ALCOHOL\\.codex\\worktrees\\soulbound-overworld\\SoulBound\\report\\od013_performance_evidence.json",
+                      "report_md":  "C:\\Users\\ALCOHOL\\.codex\\worktrees\\soulbound-overworld\\SoulBound\\report\\od013_performance_report.md",
+                      "log":  "C:\\Users\\ALCOHOL\\.codex\\worktrees\\soulbound-overworld\\SoulBound\\report\\od013_performance_evidence.log"
+                  }
+}

@@ -2335,3 +2335,47 @@ OPEN QUESTIONS: see below
 1. Should `request_save()` be wired to a UI/event (e.g. region transition) in a follow-up slice, or is a programmatic entry point sufficient for the MVP? No UI was added and no player-facing copy was invented.
 2. Confirm the reading of GDD-099 "separate expedition-state handling" that defers generic saves while a run is active/parked or at-risk satchel is live (it prevents unbanked loot from persisting without an expedition record).
 3. `push_warning` is the current actionable-diagnostic channel; confirm whether the MVP requires a player-facing message instead.
+---
+
+## SBL-OD-013 — OD-013 Performance Evidence (Owner-Ratified)
+
+- **Milestone** Release Hardening (OD-013 performance evidence).
+- **Requirements** GDD-093, GDD-094, GDD-095, GDD-096, GDD-097, GDD-104, GDD-107, GDD-123, GDD-124, GDD-129, FR-REL-001, TC-REL-001, TC-WEB-001, TC-WEB-002, NFR-PERF-001, NFR-WEB-001, NFR-BUILD-001. Ratification: [`report/od013-ratification.md`](../report/od013-ratification.md); scope of record: [`docs/agy-next-queue.md`](agy-next-queue.md). [Traceability](traceability-matrix.md).
+- **Implementation owner** agy (executed by `opencode-go/mimo-v2.6-flash` / MiMo under the same contract). **Plan owner** Codex/OpenCode. Codex CLI review **deferred** per the task instruction; nothing here is `REVIEWED`.
+- **Branch** `feature/w4-5-vertical-slice` (worktree `soulbound-overworld`), committed `[REVIEW_PENDING_CODEX]`; the commit hash and full evidence record are in [`report/implementation-review-ledger.md`](../report/implementation-review-ledger.md).
+- **Files**
+  - Created: `scripts/build/performance_evidence.ps1`, `scripts/build/test_performance_evidence.ps1`, `report/od013_performance_report.md`, `report/od013_performance_evidence.json`.
+  - Modified: `scripts/build/run_headless_tests.ps1` (canonical `-Export` chain), `docs/browser_verification_checklist.md`, `docs/testing.md`, `docs/traceability-matrix.md`, `docs/agent-review-queue.md`, `report/implementation-review-ledger.md`.
+  - Unchanged on purpose: `scripts/build/export_release.ps1`, `scripts/build/validate_release.ps1` (existing export/PCK/size-plausibility/save/restoration gates preserved; the OD-013 gate is chained from the canonical runner so no provenance capture runs after evidence files are rewritten).
+- **Asset provenance** None. No image, audio, or Gemini Flash content was generated; no OD was resolved and no numerical gameplay value was invented.
+- **Review** `REVIEW_PENDING_CODEX`. Codex CLI review was explicitly deferred for this slice; human release sign-off remains pending.
+- **Open questions**
+  1. `docs/open-decisions-ledger.md` still lists OD-013 as `TBD` (that file was outside this slice's approved modification list); the owner/Codex should refresh the ledger row against `report/od013-ratification.md`.
+  2. Browser smoke and manual profiling (Chromium, Firefox, owner-selected browser) remain **PENDING HUMAN EXECUTION**; no browser acceptance is claimed.
+  3. Whether `export_release.ps1` should also run the performance gate directly (it currently runs only through `run_headless_tests.ps1 -Export`) is left to Codex review, because writing tracked report files during export would invalidate the manifest source-provenance timing control (`test_release_manifest.ps1` control [9]).
+
+### Changes
+
+1. **Automated Godot-native capture (`scripts/build/performance_evidence.ps1`).** A transient `SceneTree` harness is written to the system temporary directory (never into the repository) and run with the project's own Godot binary under proven disposable user-data isolation. It measures all five ratified scenes - title (`title_screen.tscn`), overworld (`game_root.tscn` with a disposable `ProfileStore` root), combat (`battle_fixture.tscn`), dungeon (`dungeon_expedition.tscn`, seed 1337 / 6 rooms), and learning journal (`learning_journal.tscn` with an `AssessmentController`) - after a warm-up window, recording frame intervals as wall-clock time between consecutive `process_frame` resumes: frames, average/min/max frame time, derived average/min FPS, setup time, and Godot engine error/warning counts per scene.
+2. **Reference machine and configuration capture.** The script captures the owner's exact Windows machine (OS build, CPU, cores, memory, GPU adapter(s), PowerShell/CLR, time zone), the Godot version and executable SHA-256, `gl_compatibility` (standard and Web), the single-threaded Web preset, main scene, viewport, and per-capture display server, adapter and refresh rate. Preflight **fails with a non-zero exit** on a missing/invalid engine, a non-`4.7.2.stable` version, a non-Compatibility renderer, or a multi-threaded Web preset - never a silent skip.
+3. **Gate semantics.** 60 FPS target (`avg_fps >= 60`) with the documented 30 FPS fallback (`min_fps >= 30`); below-target rows are recorded as `WARN` in the evidence JSON and report, printed as `WARNING`, and the script still exits `0`. `build_size_budget` stays `null` - no maximum build-size budget was introduced, and the pre-existing plausibility bounds in `validate_release.ps1` are untouched.
+4. **Canonical release-gate integration.** `run_headless_tests.ps1 -Export` now chains `performance_evidence.ps1` after export, validation, and the release-manifest suite, with warning semantics documented in the runner header and inline comments. Evidence lands in tracked `report/od013_performance_evidence.json` (schema `sbl-od013-performance-evidence/1`) and `report/od013_performance_report.md`; the raw transcript goes to the gitignored `report/od013_performance_evidence.log`.
+5. **Manual browser evidence stays human.** The browser checklist gains an OD-013 section that separates automated Godot-native evidence from manual browser profiling, registers Chromium, Firefox, and an owner-selected browser as `PENDING HUMAN EXECUTION`, and states that no browser acceptance is claimed.
+
+### Verification
+
+| Command | Result |
+|---|---|
+| `scripts\build\performance_evidence.ps1` (standalone headless) | Exit 0. Five scenes measured (144.9 / 128.0-128.4 avg FPS); evidence written to `report/od013_performance_evidence.json` + `report/od013_performance_report.md`. |
+| `scripts\build\performance_evidence.ps1 -CaptureMode both` | Exit 0 (29.8 s). **10/10 scene rows PASS**: headless 128.0-144.9 avg FPS (min 57.8-138.0) at 6.9-7.8 ms; windowed native rendered 239.9-240.1 avg FPS (min 185.4-200.9) on the AMD Radeon RX590 GME at the 240 Hz display rate. This is the committed evidence snapshot. |
+| `scripts\build\test_performance_evidence.ps1` | Exit 0. **24/24 controls PASS** (52.7 s): positive capture (headless + windowed), below-target WARN + exit 0, fallback-band WARN on target only, at-target PASS, five preflight hard-failure controls, no-size-budget, gate wiring, browser-pending, and unchanged `git status` during controls. |
+| `scripts\build\run_headless_tests.ps1` | Exit 0. **32/32 headless suites PASS** (65.2 s); disposable user data proved (`realUserDataUnchanged=True`, 654 files). |
+| `scripts\build\run_headless_tests.ps1 -Export -Tier all` | Exit 0 (211.2 s). Canonical release gate: 32/32 suites, `ALL RELEASE ARTIFACTS AND PRESETS VALIDATED SUCCESSFULLY`, **62/62 manifest controls**, chained performance evidence (5 scenes PASS), isolation proof `realUserDataUnchanged=True`. |
+| `scripts\build\test_export_failure_restoration.ps1` (and `-DisableRestore`) | Exit 0 / expected exit 1 - restoration gates preserved (run inside the gate and standalone). |
+
+Control detail: `report/performance_evidence_test.log` (gitignored) plus the tables in
+[`report/od013_performance_report.md`](../report/od013_performance_report.md).
+
+### Review history
+
+- None yet. Codex CLI review was explicitly deferred by the task instruction; this entry is queued as `REVIEW_PENDING_CODEX` under AGENTS.md rule 5.

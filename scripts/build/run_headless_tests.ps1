@@ -3,6 +3,8 @@
 # SBL-BLD-005 — Strict engine resolution (no silent fallback), proven disposable
 #                user data for every Godot test/import run, and mandatory chaining
 #                of test_release_manifest.ps1 into the canonical -Export path.
+# OD-013 — the canonical -Export path additionally chains performance_evidence.ps1
+#          with warning semantics (below-target records a warning, never a failure).
 # Usage: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\run_headless_tests.ps1 [-Suite <name>] [-Export] [-Tier <t>]
 
 param (
@@ -166,6 +168,21 @@ try {
         & powershell -NoProfile -ExecutionPolicy Bypass -File $manifestTestScript -GodotPath $GodotPath
         if ($LASTEXITCODE -ne 0) {
             Write-Host "Release manifest tests failed with exit code $LASTEXITCODE!" -ForegroundColor Red
+            exit $LASTEXITCODE
+        }
+
+        # OD-013: performance evidence is part of the canonical release gate with
+        # WARNING semantics - below-target results are recorded in
+        # report/od013_performance_evidence.json and report/od013_performance_report.md
+        # and printed as warnings, but they never fail the run (exit 0). Only a
+        # preflight or capture failure (missing/invalid engine, wrong Godot
+        # version, incompatible renderer or single-thread Web configuration, or an
+        # incomplete capture) exits non-zero and fails this chain.
+        $performanceScript = Join-Path $PSScriptRoot "performance_evidence.ps1"
+        Write-Host "`nChaining performance evidence (performance_evidence.ps1, warning semantics)..." -ForegroundColor Cyan
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $performanceScript -GodotPath $GodotPath
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Performance evidence preflight/capture failed with exit code $LASTEXITCODE!" -ForegroundColor Red
             exit $LASTEXITCODE
         }
     }

@@ -123,3 +123,57 @@ root, and the redirection is **proved before execution** by a headless probe tha
   empirical before/after digest proves an export leaves the real directory byte-identical.
 - Evidence is appended to `report/godot_user_data_isolation.log` (probe path,
   `realUserDataUnchanged`, disposable file count, root removal).
+
+## OD-013 Performance Evidence Gate (SBL-OD-013)
+
+Performance evidence is a PowerShell gate, **not** one of the 32 GDScript suites in `tests/headless/`.
+It is chained into the canonical release path so a release run always records it:
+
+```powershell
+# Standalone capture (writes report/od013_performance_evidence.json + report/od013_performance_report.md)
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\performance_evidence.ps1
+
+# Capture both headless and windowed (real renderer) evidence
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\performance_evidence.ps1 -CaptureMode both
+
+# Canonical release gate (export -> validate -> manifest suite -> performance evidence)
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\run_headless_tests.ps1 -Export -Tier all
+
+# Targeted positive/negative controls (add -FullGate to also run the gate chain above)
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build\test_performance_evidence.ps1
+```
+
+### Semantics
+
+| Condition | Result |
+|---|---|
+| Every scene `avg_fps >= 60` and `min_fps >= 30` | `PASS` row, exit `0` |
+| Below the 60 FPS target or below the documented 30 FPS fallback | `WARN` row recorded in the evidence JSON and report, printed as `WARNING`, **exit `0`** (never fails the release gate) |
+| Missing/invalid engine, Godot version != `4.7.2.stable`, renderer != `gl_compatibility`, Web preset not single-threaded, or an incomplete capture | **Non-zero exit** - preflight failure is never skipped |
+| Build-size budget | **None** (`build_size_budget = null`); the pre-existing plausibility bounds in `validate_release.ps1` are unchanged |
+
+### What it measures
+
+- Scenes: title (`title_screen.tscn`), overworld (`game_root.tscn`), combat
+  (`battle_fixture.tscn`), dungeon (`dungeon_expedition.tscn`), learning journal
+  (`learning_journal.tscn`), each with a disposable `ProfileStore`/fixture root under proven
+  disposable user-data isolation.
+- Per scene: frames measured, average/min frame time (ms), derived average/min FPS, setup time,
+  and Godot engine error/warning counts.
+- Environment: OS build, CPU, memory, GPU adapter(s), PowerShell/CLR, timezone, Godot version and
+  executable SHA-256, renderer settings, thread-support flag, display server, adapter and refresh
+  rate. Headless capture excludes GPU cost; `-CaptureMode windowed` records real rendered frame
+  cost on the reference machine.
+- Browser evidence is **not** produced by this automation. Chromium/Firefox/owner-selected browser
+  rows stay `PENDING HUMAN EXECUTION` in `docs/browser_verification_checklist.md`, and the
+  generated report states that no browser acceptance is claimed.
+
+### Artifacts
+
+| Artifact | Tracked | Purpose |
+|---|---|---|
+| `report/od013_performance_evidence.json` | Yes | Machine-readable evidence (`sbl-od013-performance-evidence/1`) |
+| `report/od013_performance_report.md` | Yes | Human-readable OD-013 report with machine, engine, per-scene tables and gate semantics |
+| `report/od013_performance_evidence.log` | No (`report/*.log`) | Raw execution transcript of the last run |
+| `report/performance_evidence_test.log` | No (`report/*.log`) | Control transcript for `test_performance_evidence.ps1` |
+| Capture harness `.gd` + capture `.json` | No (system temp) | Generated per run and deleted afterwards |

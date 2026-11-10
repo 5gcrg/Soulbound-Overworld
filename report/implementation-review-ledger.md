@@ -232,6 +232,52 @@ entries:
 - **Observation:** an unrelated docs commit `18ffb02` from another agent landed mid-session; the
   source-timing control caught the mismatch and passed again after a fresh export.
 
+## SBL-OD-013 implementation (OD-013 performance evidence, owner-ratified)
+
+- **Task:** `SBL-OD-013` — queue entry in `docs/agent-review-queue.md`; scope in
+  `docs/agy-next-queue.md`; ratification in `report/od013-ratification.md`; evidence in
+  `report/od013_performance_report.md` and `report/od013_performance_evidence.json`.
+- **Implementation:** executor `opencode-go/mimo-v2.6-flash` (MiMo) under the agy contract;
+  plan owner Codex/OpenCode. Codex CLI review **deferred by instruction** — committed
+  `[REVIEW_PENDING_CODEX]`; nothing here is `REVIEWED`.
+- **Files:** created `scripts/build/performance_evidence.ps1`,
+  `scripts/build/test_performance_evidence.ps1`, `report/od013_performance_report.md`,
+  `report/od013_performance_evidence.json`; modified `scripts/build/run_headless_tests.ps1`
+  (canonical `-Export` chain only), `docs/browser_verification_checklist.md`,
+  `docs/testing.md`, `docs/traceability-matrix.md`, `docs/agent-review-queue.md`, and this
+  ledger. `export_release.ps1` and `validate_release.ps1` were deliberately left unchanged so
+  the existing export, archive/PCK, manifest, save, and restoration gates stay byte-identical;
+  the OD-013 gate is chained from the canonical runner instead, because writing tracked report
+  files inside the exporter would break the manifest source-provenance timing control
+  (`test_release_manifest.ps1` control [9]).
+- **Asset provenance:** none. No image/audio/text asset generation, no OD resolved, no
+  numerical gameplay value invented (`build_size_budget` recorded as `null`).
+- **Verification (actual results, all run on this machine):**
+
+| Command | Exit | Observed result |
+|---|---|---|
+| `scripts\build\test_performance_evidence.ps1` | 0 | **24/24 controls PASS** (52.7 s): headless capture of all five scenes, windowed rendered capture, below-target fixture WARN + exit 0, fallback-band WARN on target only, at-target PASS, missing engine / non-Godot executable / wrong version / incompatible renderer / multi-threaded Web all exit non-zero with no artifacts written, no size budget, gate wiring, browser checklist pending, git status unchanged during controls. |
+| `scripts\build\run_headless_tests.ps1` | 0 | **32/32 headless suites PASS** (65.2 s); disposable user data proved (`realUserDataUnchanged=True`, 654 files, root removed). |
+| `scripts\build\run_headless_tests.ps1 -Export -Tier all` | 0 | Canonical release gate (211.2 s): 32/32 suites, `ALL RELEASE ARTIFACTS AND PRESETS VALIDATED SUCCESSFULLY`, **62/62 manifest controls**, chained performance evidence (5 scenes PASS, exit 0), isolation proof `realUserDataUnchanged=True`. |
+| `scripts\build\test_export_failure_restoration.ps1` | 0 | Deterministic export failure path verified; tree restored byte-identically; staging removed; dist unchanged. |
+| `scripts\build\test_export_failure_restoration.ps1 -DisableRestore` | 1 (expected) | Non-vacuous proof: with restore disabled the run fails as specified. |
+| `scripts\build\performance_evidence.ps1 -CaptureMode both` | 0 | **10/10 scene rows PASS** (29.8 s): headless 128.0–144.9 avg FPS (min 57.8–138.0) at 6.9–7.8 ms average frames; windowed native rendered 239.9–240.1 avg FPS (min 185.4–200.9) at ~4.17 ms on the AMD Radeon RX590 GME / 240 Hz display. This is the committed evidence snapshot. |
+
+- **Evidence snapshot (committed):** `report/od013_performance_evidence.json`
+  (schema `sbl-od013-performance-evidence/1`) and `report/od013_performance_report.md` —
+  reference machine (Windows 11 Pro 10.0.26300 build 26300, AMD Ryzen 7 5700X 8C/16T,
+  23.9 GB RAM, AMD Radeon RX590 GME), Godot `4.7.2.stable.official.ed1daf0bf`
+  (exe SHA-256 `c8f0a6bc…6643`), `gl_compatibility` standard + Web, single-threaded Web preset,
+  60 FPS target / 30 FPS fallback, `build_size_budget = null`, browser evidence
+  `PENDING_HUMAN_EXECUTION` with `acceptance_claimed = false`.
+- **Provenance note:** the canonical `-Export` gate run above executed while this slice's own
+  changes were still uncommitted, so that run's `dist/` manifests record `source.dirty=true`;
+  the manifest-vs-live timing control still passed (digests equal). Re-run the gate after merge
+  for clean-provenance release artifacts.
+- **Open questions:** `docs/open-decisions-ledger.md` still shows OD-013 as `TBD` (file outside
+  this slice's approved modification list); browser smoke/manual profiling remain human-gated;
+  see the queue entry for the `export_release.ps1` chaining question.
+
 ## Rule
 
 Every future implementation, review, finding, negative control, and disposition
