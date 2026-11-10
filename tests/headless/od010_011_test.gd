@@ -109,7 +109,7 @@ func _test_od010_academic_linearity(store: ProfileStore) -> void:
 	_check(store.save_profile("profile_01", saved) == OK, "Assessment records persisted with the chapter profile")
 	saved = store.load_profile("profile_01")["profile"]
 
-	_check(not (saved["world"] as Dictionary).has(QuestBranchModel.WORLD_KEY),
+	_check(not _world_of(saved).has(QuestBranchModel.WORLD_KEY),
 		"The academic chapter flow writes no quest branch record")
 	_check(GameplayProfileValidator.validate(saved) == OK, "Academic profile validates with no branch record")
 	_check(QuestBranchModel.validate_profile(saved) == OK, "Branch validator accepts an absent record (linear MVP)")
@@ -155,11 +155,12 @@ func _test_od010_branch_reconverge(store: ProfileStore) -> void:
 	# Local branch state stays local to its own chapter.
 	_check(model.record_choice(2, "fixture_cluster_ch2", "fixture_branch_x") == OK,
 		"Chapter II opens its own local cluster after the Chapter I gate")
-	_check(String(model.get_cluster(1)["branch_id"]) == "fixture_branch_a",
+	var chapter_one: Dictionary = model.get_cluster(1)
+	_check(not chapter_one.is_empty() and String(chapter_one["branch_id"]) == "fixture_branch_a",
 		"Chapter I outcome unchanged by later local choices")
 	_check(model.reconverge_at_gate(2) == OK, "Chapter II gate reconverges its own cluster")
 	_check(model.cluster_count() == 2, "One local cluster per chapter, stored separately")
-	_check(String(model.get_cluster(3)["branch_id"]) == "", "Chapter III carries no cluster yet")
+	_check(model.get_cluster(3).is_empty(), "Chapter III carries no cluster yet")
 
 	# Persistence: save/reload retains the exact selected quest outcomes (FR-QST-001).
 	_check(model.save_to_store(store, "profile_02") == OK, "Branch state saved to profile_02")
@@ -167,8 +168,11 @@ func _test_od010_branch_reconverge(store: ProfileStore) -> void:
 	_check(reloaded.load_from_store(store, "profile_02") == OK, "Branch state reloaded")
 	_check(reloaded.mode == QuestBranchModel.MODE_FULL_RELEASE, "Mode persisted")
 	_check(reloaded.cluster_count() == 2, "Both cluster records persisted")
-	_check(String(reloaded.get_cluster(1)["branch_id"]) == "fixture_branch_a"
-		and String(reloaded.get_cluster(2)["branch_id"]) == "fixture_branch_x",
+	var reloaded_ch1: Dictionary = reloaded.get_cluster(1)
+	var reloaded_ch2: Dictionary = reloaded.get_cluster(2)
+	_check(not reloaded_ch1.is_empty() and not reloaded_ch2.is_empty()
+		and String(reloaded_ch1["branch_id"]) == "fixture_branch_a"
+		and String(reloaded_ch2["branch_id"]) == "fixture_branch_x",
 		"Save/reload retains the exact selected quest outcomes (FR-QST-001)")
 	_check(reloaded.is_reconverged(1) and reloaded.is_reconverged(2), "Gate reconvergence persisted")
 	_check(JSON.stringify(reloaded.serialize()) == JSON.stringify(model.serialize()),
@@ -240,11 +244,15 @@ func _test_od010_branch_reconverge(store: ProfileStore) -> void:
 
 func _test_od010_isolation_backup(store: ProfileStore) -> void:
 	print("--- OD-010 quest / profile / backup isolation ---")
-	var profile_01: Dictionary = store.load_profile("profile_01")["profile"]
-	var profile_02: Dictionary = store.load_profile("profile_02")["profile"]
-	_check(not (profile_01["world"] as Dictionary).has(QuestBranchModel.WORLD_KEY),
+	var load_01: Dictionary = store.load_profile("profile_01")
+	var load_02: Dictionary = store.load_profile("profile_02")
+	_check(load_01["error"] == OK, "profile_01 loads")
+	_check(load_02["error"] == OK, "profile_02 loads")
+	var profile_01: Dictionary = load_01["profile"]
+	var profile_02: Dictionary = load_02["profile"]
+	_check(not _world_of(profile_01).has(QuestBranchModel.WORLD_KEY),
 		"Academic slot carries no branch record")
-	_check((profile_02["world"] as Dictionary).has(QuestBranchModel.WORLD_KEY),
+	_check(_world_of(profile_02).has(QuestBranchModel.WORLD_KEY),
 		"Branch slot carries its branch record")
 	_check(GameplayProfileValidator.validate(profile_01) == OK, "Academic slot validates")
 	_check(GameplayProfileValidator.validate(profile_02) == OK, "Branch slot validates")
@@ -256,15 +264,26 @@ func _test_od010_isolation_backup(store: ProfileStore) -> void:
 	_check(fresh.load_from_store(store, "profile_03") == OK, "Empty slot loads as an empty branch model")
 	_check(fresh.cluster_count() == 0, "No branch state leaks into the independent slot (TC-SAV-001)")
 
-	# Backup round trip retains the exact quest outcome.
+	# Backup round trip retains the exact quest outcome (same-slot unmodified + retargeted slot).
 	var exported: Dictionary = store.export_backup("profile_02")
 	_check(exported["error"] == OK, "Branch profile exported")
-	_check(store.import_backup("profile_03", String(exported["text"]), GameplayProfileValidator.validate) == OK,
+	var restore_store: ProfileStore = ProfileStore.new(_test_root.path_join("restore_store"))
+	_check(restore_store.import_backup("profile_02", String(exported["text"]), GameplayProfileValidator.validate) == OK,
+		"Same-slot validated backup import accepts unmodified branch export")
+	_check(String(restore_store.export_backup("profile_02")["text"]) == String(exported["text"]),
+		"Same-slot backup export/import/export is byte-identical")
+	_check(store.import_backup("profile_03", String(exported["text"]), GameplayProfileValidator.validate) != OK,
+		"Cross-slot backup import with mismatched profile_id is rejected")
+	var exported_for_03: String = String(exported["text"]).replace('"profile_02"', '"profile_03"')
+	_check(store.import_backup("profile_03", exported_for_03, GameplayProfileValidator.validate) == OK,
 		"Validated backup import accepts the branch record")
 	var imported: QuestBranchModel = QuestBranchModel.new()
 	_check(imported.load_from_store(store, "profile_03") == OK, "Imported branch record loads")
-	_check(String(imported.get_cluster(1)["branch_id"]) == "fixture_branch_a"
-		and String(imported.get_cluster(2)["branch_id"]) == "fixture_branch_x",
+	var imported_ch1: Dictionary = imported.get_cluster(1)
+	var imported_ch2: Dictionary = imported.get_cluster(2)
+	_check(not imported_ch1.is_empty() and not imported_ch2.is_empty()
+		and String(imported_ch1["branch_id"]) == "fixture_branch_a"
+		and String(imported_ch2["branch_id"]) == "fixture_branch_x",
 		"Backup round trip retains the exact selected quest outcomes")
 	_check(imported.is_reconverged(1) and imported.is_reconverged(2),
 		"Backup round trip retains gate reconvergence")
@@ -272,9 +291,10 @@ func _test_od010_isolation_backup(store: ProfileStore) -> void:
 	# Deferred reputation/faction data is rejected at the backup boundary (zero mutation).
 	var before: String = String(store.export_backup("profile_03")["text"])
 
-	var tampered: Dictionary = JSON.parse_string(String(exported["text"])) as Dictionary
-	var tampered_world: Dictionary = tampered["world"] as Dictionary
-	var tampered_record: Dictionary = tampered_world[QuestBranchModel.WORLD_KEY]
+	var tampered: Dictionary = JSON.parse_string(exported_for_03) as Dictionary
+	var tampered_world: Dictionary = _world_of(tampered)
+	var tampered_record: Dictionary = tampered_world.get(QuestBranchModel.WORLD_KEY, {}) as Dictionary
+	_check(not tampered_record.is_empty(), "Exported backup carries the branch record")
 	tampered_record["reputation"] = 50
 	tampered_world[QuestBranchModel.WORLD_KEY] = tampered_record
 	_check(store.import_backup("profile_03", JSON.stringify(tampered), GameplayProfileValidator.validate) != OK,
@@ -284,9 +304,9 @@ func _test_od010_isolation_backup(store: ProfileStore) -> void:
 	_check(GameplayProfileValidator.validate(tampered) != OK,
 		"Gameplay validator rejects the reputation-tampered profile")
 
-	tampered = JSON.parse_string(String(exported["text"])) as Dictionary
-	tampered_world = tampered["world"] as Dictionary
-	tampered_record = tampered_world[QuestBranchModel.WORLD_KEY]
+	tampered = JSON.parse_string(exported_for_03) as Dictionary
+	tampered_world = _world_of(tampered)
+	tampered_record = tampered_world.get(QuestBranchModel.WORLD_KEY, {}) as Dictionary
 	tampered_record["faction"] = "unused_faction"
 	tampered_world[QuestBranchModel.WORLD_KEY] = tampered_record
 	_check(store.import_backup("profile_03", JSON.stringify(tampered), GameplayProfileValidator.validate) != OK,
@@ -297,8 +317,8 @@ func _test_od010_isolation_backup(store: ProfileStore) -> void:
 	# Slot isolation after every rejection.
 	var after_profile_01: Dictionary = store.load_profile("profile_01")["profile"]
 	var after_profile_02: Dictionary = store.load_profile("profile_02")["profile"]
-	_check(not (after_profile_01["world"] as Dictionary).has(QuestBranchModel.WORLD_KEY)
-		and (after_profile_02["world"] as Dictionary).has(QuestBranchModel.WORLD_KEY),
+	_check(not _world_of(after_profile_01).has(QuestBranchModel.WORLD_KEY)
+		and _world_of(after_profile_02).has(QuestBranchModel.WORLD_KEY),
 		"Profile slots stay isolated through import rejections (TC-SAV-001)")
 
 	print("PASS: OD-010 quest/profile/backup isolation verified")
@@ -325,6 +345,18 @@ func _test_od011_mvp_dungeon_unchanged() -> void:
 	_check(_count_type(first.rooms, DungeonGenerator.TYPE_COMBAT) > 0, "MVP encounter rooms retained")
 	_check(_count_type(first.rooms, DungeonGenerator.TYPE_NORMAL) > 0, "MVP treasure rooms retained")
 	_check(_mvp_reachable(first), "MVP extraction remains reachable from spawn (TC-DNG-001)")
+
+	var four_a: DungeonGenerator = DungeonGenerator.new()
+	var four_b: DungeonGenerator = DungeonGenerator.new()
+	_check(four_a.generate(1337, 4) == true and four_a.is_valid and four_a.rooms.size() == 4,
+		"Academic MVP seeded 4-room DAG generation and validation unchanged")
+	_check(_count_type(four_a.rooms, DungeonGenerator.TYPE_SPAWN) == 1
+		and _count_type(four_a.rooms, DungeonGenerator.TYPE_EXTRACTION) == 1
+		and _mvp_reachable(four_a),
+		"Academic MVP 4-room DAG keeps one entry, one extraction, and a reachable route")
+	_check(four_b.generate(1337, 4) == true
+		and JSON.stringify(four_a.serialize_expedition_state()) == JSON.stringify(four_b.serialize_expedition_state()),
+		"Academic MVP 4-room DAG is deterministic for the same seed")
 
 	var default_gen: DungeonGenerator = DungeonGenerator.new()
 	_check(default_gen.generate(20261111) == true and default_gen.rooms.size() == 6,
@@ -550,12 +582,14 @@ func _test_od011_mastery(store: ProfileStore) -> void:
 		"Marker grants leave CharacterStats byte-identical (no uncapped combat power)")
 
 	# Persistence alongside permanent character state.
-	var current: Dictionary = store.load_profile("profile_01")["profile"]
+	var current_load: Dictionary = store.load_profile("profile_01")
+	_check(current_load["error"] == OK, "profile_01 loads for the mastery persistence probe")
+	var current: Dictionary = current_load["profile"]
 	current["character"]["level"] = 7
 	current["character"]["xp"] = 350
 	current["character"]["vitality"] = 14
 	_check(store.save_profile("profile_01", current) == OK, "Permanent character state seeded (test fixture)")
-	var character_before: String = JSON.stringify((store.load_profile("profile_01")["profile"])["character"])
+	var character_before: String = JSON.stringify(_section_of(store.load_profile("profile_01")["profile"], "character"))
 
 	_check(mastery.save_to_store(store, "profile_01") == OK, "Mastery record saved alongside permanent state")
 	var reloaded: DungeonMastery = DungeonMastery.new()
@@ -564,7 +598,7 @@ func _test_od011_mastery(store: ProfileStore) -> void:
 		"Knowledge/access markers persist across save/load")
 
 	var after_profile: Dictionary = store.load_profile("profile_01")["profile"]
-	_check(JSON.stringify(after_profile["character"]) == character_before,
+	_check(JSON.stringify(_section_of(after_profile, "character")) == character_before,
 		"Mastery grants never change combat power / character stats")
 	_check(GameplayProfileValidator.validate(after_profile) == OK, "Profile with mastery record validates")
 	_check(QuestBranchModel.validate_profile(after_profile) == OK,
@@ -600,7 +634,7 @@ func _test_od011_mastery(store: ProfileStore) -> void:
 
 	# Slot isolation: mastery lives only in the slot that earned it.
 	var other_slot: Dictionary = store.load_profile("profile_03")["profile"]
-	_check(not (other_slot["world"] as Dictionary).has(DungeonMastery.WORLD_KEY),
+	_check(not _world_of(other_slot).has(DungeonMastery.WORLD_KEY),
 		"Mastery record stays inside its own profile slot (TC-SAV-001)")
 	_check(GameplayProfileValidator.validate(other_slot) == OK, "Slot without mastery record validates")
 
@@ -617,6 +651,15 @@ func _exact_keys(d: Dictionary, keys: Array) -> bool:
 		if not d.has(key):
 			return false
 	return true
+
+## Defensive section accessors: a failed load yields {} instead of a script error.
+func _world_of(profile: Dictionary) -> Dictionary:
+	return _section_of(profile, "world")
+
+func _section_of(profile: Dictionary, section: String) -> Dictionary:
+	if typeof(profile.get(section)) != TYPE_DICTIONARY:
+		return {}
+	return profile[section] as Dictionary
 
 func _count_type(rooms: Array, room_type: String) -> int:
 	var count: int = 0

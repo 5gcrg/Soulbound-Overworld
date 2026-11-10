@@ -37,6 +37,8 @@ const TYPE_EXTRACTION: String = DungeonGenerator.TYPE_EXTRACTION
 const LAYOUT_KEYS: Array[String] = ["schema", "seed", "floors", "entry_id", "extraction_id"]
 const FLOOR_KEYS: Array[String] = ["floor", "rooms"]
 const ROOM_KEYS: Array[String] = ["id", "floor", "slot", "type", "risk", "neighbors"]
+const MIN_SAFE_INT: int = -9007199254740991
+const MAX_SAFE_INT: int = 9007199254740991
 
 var seed_val: int = 0
 var layout: Dictionary = {}
@@ -398,8 +400,9 @@ static func _exact_keys(d: Dictionary, keys: Array[String]) -> bool:
 
 static func _is_int(value: Variant) -> bool:
 	if typeof(value) == TYPE_INT:
-		return true
+		return value >= MIN_SAFE_INT and value <= MAX_SAFE_INT
 	if typeof(value) == TYPE_FLOAT:
 		var f: float = float(value)
-		return is_finite(f) and not is_nan(f) and floor(f) == f
+		return is_finite(f) and not is_nan(f) and floor(f) == f \
+			and f >= float(MIN_SAFE_INT) and f <= float(MAX_SAFE_INT)
 	return false

@@ -38,6 +38,8 @@ const FULL_RELEASE_CHAPTERS: int = 5
 ## Validation bounds (data-validation limits, not gameplay values).
 const MAX_RECORDS: int = 64
 const MAX_ID_LENGTH: int = 128
+const MIN_SAFE_INT: int = -9007199254740991
+const MAX_SAFE_INT: int = 9007199254740991
 
 const ROOT_KEYS: Array[String] = ["schema", "mode", "clusters", "reconverged_chapters"]
 const CLUSTER_KEYS: Array[String] = ["chapter", "cluster_id", "branch_id", "reconverged"]
@@ -129,11 +131,22 @@ func cluster_count() -> int:
 # ==============================================================================
 
 func serialize() -> Dictionary:
+	var out_clusters: Array[Dictionary] = []
+	for rec: Dictionary in clusters:
+		out_clusters.append({
+			"chapter": int(rec["chapter"]),
+			"cluster_id": String(rec["cluster_id"]),
+			"branch_id": String(rec["branch_id"]),
+			"reconverged": bool(rec["reconverged"]),
+		})
+	var out_gates: Array[int] = []
+	for gate: int in reconverged_chapters:
+		out_gates.append(int(gate))
 	return {
 		"schema": SCHEMA_ID,
 		"mode": mode,
-		"clusters": clusters.duplicate(true),
-		"reconverged_chapters": reconverged_chapters.duplicate(),
+		"clusters": out_clusters,
+		"reconverged_chapters": out_gates,
 	}
 
 ## Strict structural parse. Any key outside ROOT_KEYS / CLUSTER_KEYS (for example a
@@ -262,7 +275,12 @@ static func _parse(value: Variant) -> Dictionary:
 			return bad
 		if typeof(rec["reconverged"]) != TYPE_BOOL:
 			return bad
-		parsed_clusters.append(rec)
+		parsed_clusters.append({
+			"chapter": chapter,
+			"cluster_id": cluster_id,
+			"branch_id": branch_id,
+			"reconverged": bool(rec["reconverged"]),
+		})
 
 	var parsed_gates: Array = []
 	var seen_gates: Dictionary = {}
@@ -299,8 +317,9 @@ static func _exact_keys(d: Dictionary, keys: Array[String]) -> bool:
 
 static func _is_int(value: Variant) -> bool:
 	if typeof(value) == TYPE_INT:
-		return true
+		return value >= MIN_SAFE_INT and value <= MAX_SAFE_INT
 	if typeof(value) == TYPE_FLOAT:
 		var f: float = float(value)
-		return is_finite(f) and not is_nan(f) and floor(f) == f
+		return is_finite(f) and not is_nan(f) and floor(f) == f \
+			and f >= float(MIN_SAFE_INT) and f <= float(MAX_SAFE_INT)
 	return false
